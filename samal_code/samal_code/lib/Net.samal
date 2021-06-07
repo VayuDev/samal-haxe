@@ -1,0 +1,146 @@
+using Core
+
+native fn openServerSocket(port : i32) -> Core.Maybe<i32>
+native fn closeSocket(socket : i32) -> ()
+native fn acceptClientSocket(serverSocket : i32) -> i32
+native fn recvByte(socket : i32) -> byte
+native fn recvStringUntilEmptyHeader(socket : i32) -> String
+native fn recvChar(socket : i32) -> char
+native fn sendString(socket : i32, str : String) -> ()
+native fn sendBytes(socket : i32, str : [byte]) -> ()
+
+fn recvUntilEmptyHeader(socket : i32, prepend : String, lastThreeChars : String) -> String {
+    ch = recvChar(socket)
+    lastFourChars = Core.concat(lastThreeChars, [ch])
+    if lastFourChars == "\r\n\r\n" || ch == '\0' {
+        Core.concat(prepend, [ch])
+    } else {
+        lastThreeChars = if Core.len(lastFourChars) > 3 {
+            lastFourChars:tail
+        } else {
+            lastFourChars
+        }
+        @tail_call_self(socket, Core.concat(prepend, [ch]), lastThreeChars)
+    }
+}
+
+enum HTTPBody {
+    Text{String},
+    Binary{[byte]}
+}
+
+struct HTTPRequest {
+    method : String,
+    version : String,
+    url : String,
+    headers : [(String, String)],
+    params : [(String, String)]
+}
+
+struct HTTPResponse {
+    body : HTTPBody,
+    status : i32,
+    contentType : String
+}
+
+fn sendResponse(socket : i32, response : HTTPResponse) -> () {
+    statusString = if response:status == 200 {
+        "200 OK"
+    } else if response:status == 404 {
+        "404 Not Found"
+    } else {
+        "500 Internal Server Error"
+    }
+
+    lenAndBytes = match response:body {
+        Text{str} -> {
+            bytes = toBytes(str)
+            (len(bytes), bytes)
+        },
+        Binary{bytes} -> {
+            (len(bytes), bytes)
+        }
+    }
+
+    fullResponseHeader =
+        ""
+        |> prepend("\r\n\r\n")
+        |> prepend(toString(lenAndBytes:0))
+        |> prepend("; charset=utf-8\r\nContent-Length: ")
+        |> prepend(response:contentType)
+        |> prepend("\r\nContent-Type: ")
+        |> prepend(statusString)
+        |> prepend("HTTP/1.1 ")
+
+    sendString(socket, fullResponseHeader)
+    sendBytes(socket, lenAndBytes:1)
+}
+
+fn recvHTTPHeader(socket : i32) -> Core.Maybe<HTTPRequest> {
+    str = recvStringUntilEmptyHeader(socket)
+    lines = Core.splitByChar(str, '\n')
+    lines = if lines == [] {
+        [""]
+    } else {
+        lines
+    }
+    lines = Core.map(lines, fn(line : String) -> String {
+        Core.takeWhile(line, fn(ch : char) -> bool {
+            ch != '\r'
+        })
+    })
+
+    firstLineSplit = Core.splitByChar(lines:head, ' ')
+    if Core.len(firstLineSplit) != 3 {
+        Core.Maybe<HTTPRequest>::None{}
+    } else {
+        headers =
+            lines:tail
+            |> Core.map(fn(line : String) -> Core.Maybe<(String, String)> {
+                splitList =
+                    Core.takeWhileEx(line, fn(ch : char) -> bool {
+                        ch != ':'
+                    })
+                if splitList:1 == "" {
+                    Core.Maybe<(String, String)>::None{}
+                } else {
+                    Core.Maybe<(String, String)>::Some{(splitList:0, splitList:1:tail:tail)}
+                }
+            })
+            |> Core.filter(fn(line : Core.Maybe<(String, String)>) -> bool {
+                match line {
+                    Some{m} -> true,
+                    None{} -> false
+                }
+            })
+            |> Core.map(fn(e : Core.Maybe<(String, String)>) -> (String, String) {
+                match e {
+                    Some{n} -> n,
+                    None{} -> ("", "")
+                }
+            })
+
+        urlSplit =
+            firstLineSplit:tail:head
+            |> Core.takeWhileEx(fn(ch : char) -> bool {
+                ch != '?'
+            })
+        url = urlSplit:0
+        params =
+            urlSplit:1:tail
+            |> Core.splitByChar('&')
+            |> Core.map(fn(parameter : String) -> (String, String) {
+                split = Core.takeWhileEx(parameter, fn(ch : char) -> bool {
+                    ch != '='
+                })
+                (split:0, split:1:tail)
+            })
+
+        Core.Maybe<HTTPRequest>::Some{HTTPRequest{
+            method : firstLineSplit:head,
+            version : firstLineSplit:tail:tail:head,
+            url : url,
+            headers : headers,
+            params : params}}
+    }
+}

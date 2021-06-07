@@ -1,0 +1,3 @@
+-cp src
+-main samal.Main
+-python bin/samal.py

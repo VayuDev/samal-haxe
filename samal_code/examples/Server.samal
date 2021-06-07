@@ -1,0 +1,176 @@
+using Core
+
+struct Handler {
+    url : [char],
+    callback : fn(Net.HTTPRequest) -> Net.HTTPResponse
+}
+
+struct ServerConfig {
+    port : i32,
+    handlers : [Handler]
+}
+
+fn search<T>(list : [T], callback : fn(T) -> bool) -> bool {
+    if list == [] {
+        false
+    } else {
+        if callback(list:head) {
+            true
+        } else {
+            search(list:tail, callback)
+        }
+    }
+}
+
+fn searchEx<T, S>(list : [T], callback : fn(T) -> Maybe<S>) -> Maybe<S> {
+    if list == [] {
+        Maybe<S>::None{}
+    } else {
+        match callback(list:head) {
+            Some{result} -> Maybe<S>::Some{result},
+            None{} -> searchEx(list:tail, callback)
+        }
+    }
+}
+
+fn loop(serverSocket : i32, config : ServerConfig) -> () {
+    clientSocket = Net.acceptClientSocket(serverSocket)
+    maybeHeader = Net.recvHTTPHeader(clientSocket)
+    match maybeHeader {
+        Some{header} -> {
+            print(header:url |> Core.prepend("Request url: "))
+            handlerFound = search(config:handlers, fn(handler : Handler) -> bool {
+                if handler:url == header:url || handler:url == "*" {
+                    response = handler:callback(header)
+                    Net.sendResponse(clientSocket, response)
+                    true
+                } else {
+                    false
+                }
+            })
+            if !handlerFound {
+                Net.sendResponse(clientSocket, Net.HTTPResponse{body: Net.HTTPBody::Text{" not found" |> Core.prepend(header:url) |> Core.prepend("Error: Path ")}, status : 404, contentType: "text/plain"})
+            }
+            ()
+        },
+        None{} -> {
+            print("Invalid http request")
+            ()
+        }
+    }
+
+    Net.closeSocket(clientSocket)
+    @tail_call_self(serverSocket, config)
+}
+
+fn runServer(config : ServerConfig) -> () {
+    match Net.openServerSocket(config:port) {
+        Some{socket} -> {
+            print("Socket created")
+            loop(socket, config)
+        },
+        None{} -> print("Failed to create socket")
+    }
+}
+
+struct Point {
+    x : i32,
+    y : i32
+}
+
+struct Edge {
+    p1 : Point,
+    p2 : Point
+}
+
+fn distance(p1 : Point, p2 : Point) -> i32 {
+    dx = p1:x - p2:x
+    dy = p1:y - p2:y
+    Math.sqrt(dx * dx + dy * dy)
+}
+
+fn pointsToLines(points : [Point], initialImage : Gfx.Image, maxDistance : i32) -> Gfx.Image {
+    Core.reduce(points, initialImage, fn(p1 : Point, img : Gfx.Image) -> Gfx.Image {
+        Core.reduce(points, img, fn(p2 : Point, img : Gfx.Image) -> Gfx.Image {
+            d = distance(p1, p2)
+            if d < maxDistance && d > 20 {
+                Gfx.drawLine(img, p1:x, p1:y, p2:x, p2:y)
+            } else {
+                img
+            }
+        })
+    })
+}
+
+fn main() -> () {
+    handlers = [
+        Handler{url : "/api/image.png", callback : fn(request : Net.HTTPRequest) -> Net.HTTPResponse {
+
+            extractInt = fn(name : [char]) -> i32 {
+                i = searchEx<([char], [char]), i32>(request:params, fn(param : ([char], [char])) -> Maybe<i32> {
+                    if param:0 == name {
+                        Core.toI32(param:1)
+                    } else {
+                        Maybe<i32>::None{}
+                    }
+                })
+                match i {
+                    Some{i} ->
+                        if i <= 3900 && i > 0 {
+                            i
+                        } else if i > 0 {
+                            3900
+                        } else {
+                            200
+                        },
+                    None{} -> 200
+                }
+            }
+            w = extractInt("width")
+            h = extractInt("height")
+            w2 = w / 2
+            h2 = h / 2
+            img = Gfx.create(w, h)
+                |> Gfx.setColor(60b, 60b, 60b)
+
+            img =
+                Core.times(w * h / 2000, fn() -> Point {
+                    Point{x : Math.randomInt(0, w - 1), y : Math.randomInt(0, h - 1)}
+                })
+                |> pointsToLines(img, 130)
+                |> Gfx.stroke()
+
+            bytes = Gfx.render(img)
+            Net.HTTPResponse{body : Net.HTTPBody::Binary{bytes}, status : 200, contentType : "image/png"}
+        }},
+        Handler{url : "/", callback : fn(request : Net.HTTPRequest) -> Net.HTTPResponse {
+            response = match IO.readFileAsString("/www/index.html") {
+                Some{fileContent} -> Net.HTTPResponse{body : Net.HTTPBody::Text{fileContent}, status : 200, contentType : "text/html"},
+                None{} -> {
+                    Net.HTTPResponse{body: Net.HTTPBody::Text{"Error: Path index.html not found"}, status : 404, contentType: "text/plain"}
+                }
+            }
+        }},
+        Handler{url : "*", callback : fn(request : Net.HTTPRequest) -> Net.HTTPResponse {
+            path = Core.concat("/www", request:url)
+            extension = IO.getExtension(path)
+            contentType =
+                if extension == ".html" {
+                    "text/html"
+                } else if extension == ".js" {
+                    "application/javascript"
+                } else {
+                    "text/plain"
+                }
+
+            response = match IO.readFileAsString(path) {
+                Some{fileContent} -> Net.HTTPResponse{body : Net.HTTPBody::Text{fileContent}, status : 200, contentType : contentType},
+                None{} -> {
+                    Net.HTTPResponse{body: Net.HTTPBody::Text{" not found" |> Core.prepend(request:url) |> Core.prepend("Error: Path ")}, status : 404, contentType: "text/plain"}
+                }
+            }
+            response
+        }}
+    ]
+    runServer(ServerConfig{port : 8080, handlers : handlers})
+}

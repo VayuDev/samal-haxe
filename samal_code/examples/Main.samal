@@ -1,0 +1,48 @@
+using Core
+typedef Abc = [char]
+typedef X = Tree<i32>
+
+fn main2(p : i32) -> i32 {
+    Lists.testListSpeed(p)
+    |> Core.reduce<i32, i32>(0, fn(e : i32, state : i32) -> i32 {
+        state + e
+    })
+}
+
+fn main3(p : i32) -> Structs.LinkedList<i32> {
+    Structs.testStruct(p):0
+}
+
+fn func() -> fn() -> [i32] {
+    l = [1, 2, 3]
+    fn() -> [i32] {
+        l
+    }
+}
+
+fn infiniteLoop(v : i32) -> i32 {
+    Core.print<i32>(v)
+    @tail_call_self(v + 1)
+}
+
+enum Tree<T> {
+    Node{$Tree<T>, T, $Tree<T>},
+    Empty{}
+}
+
+fn doSth(p : String) -> Abc {
+    concat("Hey, ", p)
+    |> concat(toString(5))
+}
+
+// Hey!
+fn main() -> (X, String) {
+    t = X::Node{$X::Empty{}, 5, $X::Empty{}}
+    match t {
+        Node{l, v, r} -> v,
+        Empty{} -> 0
+    }
+    msg = "Hello"
+    msg = doSth(msg)
+    (t, msg)
+}

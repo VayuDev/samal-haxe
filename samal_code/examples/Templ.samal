@@ -1,0 +1,13 @@
+fn fib<T>(a : T) -> T {
+    if a < 2 {
+        a
+    } else {
+        fib<T>(a - 1) + fib<T>(a - 2)
+    }
+}
+fn add<T>(a : T, b : T) -> T {
+    a + b
+}
+fn addAndFib<T>(a : T, b : T) -> T {
+    fib<T>(a) + b
+}

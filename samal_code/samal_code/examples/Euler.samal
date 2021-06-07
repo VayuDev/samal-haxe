@@ -1,0 +1,32 @@
+fn problem1() -> () {
+    Core.seq<i32>(1000)
+    |> Core.filter<i32>(fn(i : i32) -> bool {
+        i % 5 == 0 || i % 3 == 0
+    })
+    |> Core.sum<i32>()
+    |> Core.print<i32>()
+}
+
+fn problem5rec(list : [i32], guess : i32) -> i32 {
+    fits = list
+    |> Core.map<i32, bool>(fn(i : i32) -> bool {
+        guess % (i + 1) == 0
+    })
+    |> Core.reduce<bool, bool>(true, fn(b : bool, state : bool) -> bool {
+        if state {
+            b
+        } else {
+            false
+        }
+    })
+    if fits {
+        guess
+    } else {
+        @tail_call_self(list, guess + 1)
+    }
+}
+fn problem5(limit : i32) -> i32 {
+    res = problem5rec(Core.seq<i32>(limit), 1)
+    Core.print<i32>(res)
+    res
+}

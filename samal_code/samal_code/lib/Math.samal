@@ -1,0 +1,3 @@
+
+native fn randomInt(from : i32, to : i32) -> i32
+native fn sqrt<T>(num : T) -> T

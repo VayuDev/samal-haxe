@@ -1,0 +1,168 @@
+
+typedef String = [char]
+
+native fn print<T>(p: T) -> ()
+native fn dumpStackTrace() -> ()
+native fn toI32<T>(p : T) -> Maybe<i32>
+native fn toChar<T>(p : T) -> Maybe<char>
+native fn toString<T>(p : T) -> String
+native fn toBytes<T>(p : T) -> [byte]
+
+fn identity<T>(p: T) -> T {
+    p
+}
+
+fn len<T>(l : [T]) -> i32 {
+    if l == [] {
+        0
+    } else {
+        1 + len<T>(l:tail)
+    }
+}
+
+fn concat<T>(l1 : [T], l2 : [T]) -> [T] {
+    if l1 == [] {
+        l2
+    } else {
+        l1:head + concat<T>(l1:tail, l2)
+    }
+}
+
+fn prepend<T>(l1 : [T], l2 : [T]) -> [T] {
+    concat(l2, l1)
+}
+
+fn map<T, S>(l : [T], callback : fn(T) -> S) -> [S] {
+    if l == [] {
+        [:S]
+    } else {
+        callback(l:head) + map<T, S>(l:tail, callback)
+    }
+}
+
+fn zip<S, T>(l1 : [S], l2 : [T]) -> [(S, T)] {
+    if l1 == [] || l2 == [] {
+        [:(S, T)]
+    } else {
+        (l1:head, l2:head) + zip<S, T>(l1:tail, l2:tail)
+    }
+}
+
+fn seqRec<T>(index : T, limit: T) -> [T] {
+    if limit < 1 {
+        [:T]
+    } else {
+        index + seqRec<T>(index + 1, limit - 1)
+    }
+}
+
+fn seq<T>(limit: T) -> [T] {
+    seqRec<T>(0, limit)
+}
+
+fn times<T>(limit : i32, callback : fn() -> T) -> [T] {
+    if limit < 1 {
+        [:T]
+    } else {
+        callback() + times(limit - 1, callback)
+    }
+}
+
+fn createFilledList<T>(value : T, length : i32) -> [T] {
+    if length < 1 {
+        [:T]
+    } else {
+        value + createFilledList<T>(value, length - 1)
+    }
+}
+
+fn sumRec<T>(current : T, list : [T]) -> T {
+    if list == [] {
+        current
+    } else {
+        @tail_call_self(current + list:head, list:tail)
+    }
+}
+fn sum<T>(list : [T]) -> T {
+    sumRec<T>(0, list)
+}
+
+fn reduce<S, T>(list : [S], initial : T, lambda : fn(S, T) -> T) -> T {
+    if list == [] {
+        initial
+    } else {
+        val = lambda(list:head, initial)
+        reduce<S, T>(list:tail, val, lambda)
+    }
+}
+
+fn filter<T>(list : [T], condition : fn(T) -> bool) -> [T] {
+    if list == [] {
+        [:T]
+    } else {
+        head = list:head
+        if condition(head) {
+            head + filter<T>(list:tail, condition)
+        } else {
+            filter<T>(list:tail, condition)
+        }
+    }
+}
+
+fn contains<T>(list : [T], element : T) -> bool {
+    if list == [] {
+        false
+    } else {
+        if list:head == element {
+            true
+        } else {
+            contains<T>(list:tail)
+        }
+    }
+}
+
+fn takeWhileEx<T>(list : [T], callback : fn(T) -> bool) -> ([T], [T]) {
+    if list == [] {
+        ([:T], [:T])
+    } else {
+        if callback(list:head) {
+            childRet = takeWhileEx<T>(list:tail, callback)
+            (list:head + childRet:0, childRet:1)
+        } else {
+            ([:T], list)
+        }
+    }
+}
+
+fn takeWhile<T>(list : [T], callback : fn(T) -> bool) -> [T] {
+    if list == [] {
+        [:T]
+    } else {
+        if callback(list:head) {
+            list:head + takeWhile<T>(list:tail, callback)
+        } else {
+            [:T]
+        }
+    }
+}
+
+enum Maybe<T> {
+    Some{T},
+    None{}
+}
+
+fn splitByChar(str : String, delim : char) -> [String] {
+    if str == "" {
+        [:String]
+    } else {
+        takeWhileRet = takeWhileEx<char>(str, fn(ch : char) -> bool {
+            ch != delim
+        })
+        part = takeWhileRet:0
+        takeWhileRet = takeWhileEx<char>(takeWhileRet:1, fn(ch : char) -> bool {
+            ch == delim
+        })
+        rest = takeWhileRet:1
+        part + splitByChar(rest, delim)
+    }
+}

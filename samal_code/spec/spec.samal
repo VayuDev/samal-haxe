@@ -1,0 +1,53 @@
+struct Liste<T> {
+    Liste<T> prev,
+    Liste<T> next,
+    T data
+}
+
+enum Shape {
+    CIRCLE(f32),
+    RECTANGLE(f32, f32)
+}
+
+fn do(a : i32) -> (i32, i32) {
+    i = a * a
+    (a, i)
+}
+
+
+fn map<T, S>(l : [T], callback : fn(T) -> S) -> [S] {
+    if l == [] {
+        [:S]
+    } else {
+        callback(l:head) + map<T, S>(l:tail, callback)
+    }
+}
+
+gen range(from : i32, to : i32) -> [i32] {
+    if from >= to {
+        Optional<(i32, [i32])>:None{}
+    } else {
+        Optional<(i32, [i32])>:Some{(from, range(from + 1, to))}
+    }
+}
+
+fn sumRange(l : [i32]) {
+    match l:next {
+        Optional<(i32, [i32])>:None{} -> 0
+        Optional<(i32, [i32])>:Some{(head, tail)} -> head + sumRange(tail)
+    }
+}
+
+fn main() -> i32 {
+    squareTuple = do(20)
+    square = squareTuple.1
+    list =
+        0..square
+        |> map(fn(i : i32) -> i32 {
+            i*i;
+        })
+        |> filter(fn(i : i32) -> bool {
+            i < 100;
+        })
+    list:head
+}

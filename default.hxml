@@ -1,0 +1,4 @@
+-cp src
+-main samal.Main
+--macro nullSafety("samal", Strict)
+-hl bin/hashlink

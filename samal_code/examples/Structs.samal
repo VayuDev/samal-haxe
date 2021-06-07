@@ -1,0 +1,79 @@
+struct Vec2 {
+    x : i32,
+    y : i32
+}
+
+struct Rect {
+    pos : Vec2,
+    size : Vec2
+}
+struct LinkedList<T> {
+    value : T,
+    friend : [LinkedList<T>]
+}
+
+struct A {
+    l : LinkedList<Vec2>
+}
+
+fn pureIdentity<T>(v : T) -> T {
+    v
+}
+
+fn testStruct(p : i32) -> (LinkedList<i32>, Rect) {
+    list = LinkedList<i32>{value : 5, friend : [LinkedList<i32>{value : 5, friend : [LinkedList<i32>{value : 5, friend : [:LinkedList<i32>]}]}]}
+    rect = Rect{pos : Vec2{x : p * 5, y : p}, size : Vec2{x : 3, y : 3}}
+    (list, rect)
+}
+
+fn add(a : i32, b : i32, c: i32) -> i32 {
+    {
+        f = [a, b, c]
+        Core.sum<i32>([a, b, c])
+    }
+}
+
+fn testStruct2(p : i32) -> [Vec2] {
+    p = 100 + p
+    list =
+        Core.createFilledList<Vec2>(Vec2{x : 0, y : 5}, 10)
+        |> Core.map<Vec2, Vec2>(fn(p2 : Vec2) -> Vec2 {
+            Vec2{x: p2:x + 1, y: p2:y}
+        })
+}
+
+fn testStruct3(p : i32) -> [Vec2] {
+    l = [Vec2{x : 5, y : 10}]
+    x = add(5, 3, 5)
+    l
+}
+
+fn testStruct4(p : i32) -> i32 {
+    s = Vec2{x : 5, y : 6}
+    s:y
+}
+
+struct Point<T> {
+    x : T,
+    y : T
+}
+
+fn templ<T>() -> i32 {
+    point = Point<T>{x : 5, y : 3}
+    point:y
+}
+
+fn makePoint<T>(a : T, b : T) -> fn() -> Point<T> {
+    fn() -> Point<T> {
+        Point<T>{x : a, y : b}
+    }
+}
+
+fn testStruct5(p : i32) -> i32 {
+    bp = makePoint<bool>(false, true)()
+    if bp:x {
+        templ<i32>()
+    } else {
+        3329
+    }
+}

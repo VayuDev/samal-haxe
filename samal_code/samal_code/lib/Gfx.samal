@@ -1,0 +1,39 @@
+
+enum Command {
+    DrawLine{i32, i32, i32, i32},
+    SetColor{byte, byte, byte},
+    Stroke{},
+    SetLineWidth{i32}
+}
+
+struct Image {
+    width   : i32,
+    height  : i32,
+    commands : [Command]
+}
+
+fn drawLine(img : Image, x1 : i32, y1 : i32, x2 : i32, y2 : i32) -> Image {
+    command = Command::DrawLine{x1, y1, x2, y2}
+    Image{width : img:width, height : img:height, commands : command + img:commands}
+}
+
+fn setColor(img : Image, r : byte, g : byte, b : byte) -> Image {
+    command = Command::SetColor{r, g, b}
+    Image{width : img:width, height : img:height, commands : command + img:commands}
+}
+
+fn stroke(img : Image) -> Image {
+    command = Command::Stroke{}
+    Image{width : img:width, height : img:height, commands : command + img:commands}
+}
+
+fn setLineWidth(img : Image, widthTimesTen : i32) -> Image {
+    command = Command::SetLineWidth{widthTimesTen}
+    Image{width : img:width, height : img:height, commands : command + img:commands}
+}
+
+fn create(w : i32, h : i32) -> Image {
+    Image{width : w, height : h, commands : [:Command]}
+}
+
+native fn render(img : Image) -> [byte]

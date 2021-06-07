@@ -1,0 +1,7 @@
+-cp src
+-main samal.Main
+-lib hxcpp-debugger
+-lib hxcpp-debug-server
+--macro nullSafety("samal", Strict)
+-debug
+-cpp bin/cpp

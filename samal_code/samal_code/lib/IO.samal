@@ -1,0 +1,19 @@
+using Core
+
+native fn readFileAsString(filename : String) -> Core.Maybe<String>
+
+fn getExtensionRec(current : String, path : String) -> String {
+    if path == "" {
+        current
+    } else {
+        if path:head == '.' {
+            @tail_call_self(".", path:tail)
+        } else {
+            @tail_call_self(Core.concat(current, [path:head]), path:tail)
+        }
+    }
+}
+
+fn getExtension(path : String) -> String {
+    getExtensionRec("", path)
+}

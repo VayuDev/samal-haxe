@@ -1,0 +1,9 @@
+-cp src
+-cp tests
+-main tests.TestsMain
+-lib hxcpp-debugger
+-lib hxcpp-debug-server
+-lib buddy:2.13.0
+--macro nullSafety("samal", Strict)
+-debug
+-cpp bin/tests

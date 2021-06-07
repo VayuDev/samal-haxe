@@ -1,0 +1,55 @@
+fn testListSpeed(p : i32) -> [i32] {
+    l1 = Core.seq<i32>(5000)
+    l2 = Core.seq<i32>(5000)
+    combined = Core.concat<i32>(l1, l2)
+    lambda = fn(p2 : i32) -> i32 {
+        p2
+    }
+    added = Core.map<i32, i32>(combined, lambda)
+}
+
+fn testZip(p : i32) -> [(i32, i32)] {
+    l1 = Core.seq<i32>(20000)
+    l2 = Core.seq<i32>(20000)
+    l1Added = Core.map<i32, i32>(l1, fn(p : i32) -> i32 {
+        p / 16
+    })
+    Core.zip<i32, i32>(l1Added, l2)
+}
+
+fn avg<T>(list : [T]) -> T {
+    s = Core.sum<T>(list)
+    l = Core.len<T>(list)
+    s / l
+}
+
+fn testAvg(p : i32) -> i32 {
+    avg<i32>([1, 3, 5, 7])
+}
+
+fn testFib() -> i32 {
+    Templ.fib<i32>(28)
+    Templ.fib<i32>(28)
+    Templ.fib<i32>(28)
+    Templ.fib<i32>(28)
+    Templ.fib<i32>(28)
+}
+fn testSimple(p : i32) -> [i32] {
+    Core.seq<i32>(20)
+    |> Core.map<i32, i32>(fn(p : i32) -> i32 {
+        ((p - 100) * 2) / -2
+    })
+}
+
+fn testReduce(p : i32) -> i32 {
+    Core.seq<i32>(20)
+    |> Core.reduce<i32, i32>(0, fn(e : i32, state : i32) -> i32 {
+        state + e
+    })
+}
+fn makeLambda<T>(v : T) -> fn(T) -> T {
+    print<T>(v)
+    fn(p2: T) -> T {
+        v + p2
+    }
+}
