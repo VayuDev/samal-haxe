@@ -58,6 +58,9 @@ class ASTNode {
     public function errorInfo() : String {
         return mSourceRef.errorInfo() + ": ";
     }
+    public function getSourceRef() {
+        return mSourceRef;
+    }
 }
 
 class IdentifierWithTemplate {
@@ -70,6 +73,9 @@ class IdentifierWithTemplate {
     public function dump() : String {
         return mIdentifierName + "<" + mTemplateParams.map(function(type) {type.getName();}).join(", ") + ">";
     }
+    public function getName() {
+        return mIdentifierName;
+    } 
 }
 
 class NamedAndTypedParameter {

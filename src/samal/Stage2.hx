@@ -7,11 +7,12 @@ import samal.SamalAST;
 import samal.Util;
 import samal.Datatype;
 using samal.Util.NullTools;
+import samal.Program;
 
 class Stage2 {
 
-    var mProgram : Program;
-    public function new(prog : Program) {
+    var mProgram : SamalProgram;
+    public function new(prog : SamalProgram) {
         mProgram = prog;
     }
 
@@ -39,7 +40,7 @@ class Stage2 {
         }
     }
 
-    public function completeDatatypes() : Program {
+    public function completeDatatypes() : SamalProgram {
         mProgram.forEachModule(function (moduleName : String, ast : ASTNode) {
             ast.traverse(preorder, postorder);
         });

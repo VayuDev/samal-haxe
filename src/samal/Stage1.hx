@@ -1,12 +1,14 @@
 package samal;
 
+import samal.Program;
+
 class Stage1 {
-    var mProgram : Program;
-    public function new(prog : Program) {
+    var mProgram : SamalProgram;
+    public function new(prog : SamalProgram) {
         mProgram = prog;
     }
 
-    public function completeGlobalIdentifiers() : Program {
+    public function completeGlobalIdentifiers() : SamalProgram {
         return mProgram;
     }
 }

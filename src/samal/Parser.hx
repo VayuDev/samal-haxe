@@ -89,30 +89,18 @@ class Parser {
         return new IdentifierWithTemplate(str, []);
     }
 
-    function parseScope() : SamalScope {
+    function parseScope() : SamalDumbScope {
         startNode();
         eat(TokenType.LCurly);
         var statements = [];
         while(current().getType() != TokenType.RCurly) {
             skipNewlines();
-            statements.push(parseStatement());
+            statements.push(parseExpression());
             eat(TokenType.NewLine);
             skipNewlines();
         }
         eat(TokenType.RCurly);
-        return new SamalScope(makeSourceRef(), statements);
-    }
-
-    function parseStatement() : SamalStatement {
-        try {
-            mTokenizer.push();
-            var ret = parseExpression();
-            mTokenizer.acceptState();
-            return ret;
-        } catch(e) {
-            mTokenizer.pop();
-            throw e;
-        }
+        return new SamalDumbScope(makeSourceRef(), statements);
     }
 
     function parseExpression() : SamalExpression {
