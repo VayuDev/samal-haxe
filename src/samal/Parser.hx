@@ -7,6 +7,9 @@ import haxe.macro.Expr;
 
 import samal.AST;
 import haxe.ds.GenericStack;
+import samal.Util;
+
+using samal.Util.NullTools;
 
 class Parser {
     var mTokenizer : Tokenizer;
@@ -16,7 +19,7 @@ class Parser {
     public function new(code : String) {
         mTokenizer = new Tokenizer(code);
     }
-    public function parse() : ASTNode {
+    public function parse() : SamalModuleNode {
         startNode();
         var decls : Array<SamalDeclarationNode> = [];
         while(current().getType() != TokenType.Invalid) {
@@ -39,7 +42,7 @@ class Parser {
                 var params = parseFunctionParameterList();
                 eat(TokenType.RightArrow);
                 var returnType = parseDatatype();
-                var body = parseScopeExpression();
+                var body = parseScope();
                 return new SamalFunctionDeclarationNode(makeSourceRef(), identifier, params, returnType, body);
             case _:
                 throw new Exception(current().info() + " Expected declaration");
@@ -52,6 +55,9 @@ class Parser {
             case TokenType.Int:
                 eat(TokenType.Int);
                 return Datatype.Int;
+            case TokenType.Bool:
+                eat(TokenType.Bool);
+                return Datatype.Bool;
             case _:
                 throw new Exception(current().info() + " Expected datatype");
         }
@@ -83,7 +89,7 @@ class Parser {
         return new IdentifierWithTemplate(str, []);
     }
 
-    function parseScopeExpression() : SamalScopeExpression {
+    function parseScope() : SamalScope {
         startNode();
         eat(TokenType.LCurly);
         var statements = [];
@@ -94,7 +100,7 @@ class Parser {
             skipNewlines();
         }
         eat(TokenType.RCurly);
-        return new SamalScopeExpression(makeSourceRef(), statements);
+        return new SamalScope(makeSourceRef(), statements);
     }
 
     function parseStatement() : SamalStatement {
@@ -110,6 +116,34 @@ class Parser {
     }
 
     function parseExpression() : SamalExpression {
+        return parseBinaryExpression([[
+            TokenType.FunctionChain => SamalBinaryExpressionOp.FunctionChain
+        ], [
+            TokenType.Plus => SamalBinaryExpressionOp.Add,
+            TokenType.Minus => SamalBinaryExpressionOp.Sub
+        ]]);
+    }
+
+    function parseBinaryExpression(binaryExprInfo : Array<Map<TokenType, SamalBinaryExpressionOp>>) : SamalExpression {
+        if(binaryExprInfo.length == 0) {
+            return parseLiteralExpression();
+        }
+        startNode();
+        var nextStepInfo = binaryExprInfo.copy();
+        nextStepInfo.shift();
+        var lhs = parseBinaryExpression(nextStepInfo);
+        while(binaryExprInfo[0].exists(current().getType())) {
+            var op = binaryExprInfo[0][current().getType()];
+            mTokenizer.next();
+            var rhs = parseBinaryExpression(nextStepInfo);
+            lhs = new SamalBinaryExpression(makeSourceRef(), lhs, op.sure(), rhs);
+            startNode();
+        }
+        dropNode();
+        return lhs;
+    }
+
+    function parseLiteralExpression() : SamalExpression {
         startNode();
         switch(current().getType()) {
             case TokenType.Integer:
@@ -142,6 +176,9 @@ class Parser {
     
     function startNode() {
         mSourceRefs.add(mTokenizer.current().getSourceRef());
+    }
+    function dropNode() {
+        mSourceRefs.pop();
     }
 
     function makeSourceRef() : SourceCodeRef {

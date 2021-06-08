@@ -12,9 +12,18 @@ class Main {
       t.next();
     }*/
 
-    var parser = new Parser("fn test() -> int {\n 5\n 3\n}");
+    var parser = new Parser("fn test() -> int {\n 5+ 3\n}");
     var ast = parser.parse();
-    Log.trace(ast.dump(), null);
+    var program = new Program();
+    program.addModule("Main", ast);
+
+    var stage1 = new Stage1(program);
+    program = stage1.completeGlobalIdentifiers();
+
+    var stage2 = new Stage2(program);
+    program = stage2.completeDatatypes();
+
+    Log.trace(program.dump(), null);
   }
 }
 

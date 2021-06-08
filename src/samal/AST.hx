@@ -2,9 +2,9 @@ package samal;
 import samal.Tokenizer.SourceCodeRef;
 
 class ASTNode {
-    var sourceRef : SourceCodeRef;
+    var mSourceRef : SourceCodeRef;
     function new(sourceRef : SourceCodeRef) {
-        this.sourceRef = sourceRef;
+        this.mSourceRef = sourceRef;
     }
 
     function createIndentStr(indent : Int) : String {
@@ -53,6 +53,10 @@ class ASTNode {
         return postorder(self);
     }
     public function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
+    }
+
+    public function errorInfo() : String {
+        return mSourceRef.errorInfo() + ": ";
     }
 }
 

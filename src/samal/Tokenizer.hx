@@ -24,6 +24,9 @@ class SourceCodeRef {
     public function info() : String {
         return "[" + lineStart + ":" + columnStart + "] " + Util.escapeString(substr);
     }
+    public function errorInfo() : String {
+        return "At [" + lineStart + ":" + columnStart + "]:\n" + substr;
+    }
     public static function merge(first : SourceCodeRef, last : SourceCodeRef, originalString : String) {
         return new SourceCodeRef(first.lineStart, last.lineEnd, first.columnStart, last.columnEnd, first.indexStart, last.indexEnd, originalString.substring(first.indexStart, last.indexEnd));
     }
