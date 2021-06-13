@@ -24,6 +24,7 @@ class Stage2 {
         if(Std.downcast(astNode, SamalScope) != null) {
             var node = Std.downcast(astNode, SamalScope);
             var stmt = node.getStatements();
+            trace(stmt[stmt.length - 1].getDatatype());
             if(stmt.length == 0) {
                 node.setDatatype(Datatype.Tuple([]));
             } else {
@@ -32,7 +33,12 @@ class Stage2 {
         } else if(Std.downcast(astNode, SamalFunctionDeclarationNode) != null) {
             var node = Std.downcast(astNode, SamalFunctionDeclarationNode);
             if(DatatypeHelpers.getReturnType(node.getDatatype()) != node.getBody().getDatatype()) {
-                throw new Exception(node.errorInfo() + "Expected return type " + DatatypeHelpers.getReturnType(node.getDatatype()) + ", got: " + node.getBody().getDatatype().sure());
+                throw new Exception(
+                    node.errorInfo() 
+                    + "Expected return type " 
+                    + DatatypeHelpers.getReturnType(node.getDatatype()) 
+                    + ", got: " 
+                    + node.getBody().getDatatype().sure());
             }
         } else if(Std.downcast(astNode, SamalBinaryExpression) != null) {
             var node = Std.downcast(astNode, SamalBinaryExpression);

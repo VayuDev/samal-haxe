@@ -42,6 +42,7 @@ class Parser {
                 var params = parseFunctionParameterList();
                 eat(TokenType.RightArrow);
                 var returnType = parseDatatype();
+                startNode();
                 var body = parseScope();
                 return new SamalFunctionDeclarationNode(makeSourceRef(), identifier, params, returnType, body);
             case _:
@@ -89,7 +90,7 @@ class Parser {
         return new IdentifierWithTemplate(str, []);
     }
 
-    function parseScope() : SamalDumbScope {
+    function parseScope() : SamalScope {
         startNode();
         eat(TokenType.LCurly);
         var statements = [];
@@ -100,7 +101,7 @@ class Parser {
             skipNewlines();
         }
         eat(TokenType.RCurly);
-        return new SamalDumbScope(makeSourceRef(), statements);
+        return new SamalScope(makeSourceRef(), statements);
     }
 
     function parseExpression() : SamalExpression {
@@ -142,6 +143,9 @@ class Parser {
                     throw new Exception(current().info() + " Couldn't convert " + val + " to int");
                 }
                 return new SamalLiteralIntExpression(makeSourceRef(), valAsInt);
+            case TokenType.LCurly:
+                startNode();
+                return new SamalScopeExpression(makeSourceRef(), parseScope());
             case _:
                 throw new Exception(current().info() + " Expected expression");
         }

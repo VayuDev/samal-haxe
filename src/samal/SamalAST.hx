@@ -33,8 +33,8 @@ class SamalFunctionDeclarationNode extends SamalDeclarationNode {
     var mName : IdentifierWithTemplate;
     var mParams : Array<NamedAndTypedParameter>;
     var mReturnType : Datatype;
-    var mBody : SamalDumbScope;
-    public function new(sourceRef : SourceCodeRef, name : IdentifierWithTemplate, params : Array<NamedAndTypedParameter>, returnType : Datatype, body : SamalDumbScope) {
+    var mBody : SamalScope;
+    public function new(sourceRef : SourceCodeRef, name : IdentifierWithTemplate, params : Array<NamedAndTypedParameter>, returnType : Datatype, body : SamalScope) {
         super(sourceRef);
         this.mName = name;
         this.mParams = params;
@@ -42,7 +42,7 @@ class SamalFunctionDeclarationNode extends SamalDeclarationNode {
         this.mBody = body;
     }
     public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
-        mBody = cast(mBody.replace(preorder, postorder), SamalDumbScope);
+        mBody = cast(mBody.replace(preorder, postorder), SamalScope);
     }
     public override function dumpSelf() : String {
         return super.dumpSelf() + " " + mName.dump() + " " + getDatatype();
@@ -61,18 +61,14 @@ class SamalFunctionDeclarationNode extends SamalDeclarationNode {
     }
 }
 
-class SamalDumbScope extends SamalScope {
-
-}
-
 class SamalExpression extends SamalASTNode {
     var mDatatype : Null<Datatype>;
 
     public override function dumpSelf() : String {
-        if(mDatatype == null) {
+        if(getDatatype() == null) {
             return super.dumpSelf() + " ()";
         } else {
-            return super.dumpSelf() + " (" + NullTools.sure(mDatatype) + ")";
+            return super.dumpSelf() + " (" + NullTools.sure(getDatatype()) + ")";
         }
     }
 
@@ -162,9 +158,9 @@ class SamalScope extends SamalASTNode {
 
 class SamalScopeExpression extends SamalExpression {
     var mScope : SamalScope;
-    public function new(sourceRef : SourceCodeRef, statements : Array<SamalExpression>) {
+    public function new(sourceRef : SourceCodeRef, scope : SamalScope) {
         super(sourceRef);
-        mScope = new SamalScope(sourceRef, statements);
+        mScope = scope;
     }
     public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
         mScope = cast(mScope.replace(preorder, postorder), SamalScope);
@@ -172,8 +168,7 @@ class SamalScopeExpression extends SamalExpression {
     public function getScope() : SamalScope {
         return mScope;
     }
-    public override function setDatatype(type : Datatype) {
-        super.setDatatype(type);
-        mScope.setDatatype(type);
+    public override function getDatatype() {
+        return mScope.getDatatype();
     }
 }

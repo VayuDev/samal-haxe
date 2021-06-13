@@ -1,5 +1,6 @@
 package samal;
 
+import samal.Datatype.DatatypeHelpers;
 import haxe.ds.GenericStack;
 import haxe.Exception;
 import samal.CppAST;
@@ -28,6 +29,7 @@ class Stage3 {
 
     function addStatement(stmt : CppStatement) {
         mScopeStack.first().sure().addStatement(stmt);
+        return stmt;
     }
 
     function traverse(astNode : SamalASTNode) : String {
@@ -35,33 +37,58 @@ class Stage3 {
             var node = Std.downcast(astNode, SamalFunctionDeclarationNode);
             var scope = new CppScopeNode(node.getSourceRef());
             mScopeStack.add(scope);
-            traverse(node.getBody());
+
+            var lastStatementResult = "";
+            for(stmt in node.getBody().getStatements()) {
+                lastStatementResult = traverse(stmt);
+            }
+            if(lastStatementResult != "") {
+                scope.addStatement(new CppReturnStatement(node.getSourceRef(), DatatypeHelpers.getReturnType(node.getDatatype()), lastStatementResult));
+            }
             
             mCurrentFileDeclarations.push(new CppFunctionDeclaration(node.getSourceRef(), node.getDatatype(), node.getIdentifier().getName(), node.getParams(), scope));
             mScopeStack.pop();
-        } else if(Std.downcast(astNode, SamalDumbScope) != null) {
-            var node = Std.downcast(astNode, SamalDumbScope);
+        } else if(Std.downcast(astNode, SamalScope) != null) {
+            var node = Std.downcast(astNode, SamalScope);
             for(child in node.getStatements()) {
                 traverse(child);
             }
+        } else if(Std.downcast(astNode, SamalScopeExpression) != null) {
+            var node = Std.downcast(astNode, SamalScopeExpression);
+            
+            var resultDeclaration = addStatement(new CppAssignmentStatement(node.getSourceRef(), node.getDatatype().sure(), genTempVarName("scope"), "", CppAssignmentType.JustDeclare));
+            
+
+            var scope = new CppScopeStatement(node.getSourceRef(), node.getDatatype().sure(), resultDeclaration.getVarName());
+            mScopeStack.add(scope.getScope());
+            var lastStatementResult = "";
+            for(stmt in node.getScope().getStatements()) {
+                lastStatementResult = traverse(stmt);
+            }
+            addStatement(new CppAssignmentStatement(node.getSourceRef(), node.getDatatype().sure(), resultDeclaration.getVarName(), lastStatementResult, CppAssignmentType.JustAssign));
+            mScopeStack.pop();
+
+            addStatement(scope);
+
+            return scope.getVarName();
         } else if(Std.downcast(astNode, SamalBinaryExpression) != null) {
             var node = Std.downcast(astNode, SamalBinaryExpression);
             final lhsVarName = traverse(node.getLhs());
             final rhsVarName = traverse(node.getRhs());
             
-            var resName = genTempVarName("binary_expr");
+            var res : CppStatement;
             switch(node.getOperator()) {
                 case Add:
-                    addStatement(new CppNumericMathStatement(node.getSourceRef(), resName, lhsVarName, CppNumericMathOp.Add, rhsVarName));
+                    res = addStatement(new CppNumericMathStatement(node.getSourceRef(), node.getDatatype().sure(), genTempVarName("binary_expr"), lhsVarName, CppNumericMathOp.Add, rhsVarName));
                 case _:
                     throw new Exception("TODO! " + node.dump);
             }
             
-            return resName;
+            return res.getVarName();
         } else if(Std.downcast(astNode, SamalLiteralIntExpression) != null) {
             var node = Std.downcast(astNode, SamalLiteralIntExpression);
-            return "" + node.getValue();
-        }else {
+            return Std.string(node.getValue());
+        } else {
             throw new Exception("TODO! " + Type.getClassName(Type.getClass(astNode)));
         }
         return "";

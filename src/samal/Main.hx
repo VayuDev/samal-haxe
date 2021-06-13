@@ -13,7 +13,13 @@ class Main {
       t.next();
     }*/
 
-    var parser = new Parser("fn test() -> int {\n 5+ 3\n}");
+    var parser = new Parser("
+fn test() -> int {
+  {
+    5 + 3
+  }
+  2
+}");
     var ast = parser.parse();
     var program = new SamalProgram("Test");
     program.addModule("Main", ast);

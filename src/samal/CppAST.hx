@@ -27,6 +27,12 @@ class CppScopeNode extends CppASTNode {
     public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
         mStatements = Util.replaceNodes(mStatements, preorder, postorder);
     }
+    public function isStatementsEmpty() : Bool {
+        return mStatements.length == 0;
+    }
+    public function getLastStatement() : CppStatement {
+        return mStatements[mStatements.length - 1];
+    }
 }
 
 class CppDeclaration extends CppASTNode {
@@ -50,8 +56,31 @@ class CppFunctionDeclaration extends CppDeclaration {
     }
 }
 
-class CppStatement extends CppASTNode {
+abstract class CppStatement extends CppASTNode {
+    var mVarName : String;
+    var mDatatype : Datatype;
+    public function new(sourceRef : SourceCodeRef, datatype: Datatype, varName : String) {
+        super(sourceRef);
+        mVarName = varName;
+        mDatatype = datatype;
+    }
+    public function getVarName() {
+        return mVarName;
+    }
+}
 
+class CppScopeStatement extends CppStatement {
+    var mScope : CppScopeNode;
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, varName : String) {
+        super(sourceRef, datatype, varName);
+        mScope = new CppScopeNode(sourceRef);
+    }
+    public function getScope() {
+        return mScope;
+    }
+    public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
+        mScope = cast(mScope.replace(preorder, postorder), CppScopeNode);
+    }
 }
 
 enum CppNumericMathOp {
@@ -64,16 +93,48 @@ enum CppNumericMathOp {
 class CppNumericMathStatement extends CppStatement {
     var mLhsVarName : String;
     var mRhsVarName : String;
-    var mResultVarName : String;
     var mOp : CppNumericMathOp;
-    public function new(sourceRef : SourceCodeRef, resultVarName : String, lhsVarName : String, op : CppNumericMathOp, rhsVarName : String) {
-        super(sourceRef);
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, resultVarName : String, lhsVarName : String, op : CppNumericMathOp, rhsVarName : String) {
+        super(sourceRef, datatype, resultVarName);
         mLhsVarName = lhsVarName;
         mRhsVarName = rhsVarName;
-        mResultVarName = resultVarName;
         mOp = op;
     }
     public override function dumpSelf() : String {
-        return super.dumpSelf() + ": " + mResultVarName + " = " + mLhsVarName + " " + mOp + " " + mRhsVarName;
+        return super.dumpSelf() + ": " + mVarName + " = " + mLhsVarName + " " + mOp + " " + mRhsVarName;
+    }
+}
+
+enum CppAssignmentType {
+    JustDeclare;
+    JustAssign;
+    DeclareAndAssign;
+}
+
+class CppAssignmentStatement extends CppStatement {
+    var mRhsVarName : String;
+    var mType : CppAssignmentType;
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, resultVarName : String, rhsVarName : String, type : CppAssignmentType) {
+        super(sourceRef, datatype, resultVarName);
+        mRhsVarName = rhsVarName;
+        mType = type;
+    }
+    public override function dumpSelf() : String {
+        return super.dumpSelf() + ": " + mVarName + " = " + mRhsVarName + " (" + mType + ")";
+    }
+}
+
+class CppSimpleLiteral extends CppStatement {
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, value : String) {
+        super(sourceRef, datatype, value);
+    }
+}
+
+class CppReturnStatement extends CppStatement {
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, varName : String) {
+        super(sourceRef, datatype, varName);
+    }
+    public override function dumpSelf() : String {
+        return super.dumpSelf() + ": " + mVarName;
     }
 }
