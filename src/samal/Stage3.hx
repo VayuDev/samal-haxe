@@ -116,7 +116,7 @@ class Stage3 {
             for(decl in ast.getDeclarations()) {
                 traverse(decl);
             }
-            mCProgram.addModule(moduleName, new CppFile(ast.getSourceRef(), mCurrentFileDeclarations));
+            mCProgram.addModule(moduleName, new CppFile(ast.getSourceRef(), moduleName, mCurrentFileDeclarations));
         });
 
         return mCProgram;

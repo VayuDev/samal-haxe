@@ -21,4 +21,12 @@ class DatatypeHelpers {
                 throw new Exception(type + " is not a function!");
         }
     }
+    static public function toCppType(type : Datatype) : String {
+        switch(type) {
+            case Int:
+                return "int32_t";
+            case _:
+                throw new Exception("TODO " + type);
+        }
+    }
 }

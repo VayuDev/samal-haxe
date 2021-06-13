@@ -25,6 +25,13 @@ class Util {
         }
         return ret;
     }
+    public static function createIndentStr(indent : Int) : String {
+        var ret = "";
+        for(i in 0...indent) {
+            ret += " ";
+        }
+        return ret;
+    }
 }
 
 class NullTools {

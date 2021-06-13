@@ -1,5 +1,6 @@
 package samal;
 import samal.Tokenizer.SourceCodeRef;
+import samal.Util.Util;
 
 class ASTNode {
     var mSourceRef : SourceCodeRef;
@@ -7,20 +8,13 @@ class ASTNode {
         this.mSourceRef = sourceRef;
     }
 
-    function createIndentStr(indent : Int) : String {
-        var ret = "";
-        for(i in 0...indent) {
-            ret += " ";
-        }
-        return ret;
-    }
 
     public function dump() : String {
         var indent = 0;
         var ret = dumpSelf() + "\n";
         replaceChildren(function(node) {
             indent += 1;
-            ret += createIndentStr(indent) + node.dumpSelf() + "\n";
+            ret += Util.createIndentStr(indent) + node.dumpSelf() + "\n";
             return node;
         },
         function(node : ASTNode) {
@@ -97,5 +91,8 @@ class NamedAndTypedParameter {
     }
     public function getDatatype() {
         return mDatatype;
+    }
+    public function getName() {
+        return mName;
     }
 }

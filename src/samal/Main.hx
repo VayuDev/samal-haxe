@@ -1,5 +1,10 @@
 package samal;
 
+import sys.FileSystem;
+import sys.io.File;
+import samal.CppAST.HeaderOrSource;
+import samal.CppAST.CppContext;
+import haxe.display.Display.Platform;
 import haxe.Log;
 import samal.Tokenizer.TokenType;
 import samal.Tokenizer.Token;
@@ -14,7 +19,7 @@ class Main {
     }*/
 
     var parser = new Parser("
-fn test() -> int {
+fn main() -> int {
   a = {
     x = 5 + 3
     x = 3
@@ -41,6 +46,15 @@ fn test() -> int {
     var stage3 = new Stage3(program);
     var cprogram = stage3.convertToCppAST();
     Log.trace(cprogram.dump(), null);
+
+    cprogram.forEachModule(function(mod, ast) {
+      try {
+        FileSystem.createDirectory("out");
+      } catch(_) {}
+      File.saveContent('out/${mod}.hpp', ast.toCpp(new CppContext(0, HeaderOrSource.Header)));
+      File.saveContent('out/${mod}.cpp', ast.toCpp(new CppContext(0, HeaderOrSource.Source)));
+
+    });
   }
 }
 
