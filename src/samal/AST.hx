@@ -68,7 +68,7 @@ class IdentifierWithTemplate {
         if(mTemplateParams.length == 0) {
             return mIdentifierName;
         }
-        return mIdentifierName + "<" + mTemplateParams.map(function(type) {type.getName();}).join(", ") + ">";
+        return mIdentifierName + "<" + mTemplateParams.map(function(type) {return type.getName();}).join(", ") + ">";
     }
     public function getName() {
         return mIdentifierName;
