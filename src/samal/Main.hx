@@ -15,10 +15,13 @@ class Main {
 
     var parser = new Parser("
 fn test() -> int {
-  {
-    5 + 3
+  a = {
+    x = 5 + 3
+    x = 3
+    x = 1 + x
+    x
   }
-  2
+  a
 }");
     var ast = parser.parse();
     var program = new SamalProgram("Test");

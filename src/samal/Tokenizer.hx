@@ -124,6 +124,15 @@ class Tokenizer {
         }
         return tokens[indexStack.first()];
     }
+    public function peek(n : Int = 1) : Token {
+        if(indexStack.first() + n >= tokens.length) {
+            if(tokens.length == 0) {
+                return new Token(new SourceCodeRef(1, 1, 1, 1, 0, 0, ""), TokenType.Invalid);
+            }
+            return new Token(tokens[tokens.length - 1].getSourceRef(), TokenType.Invalid);
+        }
+        return tokens[indexStack.first() + n];
+    }
     public function next() : Void {
         indexStack.add(indexStack.pop() + 1);
     }

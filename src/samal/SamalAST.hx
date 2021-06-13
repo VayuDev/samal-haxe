@@ -1,5 +1,6 @@
 package samal;
 
+import haxe.macro.Expr;
 import haxe.Int32;
 import samal.Tokenizer.SourceCodeRef;
 import samal.AST;
@@ -170,5 +171,47 @@ class SamalScopeExpression extends SamalExpression {
     }
     public override function getDatatype() {
         return mScope.getDatatype();
+    }
+}
+
+class SamalAssignmentExpression extends SamalExpression {
+    var mIdentifier : String;
+    var mRhs : SamalExpression;
+    public function new(sourceRef : SourceCodeRef, identifier : String, rhs : SamalExpression) {
+        super(sourceRef);
+        mIdentifier = identifier;
+        mRhs = rhs;
+    }
+    public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
+        mRhs = cast(mRhs.replace(preorder, postorder), SamalExpression);
+    }
+    public function getRhs() {
+        return mRhs;
+    }
+    public function getIdentifier() {
+        return mIdentifier;
+    }
+    public override function dumpSelf() : String {
+        return super.dumpSelf() + ' Assigning to "${mIdentifier}"';
+    }
+    public function setIdentifier(ident : String) {
+        mIdentifier = ident;
+    }
+}
+
+class SamalLoadIdentifierExpression extends SamalExpression {
+    var mIdentifier : IdentifierWithTemplate;
+    public function new(sourceRef : SourceCodeRef, identifier : IdentifierWithTemplate) {
+        super(sourceRef);
+        mIdentifier = identifier;
+    }
+    public function getIdentifier() {
+        return mIdentifier;
+    }
+    public override function dumpSelf() : String {
+        return super.dumpSelf() + ' Loading from "${mIdentifier.dump()}"';
+    }
+    public function setIdentifier(identifier : IdentifierWithTemplate) {
+        mIdentifier = identifier;
     }
 }

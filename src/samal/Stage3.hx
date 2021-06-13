@@ -88,6 +88,18 @@ class Stage3 {
         } else if(Std.downcast(astNode, SamalLiteralIntExpression) != null) {
             var node = Std.downcast(astNode, SamalLiteralIntExpression);
             return Std.string(node.getValue());
+        } else if(Std.downcast(astNode, SamalAssignmentExpression) != null) {
+            var node = Std.downcast(astNode, SamalAssignmentExpression);
+            
+            var rhsVarName = traverse(node.getRhs());
+
+            addStatement(new CppAssignmentStatement(node.getSourceRef(), node.getDatatype().sure(), node.getIdentifier(), rhsVarName, CppAssignmentType.DeclareAndAssign));
+            return node.getIdentifier();
+
+        } else if(Std.downcast(astNode, SamalLoadIdentifierExpression) != null) {
+            var node = Std.downcast(astNode, SamalLoadIdentifierExpression);
+            
+            return node.getIdentifier().mangled();
         } else {
             throw new Exception("TODO! " + Type.getClassName(Type.getClass(astNode)));
         }

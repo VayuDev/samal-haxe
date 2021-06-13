@@ -71,11 +71,21 @@ class IdentifierWithTemplate {
         mTemplateParams = templateParams;
     }
     public function dump() : String {
+        if(mTemplateParams.length == 0) {
+            return mIdentifierName;
+        }
         return mIdentifierName + "<" + mTemplateParams.map(function(type) {type.getName();}).join(", ") + ">";
     }
     public function getName() {
         return mIdentifierName;
-    } 
+    }
+    public function getTemplateParams() {
+        return mTemplateParams;
+    }
+    public function mangled() {
+        // TODO proper implementation
+        return mIdentifierName;
+    }
 }
 
 class NamedAndTypedParameter {

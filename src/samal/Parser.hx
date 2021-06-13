@@ -84,10 +84,14 @@ class Parser {
         return ret;
     }
 
+    function parseTemplateParams() : Array<Datatype> {
+        return [];
+    }
+
     function parseIdentifierWithTemplate() : IdentifierWithTemplate {
         var str = current().getSubstr();
         eat(TokenType.Identifier);
-        return new IdentifierWithTemplate(str, []);
+        return new IdentifierWithTemplate(str, parseTemplateParams());
     }
 
     function parseScope() : SamalScope {
@@ -146,6 +150,16 @@ class Parser {
             case TokenType.LCurly:
                 startNode();
                 return new SamalScopeExpression(makeSourceRef(), parseScope());
+            case TokenType.Identifier:
+                startNode();
+                if (peek().getType() == TokenType.Equals) {
+                    var identifierName = current().getSubstr();
+                    eat(TokenType.Identifier);
+                    eat(TokenType.Equals);
+                    var rhs = parseExpression();
+                    return new SamalAssignmentExpression(makeSourceRef(), identifierName, rhs);
+                }
+                return new SamalLoadIdentifierExpression(makeSourceRef(), parseIdentifierWithTemplate());
             case _:
                 throw new Exception(current().info() + " Expected expression");
         }
@@ -158,6 +172,9 @@ class Parser {
 
     function current() {
         return mTokenizer.current();
+    }
+    function peek(n : Int = 1) {
+        return mTokenizer.peek(n);
     }
 
     function skipNewlines() {
