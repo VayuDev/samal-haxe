@@ -60,6 +60,9 @@ class SamalFunctionDeclarationNode extends SamalDeclarationNode {
     public function getParams() {
         return mParams;
     }
+    public function setIdentifier(identifier) {
+        mName = identifier;
+    }
 }
 
 class SamalExpression extends SamalASTNode {

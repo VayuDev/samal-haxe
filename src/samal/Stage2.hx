@@ -29,6 +29,7 @@ class VarDeclaration {
 class Stage2 {
     var mProgram : SamalProgram;
     var mScopeStack : GenericStack<Map<String, VarDeclaration>> = new GenericStack();
+    var mCurrentModule : String = "";
 
     public function new(prog : SamalProgram) {
         mProgram = prog;
@@ -61,6 +62,8 @@ class Stage2 {
                     + ", got: " 
                     + node.getBody().getDatatype().sure());
             }
+            node.setIdentifier(new IdentifierWithTemplate(mCurrentModule + "." + node.getIdentifier().getName(), node.getIdentifier().getTemplateParams()));
+
         } else if(Std.downcast(astNode, SamalBinaryExpression) != null) {
             var node = Std.downcast(astNode, SamalBinaryExpression);
             node.setDatatype(node.getLhs().getDatatype().sure());
@@ -115,6 +118,7 @@ class Stage2 {
 
     public function completeDatatypes() : SamalProgram {
         mProgram.forEachModule(function (moduleName : String, ast : ASTNode) {
+            mCurrentModule = moduleName;
             ast.traverse(preorder, postorder);
         });
         return mProgram;

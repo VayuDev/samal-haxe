@@ -46,7 +46,7 @@ class Stage3 {
                 scope.addStatement(new CppReturnStatement(node.getSourceRef(), DatatypeHelpers.getReturnType(node.getDatatype()), lastStatementResult));
             }
             
-            mCurrentFileDeclarations.push(new CppFunctionDeclaration(node.getSourceRef(), node.getDatatype(), node.getIdentifier().getName(), node.getParams(), scope));
+            mCurrentFileDeclarations.push(new CppFunctionDeclaration(node.getSourceRef(), node.getDatatype(), node.getIdentifier().mangled(), node.getParams(), scope));
             mScopeStack.pop();
         } else if(Std.downcast(astNode, SamalScope) != null) {
             var node = Std.downcast(astNode, SamalScope);
