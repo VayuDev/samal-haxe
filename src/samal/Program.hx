@@ -13,8 +13,8 @@ class SamalProgram {
         mName = name;
     }
 
-    public function addModule(name : String, ast : SamalModuleNode) : Void {
-        mModules.set(name, ast);
+    public function addModule(ast : SamalModuleNode) : Void {
+        mModules.set(ast.getModuleName(), ast);
     }
 
     public function dump() : String {
@@ -45,7 +45,6 @@ class CppProgram {
 
     public function addModule(name : String, ast : CppFile) : Void {
         mModules.set(name, ast);
-        mName = name;
     }
 
     public function dump() : String {

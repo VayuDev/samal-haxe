@@ -15,12 +15,22 @@ class Parser {
     var mTokenizer : Tokenizer;
     var mInError = false;
     var mSourceRefs = new GenericStack<SourceCodeRef>();
+    var mBaseFileName : String;
 
-    public function new(code : String) {
+    public function new(baseFileName : String, code : String) {
         mTokenizer = new Tokenizer(code);
+        mBaseFileName = baseFileName;
     }
     public function parse() : SamalModuleNode {
         startNode();
+        var moduleName = mBaseFileName;
+        skipNewlines();
+        if(current().getType() == TokenType.Module) {
+            eat(TokenType.Module);
+            moduleName = current().getSubstr();
+            eat(TokenType.Identifier);
+            eat(TokenType.NewLine);
+        }
         var decls : Array<SamalDeclarationNode> = [];
         while(current().getType() != TokenType.Invalid) {
             skipNewlines();
@@ -30,7 +40,7 @@ class Parser {
             }
             skipNewlines();
         }
-        return new SamalModuleNode(makeSourceRef(), decls);
+        return new SamalModuleNode(makeSourceRef(), moduleName, decls);
     }
 
     function parseDeclaration() : Null<SamalDeclarationNode> {
@@ -46,7 +56,7 @@ class Parser {
                 var body = parseScope();
                 return new SamalFunctionDeclarationNode(makeSourceRef(), identifier, params, returnType, body);
             case _:
-                throw new Exception(current().info() + " Expected declaration");
+                throw new Exception(current().info() + ": Expected declaration");
         }
         return null;
     }
@@ -60,7 +70,7 @@ class Parser {
                 eat(TokenType.Bool);
                 return Datatype.Bool;
             case _:
-                throw new Exception(current().info() + " Expected datatype");
+                throw new Exception(current().info() + ": Expected datatype");
         }
     }
 

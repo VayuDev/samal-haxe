@@ -22,7 +22,7 @@ class SourceCodeRef {
         this.substr = substr;
     }
     public function info() : String {
-        return "[" + lineStart + ":" + columnStart + "] " + Util.escapeString(substr);
+        return "[" + lineStart + ":" + columnStart + "] '" + Util.escapeString(substr) + "'";
     }
     public function errorInfo() : String {
         return "At [" + lineStart + ":" + columnStart + "]:\n" + substr;
@@ -75,6 +75,7 @@ enum TokenType {
     Int;
     DoubleAnd;
     DoublePipe;
+    Module;
 }
 
 
@@ -207,7 +208,8 @@ class TokenGenerator {
         "bool" => TokenType.Bool,
         "int" => TokenType.Int,
         "&&" => TokenType.DoubleAnd,
-        "||" => TokenType.DoublePipe
+        "||" => TokenType.DoublePipe,
+        "module" => TokenType.Module
     ];
     
 
@@ -256,7 +258,7 @@ class TokenGenerator {
                 continue;
             }
             var isIdentifier = false;
-            while(getCurrentChar() != "" && "abcdefghijklmnopqrstuvwyxzABCDEFGHIJKLMNOPQRSTUVWXYZ".indexOf(getCurrentChar()) != -1) {
+            while(getCurrentChar() != "" && "abcdefghijklmnopqrstuvwyxzABCDEFGHIJKLMNOPQRSTUVWXYZ.".indexOf(getCurrentChar()) != -1) {
                 advance();
                 isIdentifier = true;
             }
@@ -310,7 +312,7 @@ class TokenGenerator {
                 tokens.push(new Token(new SourceCodeRef(lineStart, line, columnStart, column, indexStart, index, ch), TokenType.CharLiteral));
             }
 
-            trace(getCurrentChar());
+            throwException("Unknown token " + getCurrentChar());
         }
     }
 

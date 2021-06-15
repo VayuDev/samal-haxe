@@ -110,6 +110,7 @@ class Stage3 {
         mCProgram = new CppProgram(mSProgram.getName());
         
         mSProgram.forEachModule(function(moduleName : String, ast : SamalModuleNode) {
+            moduleName = Util.mangle(moduleName, []);
             mCurrentModuleName = moduleName;
             mCurrentFileDeclarations = [];
             mScopeStack = new GenericStack<CppScopeNode>();

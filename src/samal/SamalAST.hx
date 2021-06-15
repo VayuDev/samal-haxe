@@ -14,15 +14,20 @@ class SamalASTNode extends ASTNode {
 
 class SamalModuleNode extends SamalASTNode {
     var mDeclarations : Array<SamalDeclarationNode>;
-    public function new(sourceRef : SourceCodeRef, declarations : Array<SamalDeclarationNode>) {
+    var mModuleName : String;
+    public function new(sourceRef : SourceCodeRef, moduleName : String, declarations : Array<SamalDeclarationNode>) {
         super(sourceRef);
         mDeclarations = declarations;
+        mModuleName = moduleName;
     }
     public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
         mDeclarations = Util.replaceNodes(mDeclarations, preorder, postorder);
     }
     public function getDeclarations() {
         return mDeclarations;
+    }
+    public function getModuleName() {
+        return mModuleName;
     }
 }
 

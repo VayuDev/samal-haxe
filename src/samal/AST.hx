@@ -77,8 +77,7 @@ class IdentifierWithTemplate {
         return mTemplateParams;
     }
     public function mangled() {
-        // TODO proper implementation
-        return StringTools.replace(mIdentifierName, ".", "_");
+        return Util.mangle(mIdentifierName, mTemplateParams);
     }
 }
 

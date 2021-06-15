@@ -18,7 +18,9 @@ class Main {
       t.next();
     }*/
 
-    var parser = new Parser("
+    var parser = new Parser("Main", "
+module A.B.Main
+
 fn main() -> int {
   a = {
     x = 5 + 3
@@ -30,7 +32,7 @@ fn main() -> int {
 }");
     var ast = parser.parse();
     var program = new SamalProgram("Test");
-    program.addModule("Main", ast);
+    program.addModule(ast);
 
     Log.trace("@@@@ Stage 1 @@@@", null);
     var stage1 = new Stage1(program);

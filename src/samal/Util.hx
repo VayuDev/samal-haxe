@@ -32,6 +32,14 @@ class Util {
         }
         return ret;
     }
+    
+    public static function mangle(identifier : String, templateParams : Array<Datatype>) {
+        if(templateParams.length == 0 && !StringTools.contains(identifier, ".")) {
+            return identifier;
+        }
+        // TODO proper implementation
+        return StringTools.replace(identifier, ".", "_") + "$";
+    }
 }
 
 class NullTools {
