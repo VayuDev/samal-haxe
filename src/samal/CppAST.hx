@@ -238,3 +238,19 @@ class CppReturnStatement extends CppStatement {
         return indent(ctx) + "return " + mVarName;
     }
 }
+
+class CppFunctionCallStatement extends CppStatement {
+    var mFunctionName : String;
+    var mParams : Array<String>;
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, varName : String, functionName : String, params : Array<String>) {
+        super(sourceRef, datatype, varName);
+        mFunctionName = functionName;
+        mParams = params;
+    }
+    public override function dumpSelf() : String {
+        return super.dumpSelf() + ": " + mVarName;
+    }
+    public override function toCpp(ctx : CppContext) : String {
+        return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = " + mFunctionName + "(" + mParams.join(", ") + ")";
+    }
+}

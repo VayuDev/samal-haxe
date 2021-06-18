@@ -21,14 +21,12 @@ class Main {
     var parser = new Parser("Main", "
 module A.B.Main
 
+fn add(a : int, b : int) -> int {
+  a + b
+}
+
 fn main() -> int {
-  a = {
-    x = 5 + 3
-    x = 3
-    x = 1 + x
-    x
-  }
-  a
+  add(1, 2)
 }");
     var ast = parser.parse();
     var program = new SamalProgram("Test");

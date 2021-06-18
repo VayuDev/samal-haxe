@@ -129,7 +129,7 @@ class Parser {
 
     function parseBinaryExpression(binaryExprInfo : Array<Map<TokenType, SamalBinaryExpressionOp>>) : SamalExpression {
         if(binaryExprInfo.length == 0) {
-            return parseLiteralExpression();
+            return parsePostfixExpression();
         }
         startNode();
         var nextStepInfo = binaryExprInfo.copy();
@@ -140,6 +140,33 @@ class Parser {
             mTokenizer.next();
             var rhs = parseBinaryExpression(nextStepInfo);
             lhs = new SamalBinaryExpression(makeSourceRef(), lhs, op.sure(), rhs);
+            startNode();
+        }
+        dropNode();
+        return lhs;
+    }
+
+    function parseExpressionList() : Array<SamalExpression> {
+        eat(LParen);
+        var ret = [];
+        while(current().getType() != RParen) {
+            ret.push(parseExpression());
+            if(current().getType() == Comma) {
+                eat(Comma);
+            } else {
+                break;
+            }
+        }
+        eat(RParen);
+        return ret;
+    }
+
+    function parsePostfixExpression() : SamalExpression {
+        startNode();
+        var lhs = parseLiteralExpression();
+        while(current().getType() == TokenType.LParen) {
+            var params = parseExpressionList();
+            lhs = new SamalFunctionCallExpression(makeSourceRef(), lhs, params);
             startNode();
         }
         dropNode();

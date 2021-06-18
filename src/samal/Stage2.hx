@@ -8,6 +8,7 @@ import samal.SamalAST;
 import samal.Util;
 import samal.Datatype;
 using samal.Util.NullTools;
+using samal.Datatype.DatatypeHelpers;
 import samal.Program;
 
 
@@ -38,6 +39,12 @@ class Stage2 {
     function preorder(astNode : ASTNode) {
         if(Std.downcast(astNode, SamalScope) != null) {
             mScopeStack.add(new Map<String, VarDeclaration>());
+        } else if(Std.downcast(astNode, SamalFunctionDeclarationNode) != null) {
+            mScopeStack.add(new Map<String, VarDeclaration>());
+            var node = Std.downcast(astNode, SamalFunctionDeclarationNode);
+            for(param in node.getParams()) {
+                mScopeStack.first().sure().set(param.getName(), new VarDeclaration(param.getName(), param.getDatatype()));
+            }
         }
     }
 
@@ -45,7 +52,6 @@ class Stage2 {
         if(Std.downcast(astNode, SamalScope) != null) {
             var node = Std.downcast(astNode, SamalScope);
             var stmt = node.getStatements();
-            trace(stmt[stmt.length - 1].getDatatype());
             if(stmt.length == 0) {
                 node.setDatatype(Datatype.Tuple([]));
             } else {
@@ -62,7 +68,7 @@ class Stage2 {
                     + ", got: " 
                     + node.getBody().getDatatype().sure());
             }
-            node.setIdentifier(new IdentifierWithTemplate(mCurrentModule + "." + node.getIdentifier().getName(), node.getIdentifier().getTemplateParams()));
+            mScopeStack.pop();
 
         } else if(Std.downcast(astNode, SamalBinaryExpression) != null) {
             var node = Std.downcast(astNode, SamalBinaryExpression);
@@ -97,10 +103,14 @@ class Stage2 {
                 node.setIdentifier(new IdentifierWithTemplate(decl.getIdentifier(), []));
                 node.setDatatype(decl.getType());
             }
-        } 
+        } else if(Std.downcast(astNode, SamalFunctionCallExpression) != null) {
+            var node = Std.downcast(astNode, SamalFunctionCallExpression);
+            node.setDatatype(node.getFunction().getDatatype().sure().getReturnType());
+        }
     }
 
     function findIdentifier(name : String) : VarDeclaration {
+        // search in local scope
         var stackCopy = new GenericStack<Map<String, VarDeclaration>>();
         for(frame in mScopeStack) {
             stackCopy.add(frame);
@@ -113,7 +123,9 @@ class Stage2 {
             stackCopy.pop();
         }
 
-        throw new Exception("Variable $name not found!");
+        // search in global scope
+        var func = mProgram.findFunction(name, mCurrentModule);
+        return new VarDeclaration(func.getIdentifier().mangled(), func.getDatatype());
     }
 
     public function completeDatatypes() : SamalProgram {

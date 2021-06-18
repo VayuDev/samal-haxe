@@ -31,8 +31,8 @@ class SamalModuleNode extends SamalASTNode {
     }
 }
 
-class SamalDeclarationNode extends SamalASTNode {
-
+abstract class SamalDeclarationNode extends SamalASTNode {
+    abstract public function getName() : String;
 }
 
 class SamalFunctionDeclarationNode extends SamalDeclarationNode {
@@ -67,6 +67,9 @@ class SamalFunctionDeclarationNode extends SamalDeclarationNode {
     }
     public function setIdentifier(identifier) {
         mName = identifier;
+    }
+    public function getName() : String {
+        return mName.getName();
     }
 }
 
@@ -221,5 +224,28 @@ class SamalLoadIdentifierExpression extends SamalExpression {
     }
     public function setIdentifier(identifier : IdentifierWithTemplate) {
         mIdentifier = identifier;
+    }
+}
+
+class SamalFunctionCallExpression extends SamalExpression {
+    var mFunction : SamalExpression;
+    var mParams : Array<SamalExpression>;
+    public function new(sourceRef : SourceCodeRef, func : SamalExpression, params : Array<SamalExpression>) {
+        super(sourceRef);
+        mFunction = func;
+        mParams = params;
+    }
+    
+    public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
+        mFunction = cast(mFunction.replace(preorder, postorder), SamalExpression);
+        mParams = Util.replaceNodes(mParams, preorder, postorder);
+    }
+
+    public function getFunction() {
+        return mFunction;
+    }
+
+    public function getParams() {
+        return mParams;
     }
 }
