@@ -101,7 +101,7 @@ class Stage2 {
     }
 
     function findIdentifier(name : String) : VarDeclaration {
-        var stackCopy = new GenericStack();
+        var stackCopy = new GenericStack<Map<String, VarDeclaration>>();
         for(frame in mScopeStack) {
             stackCopy.add(frame);
         }
