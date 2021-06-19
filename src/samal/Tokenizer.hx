@@ -47,6 +47,8 @@ enum TokenType {
     Equals;
     Less;
     More;
+    LessEqual;
+    MoreEqual;
     LSquare;
     RSquare;
     NewLine;
@@ -197,6 +199,8 @@ class TokenGenerator {
     ];
 
     static final MULTI_CHAR_TOKENS = [
+        "<=" => TokenType.LessEqual,
+        ">=" => TokenType.MoreEqual,
         "->" => TokenType.RightArrow,
         "==" => TokenType.DoubleEquals,
         "!=" => TokenType.NotEquals,

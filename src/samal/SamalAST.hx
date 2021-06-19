@@ -97,6 +97,10 @@ enum SamalBinaryExpressionOp {
     Add;
     Sub;
     FunctionChain;
+    Less;
+    More;
+    LessEqual;
+    MoreEqual;
 }
 
 class SamalBinaryExpression extends SamalExpression {
@@ -121,6 +125,9 @@ class SamalBinaryExpression extends SamalExpression {
     public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
         mLhs = cast(mLhs.replace(preorder, postorder), SamalExpression);
         mRhs = cast(mRhs.replace(preorder, postorder), SamalExpression);
+    }
+    public override function dumpSelf() : String {
+        return super.dumpSelf() + ": " + mOp;
     }
 }
 

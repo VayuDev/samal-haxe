@@ -166,18 +166,22 @@ class CppScopeStatement extends CppStatement {
     }
 }
 
-enum CppNumericMathOp {
+enum CppBinaryExprOp {
     Add;
     Sub;
     Mul;
     Div;
+    Less;
+    More;
+    LessEqual;
+    MoreEqual;
 }
 
-class CppNumericMathStatement extends CppStatement {
+class CppBinaryExprStatement extends CppStatement {
     var mLhsVarName : String;
     var mRhsVarName : String;
-    var mOp : CppNumericMathOp;
-    public function new(sourceRef : SourceCodeRef, datatype : Datatype, resultVarName : String, lhsVarName : String, op : CppNumericMathOp, rhsVarName : String) {
+    var mOp : CppBinaryExprOp;
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, resultVarName : String, lhsVarName : String, op : CppBinaryExprOp, rhsVarName : String) {
         super(sourceRef, datatype, resultVarName);
         mLhsVarName = lhsVarName;
         mRhsVarName = rhsVarName;
@@ -196,6 +200,14 @@ class CppNumericMathStatement extends CppStatement {
                 return "*";
             case Div:
                 return "/";
+            case Less:
+                return "<";
+            case More:
+                return ">";
+            case LessEqual:
+                return "<=";
+            case MoreEqual:
+                return ">=";
         }
     }
     public override function toCpp(ctx : CppContext) : String {

@@ -25,6 +25,8 @@ class DatatypeHelpers {
         switch(type) {
             case Int:
                 return "int32_t";
+            case Bool:
+                return "bool";
             case _:
                 throw new Exception("TODO " + type);
         }

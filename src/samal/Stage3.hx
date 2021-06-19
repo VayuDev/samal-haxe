@@ -76,13 +76,25 @@ class Stage3 {
             final lhsVarName = traverse(node.getLhs());
             final rhsVarName = traverse(node.getRhs());
             
-            var res : CppStatement;
+            var op : CppBinaryExprOp;
             switch(node.getOperator()) {
                 case Add:
-                    res = addStatement(new CppNumericMathStatement(node.getSourceRef(), node.getDatatype().sure(), genTempVarName("binary_expr"), lhsVarName, CppNumericMathOp.Add, rhsVarName));
+                    op = CppBinaryExprOp.Add;
+                case Sub:
+                    op = CppBinaryExprOp.Sub;
+                case Less:
+                    op = CppBinaryExprOp.Less;
+                case More:
+                    op = CppBinaryExprOp.More;
+                case LessEqual:
+                    op = CppBinaryExprOp.LessEqual;
+                case MoreEqual:
+                    op = CppBinaryExprOp.MoreEqual;
+                
                 case _:
-                    throw new Exception("TODO! " + node.dump);
+                    throw new Exception("TODO! " + node.dump());
             }
+            var res = addStatement(new CppBinaryExprStatement(node.getSourceRef(), node.getDatatype().sure(), genTempVarName("binary_expr"), lhsVarName, op, rhsVarName));
             
             return res.getVarName();
         } else if(Std.downcast(astNode, SamalLiteralIntExpression) != null) {

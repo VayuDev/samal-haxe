@@ -25,8 +25,8 @@ fn add(a : int, b : int) -> int {
   a + b
 }
 
-fn main() -> int {
-  add(1, 2)
+fn main() -> bool {
+  b = 3 >= 4
 }");
     var ast = parser.parse();
     var program = new SamalProgram();

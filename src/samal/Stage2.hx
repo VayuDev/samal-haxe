@@ -72,7 +72,17 @@ class Stage2 {
 
         } else if(Std.downcast(astNode, SamalBinaryExpression) != null) {
             var node = Std.downcast(astNode, SamalBinaryExpression);
-            node.setDatatype(node.getLhs().getDatatype().sure());
+            if(node.getLhs().getDatatype() != node.getRhs().getDatatype()) {
+                throw new Exception('${node.errorInfo()} Lhs and rhs types aren\' equal. Lhs is ${node.getLhs().getDatatype().sure()}, rhs is ${node.getRhs().getDatatype().sure()}');
+            }
+            if(!([Int].contains(node.getLhs().getDatatype().sure()))) {
+                throw new Exception('${node.errorInfo()} The ${node.getOperator()} operator is only defined for integers, not for ${node.getLhs().getDatatype().sure()}');
+            }
+            if([Less, LessEqual, More, MoreEqual].contains(node.getOperator())) {
+                node.setDatatype(Datatype.Bool);
+            } else {
+                node.setDatatype(node.getLhs().getDatatype().sure());
+            }
 
         } else if(Std.downcast(astNode, SamalAssignmentExpression) != null) {
             var node = Std.downcast(astNode, SamalAssignmentExpression);
