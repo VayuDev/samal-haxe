@@ -11,9 +11,7 @@ using samal.Util.NullTools;
 
 class SamalProgram {
     var mModules = new Map<String, SamalModuleNode>();
-    var mName : String;
-    public function new(name : String) {
-        mName = name;
+    public function new() {
     }
 
     public function addModule(ast : SamalModuleNode) : Void {
@@ -21,7 +19,7 @@ class SamalProgram {
     }
 
     public function dump() : String {
-        var ret = "Program " + mName + ":\n";
+        var ret = "Program:\n";
         for(mod in mModules.keyValueIterator()) {
             ret += "## " + mod.key + " ##\n";
             ret += mod.value.dump();
@@ -33,10 +31,6 @@ class SamalProgram {
         for(mod in mModules.keyValueIterator()) {
             callback(mod.key, mod.value);
         }
-    }
-
-    public function getName() {
-        return mName;
     }
 
     public function findFunction(functionName : String, moduleScope : String) : SamalFunctionDeclarationNode {
@@ -51,9 +45,7 @@ class SamalProgram {
 }
 class CppProgram {
     var mModules = new Map<String, CppFile>();
-    var mName : String;
-    public function new(name : String) {
-        mName = name;
+    public function new() {
     }
 
     public function addModule(name : String, ast : CppFile) : Void {
@@ -61,7 +53,7 @@ class CppProgram {
     }
 
     public function dump() : String {
-        var ret = "Cpp Program " + mName + ":\n";
+        var ret = "Cpp Program:\n";
         for(mod in mModules.keyValueIterator()) {
             ret += "## " + mod.key + " ##\n";
             ret += mod.value.dump();

@@ -29,7 +29,7 @@ fn main() -> int {
   add(1, 2)
 }");
     var ast = parser.parse();
-    var program = new SamalProgram("Test");
+    var program = new SamalProgram();
     program.addModule(ast);
 
     Log.trace("@@@@ Stage 1 @@@@", null);
@@ -47,14 +47,18 @@ fn main() -> int {
     var cprogram = stage3.convertToCppAST();
     Log.trace(cprogram.dump(), null);
 
+    var mainFunction = Util.mangle("A.B.Main.main", []);
+
     cprogram.forEachModule(function(mod, ast) {
       try {
         FileSystem.createDirectory("out");
       } catch(_) {}
-      File.saveContent('out/${mod}.hpp', ast.toCpp(new CppContext(0, HeaderOrSource.Header)));
-      File.saveContent('out/${mod}.cpp', ast.toCpp(new CppContext(0, HeaderOrSource.Source)));
+      File.saveContent('out/${mod}.hpp', ast.toCpp(new CppContext(0, HeaderOrSource.Header, mainFunction)));
+      File.saveContent('out/${mod}.cpp', ast.toCpp(new CppContext(0, HeaderOrSource.Source, mainFunction)));
 
     });
+    File.copy("samal_runtime/samal_runtime.cpp", "out/samal_runtime.cpp");
+    File.copy("samal_runtime/samal_runtime.hpp", "out/samal_runtime.hpp");
   }
 }
 

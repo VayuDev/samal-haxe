@@ -13,24 +13,30 @@ enum HeaderOrSource {
 class CppContext {
     var mIndent = 0;
     var mHos : HeaderOrSource;
-    public function new(indent : Int, hos : HeaderOrSource) {
+    var mMainFunction : String;
+
+    public function new(indent : Int, hos : HeaderOrSource, mainFunction : String) {
         mIndent = indent;
         mHos = hos;
+        mMainFunction = mainFunction;
     }
     public function getIndent() {
         return mIndent;
     }
     public function next() {
-        return new CppContext(mIndent + 1, mHos);
+        return new CppContext(mIndent + 1, mHos, mMainFunction);
     }
     public function prev() {
-        return new CppContext(mIndent - 1, mHos);
+        return new CppContext(mIndent - 1, mHos, mMainFunction);
     }
     public function isHeader() : Bool {
         return mHos == Header;
     }
     public function isSource() : Bool {
         return mHos == Source;
+    }
+    public function getMainFunctionMangledName() {
+        return mMainFunction;
     }
 }
 
@@ -62,6 +68,8 @@ class CppFile extends CppASTNode {
         if(ctx.isHeader()) {
             ret += "#include <cstdint>\n";
             ret += "#include <cmath>\n";
+            ret += "#include <iostream>\n";
+            ret += "#include \"samal_runtime.hpp\"\n";
         } else {
             ret += '#include "$mName.hpp"\n';
         }
@@ -117,6 +125,12 @@ class CppFunctionDeclaration extends CppDeclaration {
             ret += ";";
         } else {
             ret += " " + mBody.toCpp(ctx);
+            if(mMangledName == ctx.getMainFunctionMangledName()) {
+                ret += '\nint main(int argc, char **argv) {
+    auto res = $mMangledName();
+    std::cout << samalrt::inspect(res) << \"\\n\";
+}';
+            }
         }
         return ret;
     }

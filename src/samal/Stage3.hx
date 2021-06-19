@@ -19,7 +19,7 @@ class Stage3 {
 
     public function new(prog : SamalProgram) {
         mSProgram = prog;
-        mCProgram = new CppProgram("");
+        mCProgram = new CppProgram();
         mScopeStack = new GenericStack<CppScopeNode>();
     }
 
@@ -119,7 +119,7 @@ class Stage3 {
     }
 
     public function convertToCppAST() : CppProgram {
-        mCProgram = new CppProgram(mSProgram.getName());
+        mCProgram = new CppProgram();
         
         mSProgram.forEachModule(function(moduleName : String, ast : SamalModuleNode) {
             moduleName = Util.mangle(moduleName, []);
