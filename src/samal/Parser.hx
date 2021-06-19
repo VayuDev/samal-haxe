@@ -202,6 +202,28 @@ class Parser {
                     return new SamalAssignmentExpression(makeSourceRef(), identifierName, rhs);
                 }
                 return new SamalLoadIdentifierExpression(makeSourceRef(), parseIdentifierWithTemplate());
+            case TokenType.If:
+                startNode();
+                eat(If);
+                var mainCondition = parseExpression();
+                var mainBody = parseScope();
+                var elseIfs = [];
+                while(current().getType() == Else && peek().getType() == If) {
+                    eat(Else);
+                    eat(If);
+                    var branchCondition = parseExpression();
+                    var branchBody = parseScope();
+                    elseIfs.push(new SamalElseIfBranch(branchCondition, branchBody));
+                }
+                var elseScope;
+                if(current().getType() == Else) {
+                    eat(Else);
+                    elseScope = parseScope();
+                } else {
+                    throw new Exception("TODO");
+                    //elseScope = new SamalScope(makeSourceRefNonDestructive(), )
+                }
+                return new SamalIfExpression(makeSourceRef(), mainCondition, mainBody, elseIfs, elseScope);
             case _:
                 throw new Exception(current().info() + " Expected expression");
         }
@@ -233,11 +255,17 @@ class Parser {
     }
 
     function makeSourceRef() : SourceCodeRef {
+        var ref = makeSourceRefNonDestructive();
+        mSourceRefs.pop();
+        return ref;
+    }
+
+    function makeSourceRefNonDestructive() : SourceCodeRef {
+
         var base = mSourceRefs.first();
         if(base == null) {
             throw new Exception("Unexpected mSourceRefs is empty");
         }
-        mSourceRefs.pop();
         return SourceCodeRef.merge(base, mTokenizer.current().getSourceRef(), mTokenizer.getOriginalString());
     }
 }

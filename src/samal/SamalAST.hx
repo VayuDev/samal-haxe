@@ -256,3 +256,33 @@ class SamalFunctionCallExpression extends SamalExpression {
         return mParams;
     }
 }
+
+class SamalElseIfBranch {
+    var mCondition : SamalExpression;
+    var mBody : SamalScope;
+    public function new(condition : SamalExpression, body : SamalScope) {
+        mCondition = condition;
+        mBody = body;
+    }
+    public function getCondition() {
+        return mCondition;
+    }
+    public function getBody() {
+        return mBody;
+    }
+}
+
+class SamalIfExpression extends SamalExpression {
+    var mCondition : SamalExpression;
+    var mMainBody : SamalScope;
+    var mElseIfs : Array<SamalElseIfBranch>;
+    var mElse : SamalScope;
+    public function new(sourceRef : SourceCodeRef, condition : SamalExpression, mainBody : SamalScope, elseIfs : Array<SamalElseIfBranch>, elseBody : SamalScope) {
+        super(sourceRef);
+        mCondition = condition;
+        mMainBody = mainBody;
+        mElseIfs = elseIfs;
+        mElse = elseBody;
+    }
+
+}
