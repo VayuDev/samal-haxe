@@ -1,7 +1,9 @@
 package samal;
 
+#if sys
 import sys.FileSystem;
 import sys.io.File;
+#end
 import samal.CppAST.HeaderOrSource;
 import samal.CppAST.CppContext;
 import haxe.display.Display.Platform;
@@ -25,12 +27,16 @@ fn add(a : int, b : int) -> int {
   a + b
 }
 
-fn main() -> int {
-  if 1 < 2 {
-    42
+fn fib(n : int) -> int {
+  if n < 2 {
+    n
   } else {
-    110
+    fib(n - 1) + fib(n - 2)
   }
+}
+
+fn main() -> int {
+  fib(28)
 }");
     var ast = parser.parse();
     var program = new SamalProgram();
@@ -53,6 +59,7 @@ fn main() -> int {
 
     var mainFunction = Util.mangle("A.B.Main.main", []);
 
+#if sys
     cprogram.forEachModule(function(mod, ast) {
       try {
         FileSystem.createDirectory("out");
@@ -63,6 +70,7 @@ fn main() -> int {
     });
     File.copy("samal_runtime/samal_runtime.cpp", "out/samal_runtime.cpp");
     File.copy("samal_runtime/samal_runtime.hpp", "out/samal_runtime.hpp");
+#end
   }
 }
 

@@ -284,5 +284,58 @@ class SamalIfExpression extends SamalExpression {
         mElseIfs = elseIfs;
         mElse = elseBody;
     }
+    public function getMainCondition() {
+        return mCondition;
+    }
+    public function getMainBody() {
+        return mMainBody;
+    }
+    public function getElseIfs() {
+        return mElseIfs;
+    }
+    public function getElse() {
+        return mElse;
+    }
+    public function getAllBranches() : Array<SamalElseIfBranch> {
+        return [new SamalElseIfBranch(mCondition, mMainBody)].concat(mElseIfs);
+    }
+    
+    public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
+        mCondition = cast(mCondition.replace(preorder, postorder), SamalExpression);
+        mMainBody = cast(mMainBody.replace(preorder, postorder), SamalScope);
+        for(elsif in mElseIfs) {
+            elsif = new SamalElseIfBranch(
+                cast(elsif.getCondition().replace(preorder, postorder), SamalExpression),
+                cast(elsif.getBody().replace(preorder, postorder), SamalScope)
+            );
+        }
+        mElse = cast(mElse.replace(preorder, postorder), SamalScope);
+    }
+}
 
+class SamalSimpleIfExpression extends SamalExpression {
+    var mCondition : SamalExpression;
+    var mMainBody : SamalScope;
+    var mElseBody : SamalScope;
+    public function new(sourceRef : SourceCodeRef, condition : SamalExpression, mainBody : SamalScope, elseBody : SamalScope) {
+        super(sourceRef);
+        mCondition = condition;
+        mMainBody = mainBody;
+        mElseBody = elseBody;
+    }
+    public function getMainCondition() {
+        return mCondition;
+    }
+    public function getMainBody() {
+        return mMainBody;
+    }
+    public function getElseBody() {
+        return mElseBody;
+    }
+    
+    public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
+        mCondition = cast(mCondition.replace(preorder, postorder), SamalExpression);
+        mMainBody = cast(mMainBody.replace(preorder, postorder), SamalScope);
+        mElseBody = cast(mElseBody.replace(preorder, postorder), SamalScope);
+    }
 }

@@ -220,8 +220,7 @@ class Parser {
                     eat(Else);
                     elseScope = parseScope();
                 } else {
-                    throw new Exception("TODO");
-                    //elseScope = new SamalScope(makeSourceRefNonDestructive(), )
+                    elseScope = new SamalScope(makeSourceRefNonDestructive(), []);
                 }
                 return new SamalIfExpression(makeSourceRef(), mainCondition, mainBody, elseIfs, elseScope);
             case _:

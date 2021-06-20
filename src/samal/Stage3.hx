@@ -48,11 +48,6 @@ class Stage3 {
             
             mCurrentFileDeclarations.push(new CppFunctionDeclaration(node.getSourceRef(), node.getDatatype(), node.getIdentifier().mangled(), node.getParams(), scope));
             mScopeStack.pop();
-        } else if(Std.downcast(astNode, SamalScope) != null) {
-            var node = Std.downcast(astNode, SamalScope);
-            for(child in node.getStatements()) {
-                traverse(child);
-            }
         } else if(Std.downcast(astNode, SamalScopeExpression) != null) {
             var node = Std.downcast(astNode, SamalScopeExpression);
             
@@ -123,7 +118,43 @@ class Stage3 {
             addStatement(new CppFunctionCallStatement(node.getSourceRef(), node.getDatatype().sure(), destName, functionName, params));
 
             return destName;
+        
+        } else if(Std.downcast(astNode, SamalSimpleIfExpression) != null) {
+            var node = Std.downcast(astNode, SamalSimpleIfExpression);
+
+            final returnVarnmae = genTempVarName("if_result");
+            final datatype = node.getDatatype().sure();
+            var resultDeclaration = addStatement(new CppAssignmentStatement(node.getSourceRef(), datatype, returnVarnmae, "", CppAssignmentType.JustDeclare));
+
+            var umbrellaScope = new CppScopeStatement(node.getSourceRef(), datatype, returnVarnmae);
+            mScopeStack.add(umbrellaScope.getScope());
+
+            var conditionVarName = traverse(node.getMainCondition());
+
+            var mainScope = new CppScopeNode(node.getSourceRef());
+            mScopeStack.add(mainScope);
+            var lastStatementResult = "";
+            for(stmt in node.getMainBody().getStatements()) {
+                lastStatementResult = traverse(stmt);
+            }
+            addStatement(new CppAssignmentStatement(node.getSourceRef(), datatype, returnVarnmae, lastStatementResult, CppAssignmentType.JustAssign));
+            mScopeStack.pop();
+
+            var elseScope = new CppScopeNode(node.getSourceRef());
+            mScopeStack.add(elseScope);
+            lastStatementResult = "";
+            for(stmt in node.getElseBody().getStatements()) {
+                lastStatementResult = traverse(stmt);
+            }
+            addStatement(new CppAssignmentStatement(node.getSourceRef(), datatype, returnVarnmae, lastStatementResult, CppAssignmentType.JustAssign));
+            mScopeStack.pop();
+
+            addStatement(new CppIfStatement(node.getSourceRef(), datatype, returnVarnmae, conditionVarName, mainScope, elseScope));
+
+            mScopeStack.pop();
+            addStatement(umbrellaScope);
             
+            return resultDeclaration.getVarName();
         } else {
             throw new Exception("TODO! " + Type.getClassName(Type.getClass(astNode)));
         }

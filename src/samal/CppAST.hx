@@ -280,3 +280,25 @@ class CppFunctionCallStatement extends CppStatement {
         return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = " + mFunctionName + "(" + mParams.join(", ") + ")";
     }
 }
+
+class CppIfStatement extends CppStatement {
+    var mConditionVarName : String;
+    var mMainBody : CppScopeNode;
+    var mElseBody : CppScopeNode;
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, varName : String, conditionVarName : String, mainBody : CppScopeNode, elseBody : CppScopeNode) {
+        super(sourceRef, datatype, varName);
+        mConditionVarName = conditionVarName;
+        mMainBody = mainBody;
+        mElseBody = elseBody;
+    }
+    public override function dumpSelf() : String {
+        return super.dumpSelf() + ": " + mVarName;
+    }
+    public override function toCpp(ctx : CppContext) : String {
+        return indent(ctx) + "if (" + mConditionVarName + ") " + mMainBody.toCpp(ctx.next()) + " else " + mElseBody.toCpp(ctx.next());
+    }
+    public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
+        mMainBody = cast(mMainBody.replace(preorder, postorder), CppScopeNode);
+        mElseBody = cast(mElseBody.replace(preorder, postorder), CppScopeNode);
+    }
+}

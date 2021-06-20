@@ -116,6 +116,27 @@ class Stage2 {
         } else if(Std.downcast(astNode, SamalFunctionCallExpression) != null) {
             var node = Std.downcast(astNode, SamalFunctionCallExpression);
             node.setDatatype(node.getFunction().getDatatype().sure().getReturnType());
+
+        } else if(Std.downcast(astNode, SamalIfExpression) != null) {
+            var node = Std.downcast(astNode, SamalIfExpression);
+
+            var returnType : Null<Datatype> = null;
+            for(branch in node.getAllBranches()) {
+                if(returnType == null) {
+                    returnType = branch.getBody().getDatatype().sure();
+                } else {
+                    if(returnType != branch.getBody().getDatatype().sure()) {
+                        throw new Exception('${node.errorInfo()} All previous branches returend ${returnType}, but one returns ${branch.getBody().getDatatype().sure()}');
+                    }
+                }
+                if(branch.getCondition().getDatatype().sure() != Datatype.Bool) {
+                    throw new Exception('${branch.getCondition().errorInfo()} Condition must have bool-type, but has ${branch.getCondition().getDatatype().sure()}');
+                }
+            }
+            if(node.getElse().getDatatype().sure() != returnType) {
+                throw new Exception('${node.errorInfo()} All previous branches returend ${returnType}, but the else returns ${node.getElse().getDatatype().sure()}');
+            }
+            node.setDatatype(returnType);
         }
     }
 
@@ -138,10 +159,36 @@ class Stage2 {
         return new VarDeclaration(func.getIdentifier().mangled(), func.getDatatype());
     }
 
+    function preorderReplace(astNode : ASTNode) : ASTNode {
+        if(Std.downcast(astNode, SamalIfExpression) != null) {
+            var node = Std.downcast(astNode, SamalIfExpression);
+            if(node.getElseIfs().length == 0) {
+                return withDatatype(node.getDatatype().sure(), new SamalSimpleIfExpression(node.getSourceRef(), node.getMainCondition(), node.getMainBody(), node.getElse()));
+            }
+            var currentElseIf = node.getElseIfs().shift().sure();
+            var reducedIfExpr = withDatatype(
+                node.getDatatype().sure(), 
+                new SamalIfExpression(node.getSourceRef(), currentElseIf.getCondition(), currentElseIf.getBody(), node.getElseIfs(), node.getElse()));
+            var newElseScope = new SamalScope(node.getSourceRef(), [reducedIfExpr]);
+            return withDatatype(node.getDatatype().sure(), new SamalSimpleIfExpression(node.getSourceRef(), node.getMainCondition(), node.getMainBody(), newElseScope));
+        }
+        return astNode;
+    }
+
+    function postorderReplace(astNode : ASTNode) : ASTNode {
+        return astNode;
+    }
+
+    static function withDatatype(datatype : Datatype, node : SamalExpression) : SamalExpression {
+        node.setDatatype(datatype);
+        return node;
+    }
+
     public function completeDatatypes() : SamalProgram {
         mProgram.forEachModule(function (moduleName : String, ast : ASTNode) {
             mCurrentModule = moduleName;
             ast.traverse(preorder, postorder);
+            ast.replace(preorderReplace, postorderReplace);
         });
         return mProgram;
     }
