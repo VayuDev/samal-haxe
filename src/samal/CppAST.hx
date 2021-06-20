@@ -302,3 +302,18 @@ class CppIfStatement extends CppStatement {
         mElseBody = cast(mElseBody.replace(preorder, postorder), CppScopeNode);
     }
 }
+
+class CppListPrependStatement extends CppStatement {
+    var mValue : String;
+    var mList : String;
+
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, varName : String, value : String, list : String) {
+        super(sourceRef, datatype, varName);
+        mValue = value;
+        mList = list;
+    }
+
+    public override function toCpp(ctx : CppContext) : String {
+        return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = samalrt::listPrepend<" + mDatatype.getBaseType().toCppType() + ">(" + mValue + ", " + mList + ")";
+    }
+}

@@ -94,7 +94,7 @@ class Stage3 {
             return res.getVarName();
         } else if(Std.downcast(astNode, SamalLiteralIntExpression) != null) {
             var node = Std.downcast(astNode, SamalLiteralIntExpression);
-            return Std.string(node.getValue());
+            return "(int32_t) (" + Std.string(node.getValue()) + ")";
         } else if(Std.downcast(astNode, SamalAssignmentExpression) != null) {
             var node = Std.downcast(astNode, SamalAssignmentExpression);
             
@@ -155,6 +155,21 @@ class Stage3 {
             addStatement(umbrellaScope);
             
             return resultDeclaration.getVarName();
+
+        } else if(Std.downcast(astNode, SamalSimpleCreateEmptyList) != null) {
+            var node = Std.downcast(astNode, SamalSimpleCreateEmptyList);
+            return "(" + DatatypeHelpers.toCppType(node.getDatatype().sure()) + ") (nullptr)";
+
+        } else if(Std.downcast(astNode, SamalSimpleListPrepend) != null) {
+            var node = Std.downcast(astNode, SamalSimpleListPrepend);
+            
+            var valueVarName = traverse(node.getValue());
+            var listVarName = traverse(node.getList());
+
+            var varName = genTempVarName("list_prepend");
+            addStatement(new CppListPrependStatement(node.getSourceRef(), node.getDatatype().sure(), varName, valueVarName, listVarName));
+            return varName;
+
         } else {
             throw new Exception("TODO! " + Type.getClassName(Type.getClass(astNode)));
         }

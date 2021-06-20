@@ -69,6 +69,11 @@ class Parser {
             case TokenType.Bool:
                 eat(TokenType.Bool);
                 return Datatype.Bool;
+            case TokenType.LSquare:
+                eat(LSquare);
+                var baseType = parseDatatype();
+                eat(RSquare);
+                return Datatype.List(baseType);
             case _:
                 throw new Exception(current().info() + ": Expected datatype");
         }
@@ -151,10 +156,10 @@ class Parser {
         return lhs;
     }
 
-    function parseExpressionList() : Array<SamalExpression> {
-        eat(LParen);
+    function parseExpressionList(lterm : TokenType, rterm : TokenType) : Array<SamalExpression> {
+        eat(lterm);
         var ret = [];
-        while(current().getType() != RParen) {
+        while(current().getType() != rterm) {
             ret.push(parseExpression());
             if(current().getType() == Comma) {
                 eat(Comma);
@@ -162,7 +167,7 @@ class Parser {
                 break;
             }
         }
-        eat(RParen);
+        eat(rterm);
         return ret;
     }
 
@@ -170,7 +175,7 @@ class Parser {
         startNode();
         var lhs = parseLiteralExpression();
         while(current().getType() == TokenType.LParen) {
-            var params = parseExpressionList();
+            var params = parseExpressionList(LParen, RParen);
             lhs = new SamalFunctionCallExpression(makeSourceRef(), lhs, params);
             startNode();
         }
@@ -223,6 +228,18 @@ class Parser {
                     elseScope = new SamalScope(makeSourceRefNonDestructive(), []);
                 }
                 return new SamalIfExpression(makeSourceRef(), mainCondition, mainBody, elseIfs, elseScope);
+
+            case LSquare:
+                startNode();
+                if (peek().getType() == Colons) {
+                    eat(LSquare);
+                    eat(Colons);
+                    var type = parseDatatype();
+                    eat(RSquare);
+                    return new SamalCreateListExpression(makeSourceRef(), type, []);
+                }
+                var expressions = parseExpressionList(LSquare, RSquare);
+                return new SamalCreateListExpression(makeSourceRef(), null, expressions);
             case _:
                 throw new Exception(current().info() + " Expected expression");
         }

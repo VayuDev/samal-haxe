@@ -5,6 +5,8 @@ import haxe.Int32;
 import samal.Tokenizer.SourceCodeRef;
 import samal.AST;
 import samal.Util;
+using samal.Util.NullTools;
+using samal.Datatype.DatatypeHelpers;
 
 class SamalASTNode extends ASTNode {
     public function new(sourceRef : SourceCodeRef) {
@@ -337,5 +339,52 @@ class SamalSimpleIfExpression extends SamalExpression {
         mCondition = cast(mCondition.replace(preorder, postorder), SamalExpression);
         mMainBody = cast(mMainBody.replace(preorder, postorder), SamalScope);
         mElseBody = cast(mElseBody.replace(preorder, postorder), SamalScope);
+    }
+}
+
+class SamalCreateListExpression extends SamalExpression {
+    var mChildren : Array<SamalExpression>;
+    public function new(sourceRef : SourceCodeRef, baseType : Null<Datatype>, children : Array<SamalExpression>) {
+        super(sourceRef);
+        if(baseType != null) {
+            mDatatype = Datatype.List(baseType.sure());
+        }
+        mChildren = children;
+    }
+    public function getChildren() {
+        return mChildren;
+    }
+    
+    public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
+        mChildren = Util.replaceNodes(mChildren, preorder, postorder);
+    }
+}
+
+class SamalSimpleCreateEmptyList extends SamalExpression {
+    public function new(sourceRef : SourceCodeRef, listType : Datatype) {
+        super(sourceRef);
+        mDatatype = listType;
+    }
+}
+
+class SamalSimpleListPrepend extends SamalExpression {
+    var mValue : SamalExpression;
+    var mList : SamalExpression;
+    public function new(sourceRef : SourceCodeRef, listType : Datatype, value : SamalExpression, list : SamalExpression) {
+        super(sourceRef);
+        mDatatype = listType;
+        mValue = value;
+        mList = list;
+    }
+    public function getValue() {
+        return mValue;
+    }
+    public function getList() {
+        return mList;
+    }
+    
+    public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
+        mValue = cast(mValue.replace(preorder, postorder), SamalExpression);
+        mList = cast(mList.replace(preorder, postorder), SamalExpression);
     }
 }

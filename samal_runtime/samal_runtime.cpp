@@ -16,7 +16,7 @@ SamalString toSamalString(const std::string& str) {
 SamalString toSamalString(const std::u32string& str) {
     SamalString head = nullptr;
     for(auto it = str.rbegin(); it != str.rend(); ++it) {
-        auto next = (SamalString) samalAlloc(sizeof(SamalString));
+        auto next = (SamalString) samalAlloc(sizeof(List<char32_t>));
         next->value = *it;
         next->next = head;
         head = next;

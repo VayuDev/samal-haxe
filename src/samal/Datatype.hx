@@ -21,12 +21,22 @@ class DatatypeHelpers {
                 throw new Exception(type + " is not a function!");
         }
     }
+    static public function getBaseType(type : Datatype) : Datatype {
+        switch(type) {
+            case List(baseType):
+                return baseType;
+            case _:
+                throw new Exception(type + " is not a list!");
+        }
+    }
     static public function toCppType(type : Datatype) : String {
         switch(type) {
             case Int:
                 return "int32_t";
             case Bool:
                 return "bool";
+            case List(base):
+                return "samalrt::List<" + toCppType(base) + ">*";
             case _:
                 throw new Exception("TODO " + type);
         }

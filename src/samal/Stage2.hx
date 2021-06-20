@@ -1,5 +1,6 @@
 package samal;
 
+import haxe.EnumTools;
 import haxe.ds.GenericStack;
 import haxe.Exception;
 import samal.Datatype.DatatypeHelpers;
@@ -60,11 +61,12 @@ class Stage2 {
             mScopeStack.pop();
         } else if(Std.downcast(astNode, SamalFunctionDeclarationNode) != null) {
             var node = Std.downcast(astNode, SamalFunctionDeclarationNode);
-            if(DatatypeHelpers.getReturnType(node.getDatatype()) != node.getBody().getDatatype()) {
+            final expectedReturnType = DatatypeHelpers.getReturnType(node.getDatatype());
+            if(!expectedReturnType.equals(node.getBody().getDatatype().sure())) {
                 throw new Exception(
                     node.errorInfo() 
                     + "Expected return type " 
-                    + DatatypeHelpers.getReturnType(node.getDatatype()) 
+                    + expectedReturnType 
                     + ", got: " 
                     + node.getBody().getDatatype().sure());
             }
@@ -137,6 +139,21 @@ class Stage2 {
                 throw new Exception('${node.errorInfo()} All previous branches returend ${returnType}, but the else returns ${node.getElse().getDatatype().sure()}');
             }
             node.setDatatype(returnType);
+        } else if(Std.downcast(astNode, SamalCreateListExpression) != null) {
+            var node = Std.downcast(astNode, SamalCreateListExpression);
+            if(node.getDatatype() == null) {
+                var baseType : Null<Datatype> = null;
+                for(child in node.getChildren()) {
+                    if(baseType == null) {
+                        baseType = child.getDatatype();
+                    } else {
+                        if(!baseType.sure().equals(child.getDatatype().sure())) {
+                            throw new Exception('${node.errorInfo()} Not all initial members have the same type; previous ones are ${baseType.sure()}, but one is ${child.getDatatype().sure()}');
+                        }
+                    }
+                }
+                node.setDatatype(Datatype.List(baseType.sure()));
+            }
         }
     }
 
@@ -171,6 +188,20 @@ class Stage2 {
                 new SamalIfExpression(node.getSourceRef(), currentElseIf.getCondition(), currentElseIf.getBody(), node.getElseIfs(), node.getElse()));
             var newElseScope = new SamalScope(node.getSourceRef(), [reducedIfExpr]);
             return withDatatype(node.getDatatype().sure(), new SamalSimpleIfExpression(node.getSourceRef(), node.getMainCondition(), node.getMainBody(), newElseScope));
+
+        } else if(Std.downcast(astNode, SamalCreateListExpression) != null) {
+            var node = Std.downcast(astNode, SamalCreateListExpression);
+            if(node.getChildren().length == 0) {
+                return new SamalSimpleCreateEmptyList(node.getSourceRef(), node.getDatatype().sure());
+            }
+            var currentChild = node.getChildren().shift().sure();
+            return withDatatype(
+                node.getDatatype().sure(),
+                new SamalSimpleListPrepend(
+                    node.getSourceRef(), 
+                    node.getDatatype().sure(), 
+                    currentChild, 
+                    new SamalCreateListExpression(node.getSourceRef(), node.getDatatype().sure().getBaseType(), node.getChildren())));
         }
         return astNode;
     }
