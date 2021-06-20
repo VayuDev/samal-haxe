@@ -74,16 +74,24 @@ class Stage2 {
 
         } else if(Std.downcast(astNode, SamalBinaryExpression) != null) {
             var node = Std.downcast(astNode, SamalBinaryExpression);
-            if(node.getLhs().getDatatype() != node.getRhs().getDatatype()) {
-                throw new Exception('${node.errorInfo()} Lhs and rhs types aren\' equal. Lhs is ${node.getLhs().getDatatype().sure()}, rhs is ${node.getRhs().getDatatype().sure()}');
+            final lhsType = node.getLhs().getDatatype().sure();
+            final rhsType = node.getRhs().getDatatype().sure();
+
+            if(!lhsType.equals(rhsType)) {
+                if(rhsType.match(List(_)) && lhsType.equals(rhsType.getBaseType()) && node.getOperator() == Add) {
+                    // list prepend
+                    node.setDatatype(rhsType);
+                    return;
+                }
+                throw new Exception('${node.errorInfo()} Lhs and rhs types aren\'t equal. Lhs is ${node.getLhs().getDatatype().sure()}, rhs is ${node.getRhs().getDatatype().sure()}');
             }
-            if(!([Int].contains(node.getLhs().getDatatype().sure()))) {
+            if(!([Int].contains(lhsType))) {
                 throw new Exception('${node.errorInfo()} The ${node.getOperator()} operator is only defined for integers, not for ${node.getLhs().getDatatype().sure()}');
             }
             if([Less, LessEqual, More, MoreEqual].contains(node.getOperator())) {
                 node.setDatatype(Datatype.Bool);
             } else {
-                node.setDatatype(node.getLhs().getDatatype().sure());
+                node.setDatatype(lhsType);
             }
 
         } else if(Std.downcast(astNode, SamalAssignmentExpression) != null) {
@@ -202,6 +210,16 @@ class Stage2 {
                     node.getDatatype().sure(), 
                     currentChild, 
                     new SamalCreateListExpression(node.getSourceRef(), node.getDatatype().sure().getBaseType(), node.getChildren())));
+
+        } else if(Std.downcast(astNode, SamalBinaryExpression) != null) {
+            var node = Std.downcast(astNode, SamalBinaryExpression);
+            final lhsType = node.getLhs().getDatatype().sure();
+            final rhsType = node.getRhs().getDatatype().sure();
+
+            if(rhsType.match(List(_)) && lhsType.equals(rhsType.getBaseType()) && node.getOperator() == Add) {
+                // list prepend
+                return new SamalSimpleListPrepend(node.getSourceRef(), rhsType, node.getLhs(), node.getRhs());
+            }
         }
         return astNode;
     }
