@@ -388,3 +388,86 @@ class SamalSimpleListPrepend extends SamalExpression {
         mList = cast(mList.replace(preorder, postorder), SamalExpression);
     }
 }
+
+class SamalShape extends ASTNode {
+    
+}
+
+class SamalShapeEmptyList extends SamalShape {
+    public function new(sourceRef : SourceCodeRef) {
+        super(sourceRef);
+    }
+}
+class SamalShapeSplitList extends SamalShape {
+    var mHead : SamalShape;
+    var mTail : SamalShape;
+    public function new(sourceRef : SourceCodeRef, head : SamalShape, tail : SamalShape) {
+        super(sourceRef);
+        mHead = head;
+        mTail = tail;
+    }
+    public function getHead() {
+        return mHead;
+    }
+    public function getTail() {
+        return mTail;
+    }
+    
+    public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
+        mHead = cast(mHead.replace(preorder, postorder), SamalShape);
+        mTail = cast(mTail.replace(preorder, postorder), SamalShape);
+    }
+}
+class SamalShapeVariable extends SamalShape {
+    var mVariableName : String;
+    public function new(sourceRef : SourceCodeRef, variableName : String) {
+        super(sourceRef);
+        mVariableName = variableName;
+    }
+
+    public function getVariableName() {
+        return mVariableName;
+    }
+}
+
+class SamalMatchRow extends SamalASTNode {
+    var mShape : SamalShape;
+    var mBody : SamalExpression;
+    public function new(sourceRef : SourceCodeRef, shape : SamalShape, body : SamalExpression) {
+        super(sourceRef);
+        mShape = shape;
+        mBody = body;
+    }
+    public function getShape() {
+        return mShape;
+    }
+    public function getBody() {
+        return mBody;
+    }
+    
+    public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
+        mShape = cast(mShape.replace(preorder, postorder), SamalShape);
+        mBody = cast(mBody.replace(preorder, postorder), SamalExpression);
+    }
+}
+
+class SamalMatchExpression extends SamalExpression {
+    var mToMatch : SamalExpression;
+    var mRows : Array<SamalMatchRow>;
+    public function new(sourceRef : SourceCodeRef, toMatch : SamalExpression, rows : Array<SamalMatchRow>) {
+        super(sourceRef);
+        mToMatch = toMatch;
+        mRows = rows;
+    }
+    public function getToMatch() {
+        return mToMatch;
+    }
+    public function getRows() {
+        return mRows;
+    }
+    
+    public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
+        mToMatch = cast(mToMatch.replace(preorder, postorder), SamalExpression);
+        mRows = Util.replaceNodes(mRows, preorder, postorder);
+    }
+}

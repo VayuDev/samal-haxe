@@ -183,6 +183,29 @@ class Parser {
         return lhs;
     }
 
+    function parseMatchShape() : SamalShape {
+        startNode();
+        switch(current().getType()) {
+            case Identifier:
+                var varName = current().getSubstr();
+                eat(Identifier);
+                return new SamalShapeVariable(makeSourceRef(), varName);
+            case LSquare:
+                eat(LSquare);
+                if (current().getType() == RSquare) {
+                    eat(RSquare);
+                    return new SamalShapeEmptyList(makeSourceRef());
+                }
+                var head = parseMatchShape();
+                eat(Plus);
+                var tail = parseMatchShape();
+                eat(RSquare);
+                return new SamalShapeSplitList(makeSourceRef(), head, tail);
+            case _:
+                throw new Exception(current().info() + " Expected match shape");
+        }
+    }
+
     function parseLiteralExpression() : SamalExpression {
         startNode();
         switch(current().getType()) {
@@ -240,6 +263,25 @@ class Parser {
                 }
                 var expressions = parseExpressionList(LSquare, RSquare);
                 return new SamalCreateListExpression(makeSourceRef(), null, expressions);
+
+            case Match:
+                startNode();
+                eat(Match);
+                var toMatch = parseExpression();
+                eat(LCurly);
+                var rows = [];
+                while(current().getType() != RCurly) {
+                    skipNewlines();
+                    startNode();
+                    var shape = parseMatchShape();
+                    eat(RightArrow);
+                    var body = parseExpression();
+                    rows.push(new SamalMatchRow(makeSourceRef(), shape, body));
+                    skipNewlines();
+                }
+
+                eat(RCurly);
+                return new SamalMatchExpression(makeSourceRef(), toMatch, rows);
             case _:
                 throw new Exception(current().info() + " Expected expression");
         }

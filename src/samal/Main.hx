@@ -35,9 +35,15 @@ fn fib(n : int) -> int {
   }
 }
 
-fn main() -> [[int]] {
-  a = [[1, 2, 3], [4, 5, 6]]
-  [42] + a
+fn main() -> int {
+  match [1, 2, 3] {
+    [head + tail] -> {
+      head
+    }
+    [] -> {
+      1
+    }
+  }
 }");
     var ast = parser.parse();
     var program = new SamalProgram();
