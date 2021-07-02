@@ -28,10 +28,35 @@ class VarDeclaration {
     }
 }
 
+class MatchShapeReplacementContext {
+    var mCurrentBody : SamalScope;
+    var mElsesAlongTheWay : Array<SamalScope> = [];
+
+    public function new(currentBody : SamalScope) {
+        mCurrentBody = currentBody;
+    }
+    public function setCurrentBody(body : SamalScope) {
+        mCurrentBody = body;
+    }
+    public function getCurrentBody() {
+        return mCurrentBody;
+    }
+    public function getLowestElse() {
+        return mElsesAlongTheWay[mElsesAlongTheWay.length - 1];
+    }
+    public function getElsesAlongTheWay() {
+        return mElsesAlongTheWay;
+    }
+    public function addElseAlongTheWay(elseBody : SamalScope) {
+        mElsesAlongTheWay.push(elseBody);
+    }
+}
+
 class Stage2 {
     var mProgram : SamalProgram;
     var mScopeStack : GenericStack<Map<String, VarDeclaration>> = new GenericStack();
     var mCurrentModule : String = "";
+    var mTempVarNameCounter : Int = 0;
 
     public function new(prog : SamalProgram) {
         mProgram = prog;
@@ -287,12 +312,129 @@ class Stage2 {
                 // list prepend
                 return new SamalSimpleListPrepend(node.getSourceRef(), rhsType, node.getLhs(), node.getRhs());
             }
+        } else if(Std.downcast(astNode, SamalMatchExpression) != null) {
+            var node = Std.downcast(astNode, SamalMatchExpression);
+
+            var returnType = node.getDatatype().sure();
+            var rootScope = new SamalScope(node.getSourceRef(), []);
+            var toMatchDatatype = node.getToMatch().getDatatype().sure();
+
+            var toMatchVarName = genTempVarName("toMatch");
+            rootScope.addStatement(withDatatype(toMatchDatatype, new SamalAssignmentExpression(node.getSourceRef(), toMatchVarName, node.getToMatch())));
+
+            // use separate scope so that it only contains the logic for matching each row
+            final matchRootScope = new SamalScope(node.getSourceRef(), []);
+            rootScope.addStatement(withDatatype(returnType, new SamalScopeExpression(node.getSourceRef(), matchRootScope)));
+
+            var ctx = new MatchShapeReplacementContext(matchRootScope);
+            ctx.addElseAlongTheWay(matchRootScope); // just used for bootstrapping the first row
+
+            for(row in node.getRows()) {
+                final thisRowRoot = ctx.getLowestElse().sure();
+
+                final lastCtx = ctx;
+                ctx = new MatchShapeReplacementContext(thisRowRoot);
+                replaceMatchShape(ctx, row.getShape(), toMatchVarName, toMatchDatatype, returnType);
+                ctx.getCurrentBody().addStatement(row.getBody());
+
+                // copy generated match code to all else-bodies in the prev run
+                for(hangingElse in lastCtx.getElsesAlongTheWay()) {
+                    if(hangingElse == thisRowRoot)
+                        continue;
+                    for(stmt in thisRowRoot.getStatements()) {
+                        hangingElse.addStatement(stmt);
+                    }
+                }
+            }
+
+            // add unreachable for all other elses
+            for(hangingElse in ctx.getElsesAlongTheWay()) {
+                hangingElse.addStatement(new SamalSimpleUnreachable(node.getSourceRef()));
+            }
+
+            return withDatatype(returnType, new SamalScopeExpression(node.getSourceRef(), rootScope));
         }
         return astNode;
     }
 
+    function replaceMatchShape(ctx : MatchShapeReplacementContext, matchShape : SamalShape, currentVarName : String, currentVarDatatype : Datatype, returnType : Datatype) {
+
+        var loadCurrentVar = function() {
+            return withDatatype(
+                currentVarDatatype,
+                new SamalLoadIdentifierExpression(matchShape.getSourceRef(), new IdentifierWithTemplate(currentVarName, [])));
+        }
+
+        var generateIfElse = function(check) {
+            var checkSuccessBody = new SamalScope(matchShape.getSourceRef(), []);
+            checkSuccessBody.setDatatype(returnType);
+            var checkElseBody = new SamalScope(matchShape.getSourceRef(), []);
+            checkElseBody.setDatatype(returnType);
+            ctx.addElseAlongTheWay(checkElseBody);
+
+            var ifExpr = withDatatype(returnType, new SamalSimpleIfExpression(matchShape.getSourceRef(), check, checkSuccessBody, checkElseBody));
+            ctx.getCurrentBody().addStatement(ifExpr);
+            ctx.setCurrentBody(checkSuccessBody);
+
+            return checkSuccessBody;
+        }
+
+        if(Std.downcast(matchShape, SamalShapeVariable) != null) {
+            var node = Std.downcast(matchShape, SamalShapeVariable);
+            var assignment = 
+                withDatatype(
+                    currentVarDatatype, 
+                    new SamalAssignmentExpression(
+                        node.getSourceRef(), 
+                        node.getVariableName(), 
+                        loadCurrentVar()));
+            
+            ctx.getCurrentBody().addStatement(assignment);
+        } else if(Std.downcast(matchShape, SamalShapeEmptyList) != null) {
+            var node = Std.downcast(matchShape, SamalShapeEmptyList);
+            generateIfElse(new SamalSimpleListIsEmpty(node.getSourceRef(), loadCurrentVar()));
+            
+
+        } else if(Std.downcast(matchShape, SamalShapeSplitList) != null) {
+            var node = Std.downcast(matchShape, SamalShapeSplitList);
+            var checkSuccessBody = generateIfElse(withDatatype(
+                Bool, 
+                new SamalUnaryExpression(
+                    node.getSourceRef(), 
+                    Not, 
+                    new SamalSimpleListIsEmpty(node.getSourceRef(), loadCurrentVar()))));
+            
+            final headVarName = genTempVarName("listHead");
+            checkSuccessBody.addStatement(withDatatype(
+                currentVarDatatype.getBaseType(), 
+                new SamalAssignmentExpression(
+                    node.getSourceRef(), 
+                    headVarName, 
+                    new SamalSimpleListGetHead(node.getSourceRef(), currentVarDatatype, loadCurrentVar()))));
+            
+            final tailVarName = genTempVarName("listTail");
+            checkSuccessBody.addStatement(withDatatype(
+                currentVarDatatype, 
+                new SamalAssignmentExpression(
+                    node.getSourceRef(), 
+                    tailVarName, 
+                    new SamalSimpleListGetTail(node.getSourceRef(), currentVarDatatype, loadCurrentVar()))));
+
+            replaceMatchShape(ctx, node.getHead(), headVarName, currentVarDatatype.getBaseType(), returnType);
+            replaceMatchShape(ctx, node.getTail(), tailVarName, currentVarDatatype, returnType);
+
+        } else {
+            throw new Exception("TODO");
+        }
+    }
+
     function postorderReplace(astNode : ASTNode) : ASTNode {
         return astNode;
+    }
+
+    function genTempVarName(baseName : String) {
+        mTempVarNameCounter += 1;
+        return baseName + "$$" + mTempVarNameCounter;
     }
 
     static function withDatatype(datatype : Datatype, node : SamalExpression) : SamalExpression {

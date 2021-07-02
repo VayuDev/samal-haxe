@@ -60,7 +60,10 @@ class Stage3 {
             for(stmt in node.getScope().getStatements()) {
                 lastStatementResult = traverse(stmt);
             }
-            addStatement(new CppAssignmentStatement(node.getSourceRef(), node.getDatatype().sure(), resultDeclaration.getVarName(), lastStatementResult, CppAssignmentType.JustAssign));
+            if(lastStatementResult != "") {
+                // if it's not after an unreachable node
+                addStatement(new CppAssignmentStatement(node.getSourceRef(), node.getDatatype().sure(), resultDeclaration.getVarName(), lastStatementResult, CppAssignmentType.JustAssign));
+            }
             mScopeStack.pop();
 
             addStatement(scope);
@@ -92,9 +95,41 @@ class Stage3 {
             var res = addStatement(new CppBinaryExprStatement(node.getSourceRef(), node.getDatatype().sure(), genTempVarName("binary_expr"), lhsVarName, op, rhsVarName));
             
             return res.getVarName();
+        } else if(Std.downcast(astNode, SamalUnaryExpression) != null) {
+            var node = Std.downcast(astNode, SamalUnaryExpression);
+            var exprVarName = traverse(node.getExpression());
+            var op : CppUnaryOp;
+            switch(node.getOperator()) {
+                case Not:
+                    op = CppUnaryOp.Not;
+                case _:
+                    throw new Exception("TODO! " + node.dump());
+            }
+            var res = addStatement(new CppUnaryExprStatement(node.getSourceRef(), node.getDatatype().sure(), genTempVarName("unary_expr"), exprVarName, op));
+            return res.getVarName();
+
+        } else if(Std.downcast(astNode, SamalSimpleListIsEmpty) != null) {
+            var node = Std.downcast(astNode, SamalSimpleListIsEmpty);
+            var exprVarName = traverse(node.getList());
+            var res = addStatement(new CppUnaryExprStatement(node.getSourceRef(), node.getDatatype().sure(), genTempVarName("list_is_empty"), exprVarName, ListIsEmpty));
+            return res.getVarName();
+
+        } else if(Std.downcast(astNode, SamalSimpleListGetHead) != null) {
+            var node = Std.downcast(astNode, SamalSimpleListGetHead);
+            var exprVarName = traverse(node.getList());
+            var res = addStatement(new CppUnaryExprStatement(node.getSourceRef(), node.getDatatype().sure(), genTempVarName("list_get_head"), exprVarName, ListGetHead));
+            return res.getVarName();
+
+        } else if(Std.downcast(astNode, SamalSimpleListGetTail) != null) {
+            var node = Std.downcast(astNode, SamalSimpleListGetTail);
+            var exprVarName = traverse(node.getList());
+            var res = addStatement(new CppUnaryExprStatement(node.getSourceRef(), node.getDatatype().sure(), genTempVarName("list_is_empty"), exprVarName, ListGetTail));
+            return res.getVarName();
+
         } else if(Std.downcast(astNode, SamalLiteralIntExpression) != null) {
             var node = Std.downcast(astNode, SamalLiteralIntExpression);
             return "(int32_t) (" + Std.string(node.getValue()) + ")";
+
         } else if(Std.downcast(astNode, SamalAssignmentExpression) != null) {
             var node = Std.downcast(astNode, SamalAssignmentExpression);
             
@@ -137,7 +172,10 @@ class Stage3 {
             for(stmt in node.getMainBody().getStatements()) {
                 lastStatementResult = traverse(stmt);
             }
-            addStatement(new CppAssignmentStatement(node.getSourceRef(), datatype, returnVarnmae, lastStatementResult, CppAssignmentType.JustAssign));
+            if(lastStatementResult != "") {
+                // if it's not after an unreachable point
+                addStatement(new CppAssignmentStatement(node.getSourceRef(), datatype, returnVarnmae, lastStatementResult, CppAssignmentType.JustAssign));
+            }
             mScopeStack.pop();
 
             var elseScope = new CppScopeNode(node.getSourceRef());
@@ -146,7 +184,10 @@ class Stage3 {
             for(stmt in node.getElseBody().getStatements()) {
                 lastStatementResult = traverse(stmt);
             }
-            addStatement(new CppAssignmentStatement(node.getSourceRef(), datatype, returnVarnmae, lastStatementResult, CppAssignmentType.JustAssign));
+            if(lastStatementResult != "") {
+                // if it's not after an unreachable point
+                addStatement(new CppAssignmentStatement(node.getSourceRef(), datatype, returnVarnmae, lastStatementResult, CppAssignmentType.JustAssign));
+            }
             mScopeStack.pop();
 
             addStatement(new CppIfStatement(node.getSourceRef(), datatype, returnVarnmae, conditionVarName, mainScope, elseScope));
@@ -169,6 +210,10 @@ class Stage3 {
             var varName = genTempVarName("list_prepend");
             addStatement(new CppListPrependStatement(node.getSourceRef(), node.getDatatype().sure(), varName, valueVarName, listVarName));
             return varName;
+
+        } else if(Std.downcast(astNode, SamalSimpleUnreachable) != null) {
+            addStatement(new CppUnreachable(astNode.getSourceRef()));
+            return "";
 
         } else {
             throw new Exception("TODO! " + Type.getClassName(Type.getClass(astNode)));

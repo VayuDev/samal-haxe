@@ -133,6 +133,29 @@ class SamalBinaryExpression extends SamalExpression {
     }
 }
 
+enum SamalUnaryExpressionOp {
+    Not;
+}
+
+class SamalUnaryExpression extends SamalExpression {
+    var mExpr : SamalExpression;
+    var mOp : SamalUnaryExpressionOp;
+    public function new(sourceRef : SourceCodeRef, op : SamalUnaryExpressionOp, expr : SamalExpression) {
+        super(sourceRef);
+        mExpr = expr;
+        mOp = op;
+    }
+    public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
+        mExpr = cast(mExpr.replace(preorder, postorder), SamalExpression);
+    }
+    public function getExpression() {
+        return mExpr;
+    }
+    public function getOperator() {
+        return mOp;
+    }
+}
+
 class SamalLiteralIntExpression extends SamalExpression {
     var mVal : Int32;
     public function new(sourceRef : SourceCodeRef, val : Int32) {
@@ -160,6 +183,9 @@ class SamalScope extends SamalASTNode {
     }
     public function getStatements() {
         return mStatements;
+    }
+    public function addStatement(stmt : SamalExpression) {
+        mStatements.push(stmt);
     }
     public function setDatatype(type : Datatype) {
         mDatatype = type;
@@ -191,6 +217,10 @@ class SamalScopeExpression extends SamalExpression {
     }
     public override function getDatatype() {
         return mScope.getDatatype();
+    }
+    public override function setDatatype(datatype : Datatype) {
+        mDatatype = datatype;
+        mScope.setDatatype(datatype);
     }
 }
 
@@ -469,5 +499,46 @@ class SamalMatchExpression extends SamalExpression {
     public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
         mToMatch = cast(mToMatch.replace(preorder, postorder), SamalExpression);
         mRows = Util.replaceNodes(mRows, preorder, postorder);
+    }
+}
+
+
+class SamalSimpleListGetHead extends SamalExpression {
+    var mList : SamalExpression;
+    public function new(sourceRef : SourceCodeRef, listType : Datatype, list : SamalExpression) {
+        super(sourceRef);
+        mDatatype = listType.getBaseType();
+        mList = list;
+    }
+    public function getList() {
+        return mList;
+    }
+}
+class SamalSimpleListGetTail extends SamalExpression {
+    var mList : SamalExpression;
+    public function new(sourceRef : SourceCodeRef, listType : Datatype, list : SamalExpression) {
+        super(sourceRef);
+        mDatatype = listType;
+        mList = list;
+    }
+    public function getList() {
+        return mList;
+    }
+}
+class SamalSimpleListIsEmpty extends SamalExpression {
+    var mList : SamalExpression;
+    public function new(sourceRef : SourceCodeRef, list : SamalExpression) {
+        super(sourceRef);
+        mDatatype = Bool;
+        mList = list;
+    }
+    public function getList() {
+        return mList;
+    }
+}
+
+class SamalSimpleUnreachable extends SamalExpression {
+    public function new(sourceRef : SourceCodeRef) {
+        super(sourceRef);
     }
 }

@@ -35,13 +35,16 @@ fn fib(n : int) -> int {
   }
 }
 
-fn main() -> int {
-  match [1, 2, 3] {
+fn main() -> [int] {
+  match [:int] {
+    [head + [h + tail]] -> {
+      [9, 2]
+    }
     [head + tail] -> {
-      head
+      [99]
     }
     [] -> {
-      1
+      [42]
     }
   }
 }");

@@ -69,6 +69,7 @@ class CppFile extends CppASTNode {
             ret += "#include <cstdint>\n";
             ret += "#include <cmath>\n";
             ret += "#include <iostream>\n";
+            ret += "#include <cassert>\n";
             ret += "#include \"samal_runtime.hpp\"\n";
         } else {
             ret += '#include "$mName.hpp"\n';
@@ -212,6 +213,47 @@ class CppBinaryExprStatement extends CppStatement {
     }
     public override function toCpp(ctx : CppContext) : String {
         return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = " + mLhsVarName + " " + opAsStr() + " " + mRhsVarName;
+    }
+}
+
+enum CppUnaryOp {
+    Not;
+    ListGetHead;
+    ListGetTail;
+    ListIsEmpty;
+}
+
+class CppUnaryExprStatement extends CppStatement {
+    var mExpr : String;
+    var mOp : CppUnaryOp;
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, resultVarName : String, expr : String, op : CppUnaryOp) {
+        super(sourceRef, datatype, resultVarName);
+        mExpr = expr;
+        mOp = op;
+    }
+    public override function dumpSelf() : String {
+        return super.dumpSelf() + ": " + mVarName + " = " +  mOp + " " + mExpr;
+    }
+    public override function toCpp(ctx : CppContext) : String {
+        switch(mOp) {
+            case Not:
+                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = !(" + mExpr + ")";
+            case ListGetHead:
+                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = (" + mExpr + ")->value";
+            case ListGetTail:
+                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = (" + mExpr + ")->next";
+            case ListIsEmpty:
+                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = !(" + mExpr + ")";
+        }
+    }
+}
+
+class CppUnreachable extends CppStatement {
+    public function new(sourceRef : SourceCodeRef) {
+        super(sourceRef, Datatype.Bool, "");
+    }
+    public override function toCpp(ctx : CppContext) : String {
+        return indent(ctx) + " assert(false)";
     }
 }
 
