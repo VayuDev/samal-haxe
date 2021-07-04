@@ -40,6 +40,11 @@ class Util {
         // TODO proper implementation
         return StringTools.replace(identifier, ".", "_") + "$";
     }
+
+    private static var uniqueIdCounter = 0;
+    public static function getUniqueId() : Int {
+        return uniqueIdCounter++;
+    }
 }
 
 class NullTools {

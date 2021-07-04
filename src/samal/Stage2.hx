@@ -203,16 +203,16 @@ class Stage2 {
                 if(returnType == null) {
                     returnType = branch.getBody().getDatatype().sure();
                 } else {
-                    if(returnType != branch.getBody().getDatatype().sure()) {
-                        throw new Exception('${node.errorInfo()} All previous branches returend ${returnType}, but one returns ${branch.getBody().getDatatype().sure()}');
+                    if(!returnType.equals(branch.getBody().getDatatype().sure())) {
+                        throw new Exception('${node.errorInfo()} All previous branches returned ${returnType}, but one returns ${branch.getBody().getDatatype().sure()}');
                     }
                 }
                 if(branch.getCondition().getDatatype().sure() != Datatype.Bool) {
                     throw new Exception('${branch.getCondition().errorInfo()} Condition must have bool-type, but has ${branch.getCondition().getDatatype().sure()}');
                 }
             }
-            if(node.getElse().getDatatype().sure() != returnType) {
-                throw new Exception('${node.errorInfo()} All previous branches returend ${returnType}, but the else returns ${node.getElse().getDatatype().sure()}');
+            if(!node.getElse().getDatatype().sure().equals(returnType)) {
+                throw new Exception('${node.errorInfo()} All previous branches returned ${returnType}, but the else returns ${node.getElse().getDatatype().sure()}');
             }
             node.setDatatype(returnType);
         } else if(Std.downcast(astNode, SamalCreateListExpression) != null) {

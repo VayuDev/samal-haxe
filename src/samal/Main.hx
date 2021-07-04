@@ -35,18 +35,31 @@ fn fib(n : int) -> int {
   }
 }
 
-fn main() -> [int] {
-  match [:int] {
-    [head + [h + tail]] -> {
-      [9, 2]
-    }
+fn reverseHelper(la : [int], lb : [int]) -> [int] {
+  match la {
     [head + tail] -> {
-      [99]
+      reverseHelper(tail, head + lb)
     }
     [] -> {
-      [42]
+      lb
     }
   }
+}
+
+fn reverse(l : [int]) -> [int] {
+  reverseHelper(l, [:int])
+}
+
+fn seq(n : int) -> [int] {
+  if n < 1 {
+    [n]
+  } else {
+    n + seq(n - 1)
+  }
+}
+
+fn main() -> [int] {
+  reverse(seq(10000))
 }");
     var ast = parser.parse();
     var program = new SamalProgram();

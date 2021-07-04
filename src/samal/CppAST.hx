@@ -121,15 +121,17 @@ class CppFunctionDeclaration extends CppDeclaration {
     }
 
     public override function toCpp(ctx : CppContext) : String {
-        var ret = mDatatype.getReturnType().toCppType() + " " + mMangledName + "(" + mParams.map((p) -> '${p.getDatatype().toCppType()} ${p.getName()}').join(",") + ")";
+        final paramsAsStrArray = mParams.map((p) -> '${p.getDatatype().toCppType()} ${p.getName()}');
+        var ret = mDatatype.getReturnType().toCppType() + " " + mMangledName + "(" + ["samalrt::SamalContext &$ctx"].concat(paramsAsStrArray).join(", ") + ")";
         if(ctx.isHeader()) {
             ret += ";";
         } else {
             ret += " " + mBody.toCpp(ctx);
             if(mMangledName == ctx.getMainFunctionMangledName()) {
                 ret += '\nint main(int argc, char **argv) {
-    auto res = $mMangledName();
-    std::cout << samalrt::inspect(res) << \"\\n\";
+    samalrt::SamalContext ctx;
+    auto res = $mMangledName(ctx);
+    std::cout << samalrt::inspect(ctx, res) << \"\\n\";
 }';
             }
         }
@@ -147,6 +149,12 @@ abstract class CppStatement extends CppASTNode {
     }
     public function getVarName() {
         return mVarName;
+    }
+    private function getTrackerString() : String {
+        if(!mDatatype.requiresGC()) {
+            return "";
+        }
+        return "; samalrt::SamalGCTracker tracker$$$" + Util.getUniqueId() + "{$ctx, " + "(void**) &" + mVarName + ", " + mDatatype.toCppGCTypeStr() + "}";
     }
 }
 
@@ -212,7 +220,7 @@ class CppBinaryExprStatement extends CppStatement {
         }
     }
     public override function toCpp(ctx : CppContext) : String {
-        return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = " + mLhsVarName + " " + opAsStr() + " " + mRhsVarName;
+        return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = " + mLhsVarName + " " + opAsStr() + " " + mRhsVarName + getTrackerString();
     }
 }
 
@@ -237,13 +245,13 @@ class CppUnaryExprStatement extends CppStatement {
     public override function toCpp(ctx : CppContext) : String {
         switch(mOp) {
             case Not:
-                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = !(" + mExpr + ")";
+                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = !(" + mExpr + ")" + getTrackerString();
             case ListGetHead:
-                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = (" + mExpr + ")->value";
+                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = (" + mExpr + ")->value" + getTrackerString();
             case ListGetTail:
-                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = (" + mExpr + ")->next";
+                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = (" + mExpr + ")->next" + getTrackerString();
             case ListIsEmpty:
-                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = !(" + mExpr + ")";
+                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = !(" + mExpr + ")" + getTrackerString();
         }
     }
 }
@@ -277,11 +285,11 @@ class CppAssignmentStatement extends CppStatement {
     public override function toCpp(ctx : CppContext) : String {
         switch(mType) {
             case JustDeclare:
-                return indent(ctx) + mDatatype.toCppType() + " " + mVarName;
+                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = { 0 }" + getTrackerString();
             case JustAssign:
                 return indent(ctx) + mVarName + " = " + mRhsVarName;
             case DeclareAndAssign:
-                return indent(ctx) + mDatatype.toCppType() + " " + mVarName +  " = " + mRhsVarName;
+                return indent(ctx) + mDatatype.toCppType() + " " + mVarName +  " = " + mRhsVarName + getTrackerString();
         }
     }
 }
@@ -319,7 +327,7 @@ class CppFunctionCallStatement extends CppStatement {
         return super.dumpSelf() + ": " + mVarName;
     }
     public override function toCpp(ctx : CppContext) : String {
-        return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = " + mFunctionName + "(" + mParams.join(", ") + ")";
+        return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = " + mFunctionName + "(" + ["$ctx"].concat(mParams).join(", ") + ")" + getTrackerString();
     }
 }
 
@@ -356,6 +364,6 @@ class CppListPrependStatement extends CppStatement {
     }
 
     public override function toCpp(ctx : CppContext) : String {
-        return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = samalrt::listPrepend<" + mDatatype.getBaseType().toCppType() + ">(" + mValue + ", " + mList + ")";
+        return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = samalrt::listPrepend<" + mDatatype.getBaseType().toCppType() + ">($ctx, " + mValue + ", " + mList + ")" + getTrackerString();
     }
 }

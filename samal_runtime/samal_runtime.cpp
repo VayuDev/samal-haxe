@@ -3,37 +3,124 @@
 #include <string>
 #include <codecvt>
 #include <locale>
+#include <cassert>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
 
 namespace samalrt {
 
-SamalString toSamalString(const std::string& str) {
+
+SamalContext::SamalContext() {
+    mCurrentPage = (uint8_t*) malloc(mPageSize);
+    mOtherPage = (uint8_t*) malloc(mPageSize);
+}
+
+SamalString toSamalString(SamalContext& ctx, const std::string& str) {
     std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
     auto asInt = converter.from_bytes(str);
     auto u32String = std::u32string(reinterpret_cast<char32_t const *>(asInt.data()), asInt.length());
-    return toSamalString(u32String);
+    return toSamalString(ctx, u32String);
 }
 
-SamalString toSamalString(const std::u32string& str) {
+SamalString toSamalString(SamalContext& ctx, const std::u32string& str) {
     SamalString head = nullptr;
     for(auto it = str.rbegin(); it != str.rend(); ++it) {
-        auto next = (SamalString) samalAlloc(sizeof(List<char32_t>));
+        auto next = (SamalString) ctx.alloc(sizeof(List<char32_t>));
         next->value = *it;
         next->next = head;
         head = next;
     }
     return head;
 }
-void* samalAlloc(size_t len) {
-    return malloc(len);
+
+
+void* SamalContext::alloc(size_t len) {
+    auto ret = mCurrentPage + mCurrentPageOffset;
+    mCurrentPageOffset += len;
+    return ret;
+}
+void* SamalContext::allocOnOtherPage(size_t len) {
+    auto ret = mOtherPage + mOtherPageOffset;
+    mOtherPageOffset += len;
+    return ret;
 }
 
-SamalString inspect(int32_t val) {
-    auto str = std::to_string(val);
-    return toSamalString(str);
+void SamalContext::requestCollection() {
+    mCollectionRequestsCounter += 1;
+    if(mCollectionRequestsCounter >= mCollectionRequestsPerCollection) {
+        collect();
+        mCollectionRequestsCounter = 0;
+    }
 }
-SamalString inspect(bool val) {
+
+void SamalContext::collect() {
+    //std::cout << "Starting collection" << std::endl;
+    auto currentRoot = mLastGCTracker;
+    while(currentRoot) {
+        assert(currentRoot->getRawPtr());
+        
+        visitObj(currentRoot->getRawPtr(), currentRoot->getDatatype());
+        
+        currentRoot = currentRoot->getPrev();
+    }
+    auto tmp = mCurrentPage;
+    mCurrentPage = mOtherPage;
+    mCurrentPageOffset = mOtherPageOffset;
+    mOtherPage = tmp;
+    mOtherPageOffset = 0;
+    std::cout << "Collected!" << std::endl;
+}
+
+void SamalContext::visitObj(void **rawPtr, const Datatype& type) {
+    assert(rawPtr);
+    switch(type.getCategory()) {
+    case DatatypeCategory::Bool:
+    case DatatypeCategory::Int:
+        break;
+    case DatatypeCategory::List:
+        while(true) {
+            if(*rawPtr == nullptr)
+                break;
+            if(isInOtherPage(*rawPtr)) {
+                break;
+            }
+            if(isInOtherPage(**(void***)rawPtr)) {
+                *rawPtr = **(void***)rawPtr;
+                break;
+            }
+            visitObj((void**) (*(uint8_t***)rawPtr + 8), type.getBaseType());
+            auto newPtr = copyToOther(rawPtr, type.getSize());
+            auto oldPtrToCurrent = *rawPtr;
+            *rawPtr = newPtr;
+
+            rawPtr = *(void***)rawPtr;
+            *(void**)oldPtrToCurrent = newPtr;
+        }
+        break;
+    }
+}
+
+
+void* SamalContext::copyToOther(void** rawPtr, size_t size) {
+    assert(rawPtr);
+    auto newPtr = allocOnOtherPage(size);
+    memcpy(newPtr, *rawPtr, size);
+    //std::cout << "Moved " << *rawPtr << " to " << newPtr << std::endl;
+    return newPtr;
+}
+
+bool SamalContext::isInOtherPage(void* ptr) {
+    return ptr >= mOtherPage && ptr < mOtherPage + mOtherPageOffset;
+}
+
+SamalString inspect(SamalContext& ctx, int32_t val) {
     auto str = std::to_string(val);
-    return toSamalString(str);
+    return toSamalString(ctx, str);
+}
+SamalString inspect(SamalContext& ctx, bool val) {
+    auto str = std::to_string(val);
+    return toSamalString(ctx, str);
 }
 
 std::ostream& operator<<(std::ostream& stream, SamalString str) {
