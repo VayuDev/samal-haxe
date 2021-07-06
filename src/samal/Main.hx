@@ -12,6 +12,8 @@ import samal.Tokenizer.TokenType;
 import samal.Tokenizer.Token;
 import samal.Program;
 
+import cloner.Cloner;
+
 class Main {
   static function main() {
     /*var t = new Tokenizer("fn test() -> int {\n 5\n}");
@@ -35,10 +37,10 @@ fn fib(n : int) -> int {
   }
 }
 
-fn reverseHelper(la : [int], lb : [int]) -> [int] {
+fn reverseHelper<T>(la : [T], lb : [T]) -> [T] {
   match la {
     [head + tail] -> {
-      reverseHelper(tail, head + lb)
+      reverseHelper<T>(tail, head + lb)
     }
     [] -> {
       lb
@@ -46,8 +48,8 @@ fn reverseHelper(la : [int], lb : [int]) -> [int] {
   }
 }
 
-fn reverse(l : [int]) -> [int] {
-  reverseHelper(l, [:int])
+fn reverse<T>(l : [T]) -> [T] {
+  reverseHelper<T>(l, [:T])
 }
 
 fn seq(n : int) -> [int] {
@@ -59,11 +61,15 @@ fn seq(n : int) -> [int] {
 }
 
 fn main() -> [int] {
-  reverse(seq(10000))
+  reverse<int>(seq(10000))
 }");
     var ast = parser.parse();
     var program = new SamalProgram();
     program.addModule(ast);
+
+    var cloner = new Cloner();
+    var cpy = cloner.clone(ast);
+    cpy.setDeclarations([]);
 
     Log.trace("@@@@ Stage 1 @@@@", null);
     var stage1 = new Stage1(program);

@@ -1,4 +1,5 @@
 -cp src
 -main samal.Main
+-lib cloner
 --macro nullSafety("samal", Strict)
 -hl bin/hashlink

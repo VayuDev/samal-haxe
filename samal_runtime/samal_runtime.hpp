@@ -190,6 +190,6 @@ using namespace samalrt;
 
 static Datatype int_{DatatypeCategory::Int};
 static Datatype bool_{DatatypeCategory::Bool};
-static Datatype list_Sint_E{DatatypeCategory::List, &int_};
+static Datatype list_sint_e{DatatypeCategory::List, &int_};
 
 }

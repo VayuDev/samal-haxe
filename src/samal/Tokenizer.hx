@@ -84,9 +84,11 @@ enum TokenType {
 class Token {
     private var type : TokenType;
     private var ref : SourceCodeRef;
-    public function new(ref : SourceCodeRef, type : TokenType) {
+    private var skippedSpaces : Int;
+    public function new(ref : SourceCodeRef, type : TokenType, skippedSpaces : Int) {
         this.type = type;
         this.ref = ref;
+        this.skippedSpaces = skippedSpaces;
     }
     public function getType() : TokenType {
         return type;
@@ -102,6 +104,9 @@ class Token {
     }
     public function getSubstr() : String {
         return ref.getSubstr();
+    }
+    public function getSkippedWhitespaces() : Int {
+        return skippedSpaces;
     }
 }
 
@@ -121,18 +126,18 @@ class Tokenizer {
     public function current() : Token {
         if(indexStack.first() >= tokens.length) {
             if(tokens.length == 0) {
-                return new Token(new SourceCodeRef(1, 1, 1, 1, 0, 0, ""), TokenType.Invalid);
+                return new Token(new SourceCodeRef(1, 1, 1, 1, 0, 0, ""), TokenType.Invalid, 0);
             }
-            return new Token(tokens[tokens.length - 1].getSourceRef(), TokenType.Invalid);
+            return new Token(tokens[tokens.length - 1].getSourceRef(), TokenType.Invalid, 0);
         }
         return tokens[indexStack.first()];
     }
     public function peek(n : Int = 1) : Token {
         if(indexStack.first() + n >= tokens.length) {
             if(tokens.length == 0) {
-                return new Token(new SourceCodeRef(1, 1, 1, 1, 0, 0, ""), TokenType.Invalid);
+                return new Token(new SourceCodeRef(1, 1, 1, 1, 0, 0, ""), TokenType.Invalid, 0);
             }
-            return new Token(tokens[tokens.length - 1].getSourceRef(), TokenType.Invalid);
+            return new Token(tokens[tokens.length - 1].getSourceRef(), TokenType.Invalid, 0);
         }
         return tokens[indexStack.first() + n];
     }
@@ -172,6 +177,7 @@ class TokenGenerator {
     var lineStart : Int = -1;
     var columnStart : Int = -1;
     var tokens : Array<Token> = new Array();
+    var skippedSpaces : Int = 0;
 
     static final SINGLE_CHAR_TOKENS = [
         '+' => TokenType.Plus,
@@ -220,6 +226,7 @@ class TokenGenerator {
     public function new(code) {
         this.code = code;
         while(index < code.length) {
+            skippedSpaces = 0;
             skipWhitespaces();
             lineStart = line;
             columnStart = column;
@@ -232,7 +239,7 @@ class TokenGenerator {
                     for(_ in 0...str.length) {
                         advance();
                     }
-                    tokens.push(new Token(makeSourceRef(), type));
+                    tokens.push(new Token(makeSourceRef(), type, skippedSpaces));
                     break;
                 }
             }
@@ -252,7 +259,7 @@ class TokenGenerator {
                 while(getCurrentChar() != "" && "0123456789".indexOf(getCurrentChar()) != -1) {
                     advance();
                 }
-                tokens.push(new Token(makeSourceRef(), TokenType.Integer));
+                tokens.push(new Token(makeSourceRef(), TokenType.Integer, skippedSpaces));
                 continue;
             }
 
@@ -267,7 +274,7 @@ class TokenGenerator {
                 isIdentifier = true;
             }
             if(isIdentifier) {
-                tokens.push(new Token(makeSourceRef(), TokenType.Identifier));
+                tokens.push(new Token(makeSourceRef(), TokenType.Identifier, skippedSpaces));
                 continue;
             }
 
@@ -284,7 +291,7 @@ class TokenGenerator {
                     advance();
                 }
                 advance();
-                tokens.push(new Token(new SourceCodeRef(lineStart, line, columnStart, column, indexStart, index, res), TokenType.StringLiteral));
+                tokens.push(new Token(new SourceCodeRef(lineStart, line, columnStart, column, indexStart, index, res), TokenType.StringLiteral, skippedSpaces));
                 continue;
             }
 
@@ -313,7 +320,7 @@ class TokenGenerator {
                     throwException("String literals should only contain one character!");
                 }
                 advance();
-                tokens.push(new Token(new SourceCodeRef(lineStart, line, columnStart, column, indexStart, index, ch), TokenType.CharLiteral));
+                tokens.push(new Token(new SourceCodeRef(lineStart, line, columnStart, column, indexStart, index, ch), TokenType.CharLiteral, skippedSpaces));
             }
 
             throwException("Unknown token " + getCurrentChar());
@@ -330,7 +337,8 @@ class TokenGenerator {
 
     private function genSingleCharToken(type : TokenType) {
         advance();
-        tokens.push(new Token(makeSourceRef(), type));
+        tokens.push(new Token(makeSourceRef(), type, skippedSpaces));
+        skippedSpaces = 0;
     }
 
     private function makeSourceRef() : SourceCodeRef {
@@ -355,6 +363,9 @@ class TokenGenerator {
             column = 1;
         } else {
             column += 1;
+        }
+        if(" \t\r".indexOf(getCurrentChar()) != -1) {
+            skippedSpaces += 1;
         }
         index += 1;
     }

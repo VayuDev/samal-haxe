@@ -1,5 +1,8 @@
 package samal;
 
+import samal.Datatype.DatatypeHelpers;
+using samal.Datatype.DatatypeHelpers;
+import haxe.Exception;
 import samal.AST;
 
 class Util {
@@ -37,8 +40,23 @@ class Util {
         if(templateParams.length == 0 && !StringTools.contains(identifier, ".")) {
             return identifier;
         }
-        // TODO proper implementation
-        return StringTools.replace(identifier, ".", "_") + "$";
+        var base = StringTools.replace(identifier, ".", "_");
+        if(templateParams.length == 0) {
+            return base;
+        }
+        return base + "_S" + templateParams.map(function (type) { return DatatypeHelpers.toMangledName(type); }).join("_") + "E";
+    }
+
+    public static function buildTemplateReplacementMap(expectedParams : Array<Datatype>, passedParams : Array<Datatype>) : Map<String, Datatype> {
+        if(expectedParams.length != passedParams.length) {
+            throw new Exception('Expected & passed template parameter amount doesn\'t match; expected ${expectedParams.length}, but got ${passedParams.length}');
+        }
+        final ret = new Map<String, Datatype>();
+        for(i in 0...expectedParams.length) {
+            ret.set(expectedParams[i].getUserTypeData().getName(), passedParams[i]);
+        }
+
+        return ret;
     }
 
     private static var uniqueIdCounter = 0;

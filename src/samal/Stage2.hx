@@ -52,11 +52,23 @@ class MatchShapeReplacementContext {
     }
 }
 
+class TemplateFunctionToCompile {
+    var mFunctionDeclaration : SamalFunctionDeclarationNode;
+    var mTypeMap : Map<String, Datatype>;
+    var mPassedTemplateParams : Array<Datatype>;
+    public function new(decl : SamalFunctionDeclarationNode, typeMap : Map<String, Datatype>, passedTemplateParams : Array<Datatype>) {
+        mFunctionDeclaration = decl;
+        mTypeMap = typeMap;
+        mPassedTemplateParams = passedTemplateParams;
+    }
+}
+
 class Stage2 {
     var mProgram : SamalProgram;
     var mScopeStack : GenericStack<Map<String, VarDeclaration>> = new GenericStack();
     var mCurrentModule : String = "";
     var mTempVarNameCounter : Int = 0;
+    var mTemplateFunctionsToCompile : Map<String, TemplateFunctionToCompile> = new Map();
 
     public function new(prog : SamalProgram) {
         mProgram = prog;
@@ -81,13 +93,7 @@ class Stage2 {
     }
 
     function traverse(astNode : ASTNode) {
-        if(Std.downcast(astNode, SamalModuleNode) != null) {
-            var node = Std.downcast(astNode, SamalModuleNode);
-            for(decl in node.getDeclarations()) {
-                traverse(decl);
-            }    
-            
-        } else if(Std.downcast(astNode, SamalScope) != null) {
+        if(Std.downcast(astNode, SamalScope) != null) {
             var node = Std.downcast(astNode, SamalScope);
             mScopeStack.add(new Map<String, VarDeclaration>());
 
@@ -119,7 +125,7 @@ class Stage2 {
 
             // check return type
             final expectedReturnType = DatatypeHelpers.getReturnType(node.getDatatype());
-            if(!expectedReturnType.equals(node.getBody().getDatatype().sure())) {
+            if(!expectedReturnType.deepEquals(node.getBody().getDatatype().sure())) {
                 throw new Exception(
                     node.errorInfo() 
                     + "Expected return type " 
@@ -135,12 +141,13 @@ class Stage2 {
             final lhsType = node.getLhs().getDatatype().sure();
             final rhsType = node.getRhs().getDatatype().sure();
 
-            if(!lhsType.equals(rhsType)) {
-                if(rhsType.match(List(_)) && lhsType.equals(rhsType.getBaseType()) && node.getOperator() == Add) {
+            if(!lhsType.deepEquals(rhsType)) {
+                if(rhsType.match(List(_)) && lhsType.deepEquals(rhsType.getBaseType()) && node.getOperator() == Add) {
                     // list prepend
                     node.setDatatype(rhsType);
                     return;
                 }
+                trace(lhsType.deepEquals(rhsType.getBaseType()));
                 throw new Exception('${node.errorInfo()} Lhs and rhs types aren\'t equal. Lhs is ${node.getLhs().getDatatype().sure()}, rhs is ${node.getRhs().getDatatype().sure()}');
             }
             if(!([Int].contains(lhsType))) {
@@ -177,11 +184,11 @@ class Stage2 {
             node.setIdentifier(decl.getIdentifier());
         } else if(Std.downcast(astNode, SamalLoadIdentifierExpression) != null) {
             var node = Std.downcast(astNode, SamalLoadIdentifierExpression);
-            if(node.getIdentifier().getTemplateParams().length == 0) {
-                var decl = findIdentifier(node.getIdentifier().getName());
-                node.setIdentifier(new IdentifierWithTemplate(decl.getIdentifier(), []));
-                node.setDatatype(decl.getType());
-            }
+
+            var decl = findIdentifier(node.getIdentifier());
+            node.setIdentifier(new IdentifierWithTemplate(decl.getIdentifier(), []));
+            node.setDatatype(decl.getType());
+            
         } else if(Std.downcast(astNode, SamalFunctionCallExpression) != null) {
             var node = Std.downcast(astNode, SamalFunctionCallExpression);
             traverse(node.getFunction());
@@ -203,7 +210,7 @@ class Stage2 {
                 if(returnType == null) {
                     returnType = branch.getBody().getDatatype().sure();
                 } else {
-                    if(!returnType.equals(branch.getBody().getDatatype().sure())) {
+                    if(!returnType.deepEquals(branch.getBody().getDatatype().sure())) {
                         throw new Exception('${node.errorInfo()} All previous branches returned ${returnType}, but one returns ${branch.getBody().getDatatype().sure()}');
                     }
                 }
@@ -211,7 +218,7 @@ class Stage2 {
                     throw new Exception('${branch.getCondition().errorInfo()} Condition must have bool-type, but has ${branch.getCondition().getDatatype().sure()}');
                 }
             }
-            if(!node.getElse().getDatatype().sure().equals(returnType)) {
+            if(!node.getElse().getDatatype().sure().deepEquals(returnType)) {
                 throw new Exception('${node.errorInfo()} All previous branches returned ${returnType}, but the else returns ${node.getElse().getDatatype().sure()}');
             }
             node.setDatatype(returnType);
@@ -226,7 +233,7 @@ class Stage2 {
                     if(baseType == null) {
                         baseType = child.getDatatype();
                     } else {
-                        if(!baseType.sure().equals(child.getDatatype().sure())) {
+                        if(!baseType.sure().deepEquals(child.getDatatype().sure())) {
                             throw new Exception('${node.errorInfo()} Not all initial members have the same type; previous ones are ${baseType.sure()}, but one is ${child.getDatatype().sure()}');
                         }
                     }
@@ -246,7 +253,7 @@ class Stage2 {
                 if(returnType == null) {
                     returnType = row.getBody().getDatatype().sure();
                 } else {
-                    if(!returnType.sure().equals(row.getBody().getDatatype().sure())) {
+                    if(!returnType.sure().deepEquals(row.getBody().getDatatype().sure())) {
                         // wrong row type
                         throw new Exception('${node.errorInfo()} All match-branches must have the same type; previous branches returned $returnType, but one returns ${row.getBody().getDatatype().sure()}');
                     }
@@ -257,14 +264,14 @@ class Stage2 {
         }
     }
 
-    function findIdentifier(name : String) : VarDeclaration {
+    function findIdentifier(name : IdentifierWithTemplate) : VarDeclaration {
         // search in local scope
         var stackCopy = new GenericStack<Map<String, VarDeclaration>>();
         for(frame in mScopeStack) {
             stackCopy.add(frame);
         }
         while(!stackCopy.isEmpty()) {
-            var type = stackCopy.first().sure().get(name);
+            var type = stackCopy.first().sure().get(name.getName());
             if(type != null) {
                 return type;
             }
@@ -272,7 +279,21 @@ class Stage2 {
         }
 
         // search in global scope
-        var func = mProgram.findFunction(name, mCurrentModule);
+        var func = mProgram.findFunction(name.getName(), mCurrentModule);
+        // found a template function
+        if(func.getTemplateParams().length > 0) {
+            try {
+                final replacementMap = Util.buildTemplateReplacementMap(func.getTemplateParams(), name.getTemplateParams());
+                final completedFunctionType = func.getDatatype().complete(replacementMap);
+                final requiredMangledName = Util.mangle(func.getIdentifier().getName(), name.getTemplateParams());
+                if(!mTemplateFunctionsToCompile.exists(requiredMangledName)) {
+                    mTemplateFunctionsToCompile.set(requiredMangledName, new TemplateFunctionToCompile(func, replacementMap, name.getTemplateParams()));
+                }
+                return new VarDeclaration(requiredMangledName, completedFunctionType);
+            } catch(e : Exception) {
+                throw new Exception("Error while instantiating " + name.dump() + ": " + e.toString());
+            }
+        }
         return new VarDeclaration(func.getIdentifier().mangled(), func.getDatatype());
     }
 
@@ -308,7 +329,7 @@ class Stage2 {
             final lhsType = node.getLhs().getDatatype().sure();
             final rhsType = node.getRhs().getDatatype().sure();
 
-            if(rhsType.match(List(_)) && lhsType.equals(rhsType.getBaseType()) && node.getOperator() == Add) {
+            if(rhsType.match(List(_)) && lhsType.deepEquals(rhsType.getBaseType()) && node.getOperator() == Add) {
                 // list prepend
                 return new SamalSimpleListPrepend(node.getSourceRef(), rhsType, node.getLhs(), node.getRhs());
             }
@@ -443,9 +464,17 @@ class Stage2 {
     }
 
     public function completeDatatypes() : SamalProgram {
-        mProgram.forEachModule(function (moduleName : String, ast : ASTNode) {
+        mProgram.forEachModule(function (moduleName : String, ast : SamalModuleNode) {
             mCurrentModule = moduleName;
-            traverse(ast);
+            for(decl in ast.getDeclarations()) {
+                if(decl.getTemplateParams().length == 0) {
+                    traverse(decl);
+                }
+            }
+            final decls = ast.getDeclarations().filter(function(decl) {
+                return decl.getTemplateParams().length == 0;
+            });
+            ast.setDeclarations(decls);
             ast.replace(preorderReplace, postorderReplace);
         });
         return mProgram;

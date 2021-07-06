@@ -31,10 +31,14 @@ class SamalModuleNode extends SamalASTNode {
     public function getModuleName() {
         return mModuleName;
     }
+    public function setDeclarations(decls : Array<SamalDeclarationNode>) {
+        mDeclarations = decls;
+    }
 }
 
 abstract class SamalDeclarationNode extends SamalASTNode {
     abstract public function getName() : String;
+    abstract public function getTemplateParams() : Array<Datatype>;
 }
 
 class SamalFunctionDeclarationNode extends SamalDeclarationNode {
@@ -72,6 +76,9 @@ class SamalFunctionDeclarationNode extends SamalDeclarationNode {
     }
     public function getName() : String {
         return mName.getName();
+    }
+    public function getTemplateParams() : Array<Datatype> {
+        return mName.getTemplateParams();
     }
 }
 

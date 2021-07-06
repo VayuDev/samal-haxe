@@ -63,17 +63,20 @@ class Parser {
 
     function parseDatatype() : Datatype {
         switch(current().getType()) {
-            case TokenType.Int:
+            case Int:
                 eat(TokenType.Int);
                 return Datatype.Int;
-            case TokenType.Bool:
+            case Bool:
                 eat(TokenType.Bool);
                 return Datatype.Bool;
-            case TokenType.LSquare:
+            case LSquare:
                 eat(LSquare);
                 var baseType = parseDatatype();
                 eat(RSquare);
                 return Datatype.List(baseType);
+            case Identifier:
+                final ident = parseIdentifierWithTemplate();
+                return Datatype.Usertype(ident.getName(), ident.getTemplateParams());
             case _:
                 throw new Exception(current().info() + ": Expected datatype");
         }
@@ -100,7 +103,20 @@ class Parser {
     }
 
     function parseTemplateParams() : Array<Datatype> {
-        return [];
+        var templateParams = [];
+        if(current().getType() == Less && current().getSkippedWhitespaces() == 0) {
+            eat(Less);
+            while(current().getType() != More) {
+                templateParams.push(parseDatatype());
+                if(current().getType() == Comma) {
+                    eat(Comma);
+                } else {
+                    break;
+                }
+            }
+            eat(More);
+        }
+        return templateParams;
     }
 
     function parseIdentifierWithTemplate() : IdentifierWithTemplate {
@@ -292,7 +308,7 @@ class Parser {
         mTokenizer.eat(type);
     }
 
-    function current() {
+    function current() : Token {
         return mTokenizer.current();
     }
     function peek(n : Int = 1) {

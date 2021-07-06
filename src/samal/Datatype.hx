@@ -1,6 +1,9 @@
 package samal;
 
+import samal.AST.IdentifierWithTemplate;
 import haxe.Exception;
+
+using samal.Util.NullTools;
 
 
 enum Datatype {
@@ -29,6 +32,34 @@ class DatatypeHelpers {
                 throw new Exception(type + " is not a list!");
         }
     }
+    static public function getUserTypeData(type : Datatype) : IdentifierWithTemplate {
+        switch(type) {
+            case Usertype(name, params):
+                return new IdentifierWithTemplate(name, params);
+            case _:
+                throw new Exception(type + " is not a user type!");
+        }
+    }
+    static public function complete(type : Datatype, map : Map<String, Datatype>) : Datatype {
+        switch(type) {
+            case Usertype(name, params):
+                return map[name].sure();
+            case List(base):
+                return Datatype.List(complete(base, map));
+            case Function(returnType, params):
+                return Datatype.Function(complete(returnType, map), params.map(function(paramType) {
+                    return complete(paramType, map);
+                }));
+            case Tuple(params):
+                return Datatype.Tuple(params.map(function(paramType) {
+                    return complete(paramType, map);
+                }));
+            case Int:
+                return type;
+            case Bool:
+                return type;
+        }
+    }
     static public function toCppType(type : Datatype) : String {
         switch(type) {
             case Int:
@@ -41,20 +72,20 @@ class DatatypeHelpers {
                 throw new Exception("TODO " + type);
         }
     }
-    static private function toCppGCTypeRec(type : Datatype) : String {
+    static public function toMangledName(type : Datatype) : String {
         switch(type) {
             case Int:
                 return "int_";
             case Bool:
                 return "bool_";
             case List(base):
-                return "list_S" + toCppGCTypeRec(base) + "E";
+                return "list_s" + toMangledName(base) + "e";
             case _:
                 throw new Exception("TODO " + type);
         }
     }
     static public function toCppGCTypeStr(type : Datatype) : String {
-        return "samalds::" + toCppGCTypeRec(type);
+        return "samalds::" + toMangledName(type);
     }
     static public function requiresGC(type : Datatype) : Bool {
         switch(type) {
@@ -67,5 +98,8 @@ class DatatypeHelpers {
             case _:
                 throw new Exception("TODO " + type);
         }
+    }
+    public static function deepEquals(a : Datatype, b : Datatype) : Bool {
+        return Std.string(a) == Std.string(b);
     }
 }

@@ -1,3 +1,4 @@
 -cp src
 -main samal.Main
+-lib cloner
 -python bin/samal.py

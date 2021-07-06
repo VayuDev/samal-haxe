@@ -4,6 +4,7 @@
 -lib hxcpp-debugger
 -lib hxcpp-debug-server
 -lib buddy:2.13.0
+-lib cloner
 --macro nullSafety("samal", Strict)
 -debug
 -cpp bin/tests
