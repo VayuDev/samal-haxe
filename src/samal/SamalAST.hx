@@ -1,5 +1,6 @@
 package samal;
 
+import cloner.Cloner;
 import haxe.macro.Expr;
 import haxe.Int32;
 import samal.Tokenizer.SourceCodeRef;
@@ -79,6 +80,14 @@ class SamalFunctionDeclarationNode extends SamalDeclarationNode {
     }
     public function getTemplateParams() : Array<Datatype> {
         return mName.getTemplateParams();
+    }
+    public function cloneWithTemplateParams(typeMap : Map<String, Datatype>, templateParams : Array<Datatype>, cloner : Cloner) : SamalFunctionDeclarationNode {
+        final params = mParams.map(function(p) {
+            return new NamedAndTypedParameter(p.getName(), p.getDatatype().complete(typeMap));
+        });
+        final body = cloner.clone(mBody);
+        final returnType = cloner.clone(mReturnType);
+        return new SamalFunctionDeclarationNode(getSourceRef(), new IdentifierWithTemplate(getName(), templateParams), params, returnType.complete(typeMap), body);
     }
 }
 

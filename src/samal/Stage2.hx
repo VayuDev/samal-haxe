@@ -1,5 +1,6 @@
 package samal;
 
+import cloner.Cloner;
 import haxe.EnumTools;
 import haxe.ds.GenericStack;
 import haxe.Exception;
@@ -10,6 +11,7 @@ import samal.Util;
 import samal.Datatype;
 using samal.Util.NullTools;
 using samal.Datatype.DatatypeHelpers;
+using samal.Util.Util;
 import samal.Program;
 
 
@@ -61,6 +63,15 @@ class TemplateFunctionToCompile {
         mTypeMap = typeMap;
         mPassedTemplateParams = passedTemplateParams;
     }
+    public function getFunctionDeclaration() {
+        return mFunctionDeclaration;
+    }
+    public function getTypeMap() {
+        return mTypeMap;
+    }
+    public function getPassedTemplateParams() {
+        return mPassedTemplateParams;
+    }
 }
 
 class Stage2 {
@@ -69,6 +80,9 @@ class Stage2 {
     var mCurrentModule : String = "";
     var mTempVarNameCounter : Int = 0;
     var mTemplateFunctionsToCompile : Map<String, TemplateFunctionToCompile> = new Map();
+    var mCloner = new Cloner();
+    var mCurrentTemplateReplacementMap = new Map<String, Datatype>();
+    final mCompiledTemplateFunctions = new List<String>();
 
     public function new(prog : SamalProgram) {
         mProgram = prog;
@@ -119,12 +133,12 @@ class Stage2 {
             // function params
             mScopeStack.add(new Map<String, VarDeclaration>());
             for(param in node.getParams()) {
-                mScopeStack.first().sure().set(param.getName(), new VarDeclaration(param.getName(), param.getDatatype()));
+                mScopeStack.first().sure().set(param.getName(), new VarDeclaration(param.getName(), complete(param.getDatatype())));
             }
             traverse(node.getBody());
 
             // check return type
-            final expectedReturnType = DatatypeHelpers.getReturnType(node.getDatatype());
+            final expectedReturnType = complete(DatatypeHelpers.getReturnType(node.getDatatype()));
             if(!expectedReturnType.deepEquals(node.getBody().getDatatype().sure())) {
                 throw new Exception(
                     node.errorInfo() 
@@ -239,6 +253,8 @@ class Stage2 {
                     }
                 }
                 node.setDatatype(Datatype.List(baseType.sure()));
+            } else {
+                node.setDatatype(complete(node.getDatatype().sure()));
             }
         } else if(Std.downcast(astNode, SamalMatchExpression) != null) {
             var node = Std.downcast(astNode, SamalMatchExpression);
@@ -264,6 +280,10 @@ class Stage2 {
         }
     }
 
+    function complete(datatype : Datatype) : Datatype {
+        return datatype.complete(mCurrentTemplateReplacementMap);
+    }
+
     function findIdentifier(name : IdentifierWithTemplate) : VarDeclaration {
         // search in local scope
         var stackCopy = new GenericStack<Map<String, VarDeclaration>>();
@@ -282,17 +302,18 @@ class Stage2 {
         var func = mProgram.findFunction(name.getName(), mCurrentModule);
         // found a template function
         if(func.getTemplateParams().length > 0) {
-            try {
-                final replacementMap = Util.buildTemplateReplacementMap(func.getTemplateParams(), name.getTemplateParams());
+            //try {
+                final passedTemplateParams = name.getTemplateParams().map(function(p) return complete(p));
+                final replacementMap = Util.buildTemplateReplacementMap(func.getTemplateParams(), passedTemplateParams);
                 final completedFunctionType = func.getDatatype().complete(replacementMap);
-                final requiredMangledName = Util.mangle(func.getIdentifier().getName(), name.getTemplateParams());
+                final requiredMangledName = Util.mangle(func.getIdentifier().getName(), passedTemplateParams);
                 if(!mTemplateFunctionsToCompile.exists(requiredMangledName)) {
-                    mTemplateFunctionsToCompile.set(requiredMangledName, new TemplateFunctionToCompile(func, replacementMap, name.getTemplateParams()));
+                    mTemplateFunctionsToCompile.set(requiredMangledName, new TemplateFunctionToCompile(func, replacementMap, passedTemplateParams));
                 }
                 return new VarDeclaration(requiredMangledName, completedFunctionType);
-            } catch(e : Exception) {
+            /*} catch(e : Exception) {
                 throw new Exception("Error while instantiating " + name.dump() + ": " + e.toString());
-            }
+            }*/
         }
         return new VarDeclaration(func.getIdentifier().mangled(), func.getDatatype());
     }
@@ -466,15 +487,35 @@ class Stage2 {
     public function completeDatatypes() : SamalProgram {
         mProgram.forEachModule(function (moduleName : String, ast : SamalModuleNode) {
             mCurrentModule = moduleName;
+            // traverse all normal functions
+            final pureTemplateFunctions = new List<SamalDeclarationNode>();
             for(decl in ast.getDeclarations()) {
                 if(decl.getTemplateParams().length == 0) {
                     traverse(decl);
+                } else {
+                    pureTemplateFunctions.add(decl);
                 }
             }
-            final decls = ast.getDeclarations().filter(function(decl) {
-                return decl.getTemplateParams().length == 0;
-            });
-            ast.setDeclarations(decls);
+
+            // instantiate used template functions
+            var it = mTemplateFunctionsToCompile.keyValueIterator();
+            while(it.hasNext()) {
+                final current = it.next();
+                
+                mCurrentTemplateReplacementMap = current.value.getTypeMap();
+                final decl = current.value.getFunctionDeclaration().cloneWithTemplateParams(current.value.getTypeMap(), current.value.getPassedTemplateParams(), mCloner);
+                traverse(decl);
+                ast.getDeclarations().push(decl);
+                mTemplateFunctionsToCompile.remove(current.key);
+                it = mTemplateFunctionsToCompile.keyValueIterator();
+                mCompiledTemplateFunctions.add(current.key);
+            }
+
+            // delete pure template functions
+            for(pureDecl in pureTemplateFunctions) {
+                ast.getDeclarations().remove(pureDecl);
+            }
+
             ast.replace(preorderReplace, postorderReplace);
         });
         return mProgram;

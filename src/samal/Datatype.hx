@@ -4,6 +4,7 @@ import samal.AST.IdentifierWithTemplate;
 import haxe.Exception;
 
 using samal.Util.NullTools;
+using samal.Util.Util;
 
 
 enum Datatype {
@@ -58,6 +59,29 @@ class DatatypeHelpers {
                 return type;
             case Bool:
                 return type;
+        }
+    }
+    static public function isComplete(type : Datatype) : Bool {
+        switch(type) {
+            case Usertype(name, params):
+                return false;
+            case List(base):
+                return isComplete(base);
+            case Function(returnType, params):
+                if(!isComplete(returnType)) {
+                    return false;
+                }
+                return !params.any(function(p) {
+                    return !isComplete(p);
+                });
+            case Tuple(params):
+                return !params.any(function(p) {
+                    return !isComplete(p);
+                });
+            case Int:
+                return true;
+            case Bool:
+                return true;
         }
     }
     static public function toCppType(type : Datatype) : String {

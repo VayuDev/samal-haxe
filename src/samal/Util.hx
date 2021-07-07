@@ -63,6 +63,16 @@ class Util {
     public static function getUniqueId() : Int {
         return uniqueIdCounter++;
     }
+
+    @generic
+    public static function any<T>(list : Array<T>, condition : (T) -> Bool) : Bool {
+        for(e in list) {
+            if(condition(e)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 class NullTools {

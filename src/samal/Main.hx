@@ -52,6 +52,17 @@ fn reverse<T>(l : [T]) -> [T] {
   reverseHelper<T>(l, [:T])
 }
 
+fn sum<T>(l : [T]) -> T {
+  match l {
+    [] -> {
+      0
+    }
+    [head + tail] -> {
+      head + sum<T>(tail)
+    }
+  }
+}
+
 fn seq(n : int) -> [int] {
   if n < 1 {
     [n]
@@ -61,15 +72,12 @@ fn seq(n : int) -> [int] {
 }
 
 fn main() -> [int] {
-  reverse<int>(seq(10000))
+  list = seq(10000)
+  reverse<int>(sum<int>(list) + list)
 }");
     var ast = parser.parse();
     var program = new SamalProgram();
     program.addModule(ast);
-
-    var cloner = new Cloner();
-    var cpy = cloner.clone(ast);
-    cpy.setDeclarations([]);
 
     Log.trace("@@@@ Stage 1 @@@@", null);
     var stage1 = new Stage1(program);
