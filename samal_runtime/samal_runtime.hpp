@@ -74,7 +74,11 @@ public:
     SamalGCTracker* getLastGCTracker() {
         return mLastGCTracker;
     }
-    void* alloc(size_t len);
+    void* alloc(size_t len) {
+        auto ret = mCurrentPage + mCurrentPageOffset;
+        mCurrentPageOffset += len;
+        return ret;
+    }
     void collect();
     void requestCollection();
 

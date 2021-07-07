@@ -34,12 +34,6 @@ SamalString toSamalString(SamalContext& ctx, const std::u32string& str) {
     return head;
 }
 
-
-void* SamalContext::alloc(size_t len) {
-    auto ret = mCurrentPage + mCurrentPageOffset;
-    mCurrentPageOffset += len;
-    return ret;
-}
 void* SamalContext::allocOnOtherPage(size_t len) {
     auto ret = mOtherPage + mOtherPageOffset;
     mOtherPageOffset += len;
