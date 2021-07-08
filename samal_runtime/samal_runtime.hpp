@@ -94,7 +94,7 @@ private:
 
     void* allocOnOtherPage(size_t len);
     bool isInOtherPage(void*);
-    void visitObj(void **rawPtr, const Datatype& type);
+    void visitObj(void *rawPtr, const Datatype& type);
     void* copyToOther(void** rawPtr, size_t size);
 };
 
@@ -118,7 +118,7 @@ using SamalString = List<char32_t>*;
 
 class SamalGCTracker {
 public:
-    SamalGCTracker(SamalContext& ctx, void **rawPtr, Datatype type)
+    SamalGCTracker(SamalContext& ctx, void *rawPtr, Datatype type)
     : mPrev(ctx.getLastGCTracker()), mToTrackRawPtr(rawPtr), mDatatype(type), mCtx(ctx) {
         ctx.setLastGCTracker(*this);
         ctx.requestCollection();
@@ -135,19 +135,16 @@ public:
     SamalGCTracker* getPrev() {
         return mPrev;
     }
-    void** getRawPtr() {
+    void* getRawPtr() {
         return mToTrackRawPtr;
     }
     const Datatype& getDatatype() {
         return mDatatype;
     }
-    void assignToTrackInternal(void* newPtr) {
-        *mToTrackRawPtr = newPtr;
-    }
     
 private:
     SamalGCTracker* mPrev = nullptr;
-    void** mToTrackRawPtr = nullptr;
+    void* mToTrackRawPtr = nullptr;
     Datatype mDatatype;
     SamalContext& mCtx;
 };

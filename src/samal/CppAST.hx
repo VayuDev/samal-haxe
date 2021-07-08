@@ -155,7 +155,7 @@ abstract class CppStatement extends CppASTNode {
         if(!mDatatype.requiresGC()) {
             return "";
         }
-        return "; samalrt::SamalGCTracker tracker$$$" + Util.getUniqueId() + "{$ctx, " + "(void**) &" + mVarName + ", " + mDatatype.toCppGCTypeStr() + "}";
+        return "; samalrt::SamalGCTracker tracker$$$" + Util.getUniqueId() + "{$ctx, " + "(void*) &" + mVarName + ", " + mDatatype.toCppGCTypeStr() + "}";
     }
 }
 

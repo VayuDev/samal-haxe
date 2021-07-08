@@ -66,13 +66,14 @@ void SamalContext::collect() {
     std::cout << "Collected!" << std::endl;
 }
 
-void SamalContext::visitObj(void **rawPtr, const Datatype& type) {
-    assert(rawPtr);
+void SamalContext::visitObj(void *toVisit, const Datatype& type) {
+    assert(toVisit);
     switch(type.getCategory()) {
     case DatatypeCategory::Bool:
     case DatatypeCategory::Int:
         break;
     case DatatypeCategory::List:
+        void** rawPtr = (void**)toVisit;
         while(true) {
             if(*rawPtr == nullptr)
                 break;
