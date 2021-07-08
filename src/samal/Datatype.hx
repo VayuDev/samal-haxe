@@ -92,8 +92,10 @@ class DatatypeHelpers {
                 return "bool";
             case List(base):
                 return "samalrt::List<" + toCppType(base) + ">*";
+            case Function(returnType, params):
+                return "std::function<" + toCppType(returnType) + "(samalrt::SamalContext&, " + params.map(function(p) return toCppType(p)).join(", ") + ")>";
             case _:
-                throw new Exception("TODO " + type);
+                throw new Exception("TODO toCppType: " + type);
         }
     }
     static public function toMangledName(type : Datatype) : String {
@@ -117,10 +119,12 @@ class DatatypeHelpers {
                 return false;
             case Bool:
                 return false;
-            case List(base):
+            case List(_):
                 return true;
+            case Function(_, _):
+                return false;
             case _:
-                throw new Exception("TODO " + type);
+                throw new Exception("TODO requiresGC" + type);
         }
     }
     public static function deepEquals(a : Datatype, b : Datatype) : Bool {

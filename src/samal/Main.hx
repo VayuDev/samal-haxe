@@ -53,12 +53,13 @@ fn reverse<T>(l : [T]) -> [T] {
 }
 
 fn sum<T>(l : [T]) -> T {
+  self = sum<T>
   match l {
     [] -> {
       0
     }
     [head + tail] -> {
-      head + sum<T>(tail)
+      head + self(tail)
     }
   }
 }
@@ -72,7 +73,8 @@ fn seq(n : int) -> [int] {
 }
 
 fn main() -> [int] {
-  list = seq(10000)
+  a = seq
+  list = a(10000)
   reverse<int>(sum<int>(list) + list)
 }");
     var ast = parser.parse();

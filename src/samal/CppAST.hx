@@ -70,6 +70,7 @@ class CppFile extends CppASTNode {
             ret += "#include <cmath>\n";
             ret += "#include <iostream>\n";
             ret += "#include <cassert>\n";
+            ret += "#include <functional>\n";
             ret += "#include \"samal_runtime.hpp\"\n";
         } else {
             ret += '#include "$mName.hpp"\n';
