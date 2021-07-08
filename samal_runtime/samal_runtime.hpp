@@ -75,6 +75,7 @@ public:
         return mLastGCTracker;
     }
     void* alloc(size_t len) {
+        len = alignSize(len);
         auto ret = mCurrentPage + mCurrentPageOffset;
         mCurrentPageOffset += len;
         return ret;
