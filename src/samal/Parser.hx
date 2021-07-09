@@ -298,6 +298,15 @@ class Parser {
 
                 eat(RCurly);
                 return new SamalMatchExpression(makeSourceRef(), toMatch, rows);
+
+            case Fn:
+                startNode();
+                eat(Fn);
+                final params = parseFunctionParameterList();
+                eat(RightArrow);
+                final returnType = parseDatatype();
+                final body = parseScope();
+                return new SamalCreateLambdaExpression(makeSourceRef(), params, returnType, body);
             case _:
                 throw new Exception(current().info() + " Expected expression");
         }

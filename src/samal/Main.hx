@@ -72,10 +72,17 @@ fn seq(n : int) -> [int] {
   }
 }
 
-fn main() -> [int] {
+fn mainTwo() -> [int] {
   a = seq
   list = a(10000)
   reverse<int>(sum<int>(list) + list)
+}
+
+fn main() -> int {
+  a = fn(i : int) -> int {
+    i + 1
+  }
+  a()
 }");
     var ast = parser.parse();
     var program = new SamalProgram();

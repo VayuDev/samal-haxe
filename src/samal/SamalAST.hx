@@ -558,3 +558,29 @@ class SamalSimpleUnreachable extends SamalExpression {
         super(sourceRef);
     }
 }
+
+
+class SamalCreateLambdaExpression extends SamalExpression {
+    final mParameters : Array<NamedAndTypedParameter>;
+    final mReturnType : Datatype;
+    var mBody : SamalScope;
+    public function new(sourceRef : SourceCodeRef, parameters: Array<NamedAndTypedParameter>, returnType : Datatype, body : SamalScope) {
+        super(sourceRef);    
+        mParameters = parameters;
+        mReturnType = returnType;
+        mBody = body;
+        mDatatype = Datatype.Function(returnType, parameters.map(function(p) return p.getDatatype()));
+    }
+    public function getParams() {
+        return mParameters;
+    }
+    public function getReturnType() {
+        return mReturnType;
+    }
+    public function getBody() {
+        return mBody;
+    }
+    public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
+        mBody = cast(mBody.replace(preorder, postorder), SamalScope);
+    }
+}

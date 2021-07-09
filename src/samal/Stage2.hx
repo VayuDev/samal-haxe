@@ -106,10 +106,17 @@ class Stage2 {
         }
     }
 
+    function pushStackFrame() {
+        mScopeStack.add(new Map<String, VarDeclaration>());
+    }
+    function popStackFrame() {
+        mScopeStack.pop();
+    }
+
     function traverse(astNode : ASTNode) {
         if(Std.downcast(astNode, SamalScope) != null) {
             var node = Std.downcast(astNode, SamalScope);
-            mScopeStack.add(new Map<String, VarDeclaration>());
+            pushStackFrame();
 
             for(stmt in node.getStatements()) {
                 traverse(stmt);
@@ -121,7 +128,7 @@ class Stage2 {
             } else {
                 node.setDatatype(stmt[stmt.length - 1].getDatatype().sure());
             }
-            mScopeStack.pop();
+            popStackFrame();
 
         } else if(Std.downcast(astNode, SamalScopeExpression) != null) {
             var node = Std.downcast(astNode, SamalScopeExpression);
@@ -131,7 +138,7 @@ class Stage2 {
             var node = Std.downcast(astNode, SamalFunctionDeclarationNode);
 
             // function params
-            mScopeStack.add(new Map<String, VarDeclaration>());
+            pushStackFrame();
             for(param in node.getParams()) {
                 mScopeStack.first().sure().set(param.getName(), new VarDeclaration(param.getName(), complete(param.getDatatype())));
             }
@@ -147,7 +154,7 @@ class Stage2 {
                     + ", got: " 
                     + node.getBody().getDatatype().sure());
             }
-            mScopeStack.pop();
+            popStackFrame();
         } else if(Std.downcast(astNode, SamalBinaryExpression) != null) {
             var node = Std.downcast(astNode, SamalBinaryExpression);
             traverse(node.getLhs());
@@ -263,7 +270,7 @@ class Stage2 {
             var toMatchDatatype = node.getToMatch().getDatatype().sure();
             var returnType : Null<Datatype> = null;
             for(row in node.getRows()) {
-                mScopeStack.add(new Map<String, VarDeclaration>());
+                pushStackFrame();
                 traverseMatchShape(row.getShape(), toMatchDatatype);
                 traverse(row.getBody());
                 if(returnType == null) {
@@ -274,9 +281,23 @@ class Stage2 {
                         throw new Exception('${node.errorInfo()} All match-branches must have the same type; previous branches returned $returnType, but one returns ${row.getBody().getDatatype().sure()}');
                     }
                 }
-                mScopeStack.pop();
+                popStackFrame();
             }
             node.setDatatype(returnType.sure());
+
+        } else if(Std.downcast(astNode, SamalCreateLambdaExpression) != null) {
+            var node = Std.downcast(astNode, SamalCreateLambdaExpression);
+
+            node.setDatatype(complete(node.getDatatype().sure()));
+
+            pushStackFrame();
+            for(param in node.getParams()) {
+                mScopeStack.first().sure().set(param.getName(), new VarDeclaration(param.getName(), complete(param.getDatatype())));
+            }
+            traverse(node.getBody());
+            if(!node.getBody().getDatatype().sure().deepEquals(node.getDatatype().sure().getReturnType())) {
+                throw new Exception('${node.errorInfo()} Declared return type is ${node.getDatatype().sure().getReturnType()}, but actual type is ${node.getBody().getDatatype().sure()}');
+            }
         }
     }
 
