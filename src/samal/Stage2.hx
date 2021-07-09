@@ -77,12 +77,17 @@ class TemplateFunctionToCompile {
 class Stage2 {
     var mProgram : SamalProgram;
     var mScopeStack : GenericStack<Map<String, VarDeclaration>> = new GenericStack();
+    var mScopeStackLength = 0;
     var mCurrentModule : String = "";
     var mTempVarNameCounter : Int = 0;
     var mTemplateFunctionsToCompile : Map<String, TemplateFunctionToCompile> = new Map();
     var mCloner = new Cloner();
     var mCurrentTemplateReplacementMap = new Map<String, Datatype>();
     final mCompiledTemplateFunctions = new List<String>();
+
+    // Upon entering a lambda, this value is set to track which are variables are accessed in the body.
+    // Afterwards, it is set back to null.
+    var mOnStackedIdentifierLoadCallback : Null<(Int, String) -> Void> = null;
 
     public function new(prog : SamalProgram) {
         mProgram = prog;
@@ -108,9 +113,11 @@ class Stage2 {
 
     function pushStackFrame() {
         mScopeStack.add(new Map<String, VarDeclaration>());
+        mScopeStackLength += 1;
     }
     function popStackFrame() {
         mScopeStack.pop();
+        mScopeStackLength -= 1;
     }
 
     function traverse(astNode : ASTNode) {
@@ -206,7 +213,7 @@ class Stage2 {
         } else if(Std.downcast(astNode, SamalLoadIdentifierExpression) != null) {
             var node = Std.downcast(astNode, SamalLoadIdentifierExpression);
 
-            var decl = findIdentifier(node.getIdentifier());
+            var decl = findIdentifierForLoading(node.getIdentifier());
             node.setIdentifier(new IdentifierWithTemplate(decl.getIdentifier(), []));
             node.setDatatype(decl.getType());
             
@@ -290,14 +297,23 @@ class Stage2 {
 
             node.setDatatype(complete(node.getDatatype().sure()));
 
+            final startStackLength = mScopeStackLength;
             pushStackFrame();
             for(param in node.getParams()) {
                 mScopeStack.first().sure().set(param.getName(), new VarDeclaration(param.getName(), complete(param.getDatatype())));
             }
+            // track all used variables, used in the C++-target for GC
+            mOnStackedIdentifierLoadCallback = function(depth, name) {
+                if(depth > startStackLength) {
+                    node.addCapturedVariable(name);
+                }
+            };
             traverse(node.getBody());
+            mOnStackedIdentifierLoadCallback = null;
             if(!node.getBody().getDatatype().sure().deepEquals(node.getDatatype().sure().getReturnType())) {
                 throw new Exception('${node.errorInfo()} Declared return type is ${node.getDatatype().sure().getReturnType()}, but actual type is ${node.getBody().getDatatype().sure()}');
             }
+            popStackFrame();
         }
     }
 
@@ -305,7 +321,7 @@ class Stage2 {
         return datatype.complete(mCurrentTemplateReplacementMap);
     }
 
-    function findIdentifier(name : IdentifierWithTemplate) : VarDeclaration {
+    function findIdentifierForLoading(name : IdentifierWithTemplate) : VarDeclaration {
         // search in local scope
         var stackCopy = new GenericStack<Map<String, VarDeclaration>>();
         for(frame in mScopeStack) {
@@ -314,6 +330,16 @@ class Stage2 {
         while(!stackCopy.isEmpty()) {
             var type = stackCopy.first().sure().get(name.getName());
             if(type != null) {
+                // found the variable, call the callback and return
+                if(mOnStackedIdentifierLoadCallback != null) {
+                    // figure our stackCopy size
+                    var size = 0;
+                    while(!stackCopy.isEmpty()) {
+                        stackCopy.pop();
+                        size += 1;
+                    }
+                    mOnStackedIdentifierLoadCallback.sure()(size, type.getIdentifier());
+                }
                 return type;
             }
             stackCopy.pop();

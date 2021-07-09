@@ -58,7 +58,7 @@ class SamalFunctionDeclarationNode extends SamalDeclarationNode {
         mBody = cast(mBody.replace(preorder, postorder), SamalScope);
     }
     public override function dumpSelf() : String {
-        return super.dumpSelf() + " " + mName.dump() + " " + getDatatype();
+        return "\n" + super.dumpSelf() + " " + mName.dump() + " " + getDatatype();
     }
     public function getDatatype() : Datatype {
         return Datatype.Function(mReturnType, mParams.map(function(p) {return p.getDatatype();}));
@@ -564,6 +564,7 @@ class SamalCreateLambdaExpression extends SamalExpression {
     final mParameters : Array<NamedAndTypedParameter>;
     final mReturnType : Datatype;
     var mBody : SamalScope;
+    final mCapturedVariables : Array<String> = [];
     public function new(sourceRef : SourceCodeRef, parameters: Array<NamedAndTypedParameter>, returnType : Datatype, body : SamalScope) {
         super(sourceRef);    
         mParameters = parameters;
@@ -582,5 +583,11 @@ class SamalCreateLambdaExpression extends SamalExpression {
     }
     public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
         mBody = cast(mBody.replace(preorder, postorder), SamalScope);
+    }
+    public function addCapturedVariable(name : String) {
+        mCapturedVariables.push(name);
+    }
+    public override function dumpSelf() : String {
+        return super.dumpSelf() + " Captured: <" + mCapturedVariables.join(", ") + ">";
     }
 }

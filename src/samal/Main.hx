@@ -79,8 +79,9 @@ fn mainTwo() -> [int] {
 }
 
 fn main() -> int {
+  b = 3
   a = fn(i : int) -> int {
-    i + 1
+    i + 1 + b
   }
   a()
 }");
