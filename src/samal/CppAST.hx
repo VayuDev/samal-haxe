@@ -144,7 +144,7 @@ class CppFunctionDeclaration extends CppDeclaration {
             // trackers for params
             ret += mParams.map(function(p) {
                 return indent(ctx.next()) + "samalrt::SamalGCTracker " + p.getName() + "$$$tracker" 
-                    + "{$ctx, " + "(void*) &" + p.getName() + ", " + p.getDatatype().toCppGCTypeStr() + ", true}\n;";
+                    + "{$ctx, " + "(void*) &" + p.getName() + ", " + p.getDatatype().toCppGCTypeStr() + ", true};\n";
             }).join("");
             ret += mBody.getStatements().map((stmt) -> stmt.toCpp(ctx.next()) + ";\n").join("");
             ret += "}";

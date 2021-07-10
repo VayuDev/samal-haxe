@@ -16,6 +16,13 @@ SamalContext::SamalContext() {
     mOtherPage = (uint8_t*) malloc(mPageSize);
 }
 
+SamalContext::~SamalContext() {
+    free(mCurrentPage);
+    mCurrentPage = nullptr;
+    free(mOtherPage);
+    mOtherPage = nullptr;
+}
+
 SamalString toSamalString(SamalContext& ctx, const std::string& str) {
     std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;
     auto asInt = converter.from_bytes(str);
@@ -35,6 +42,7 @@ SamalString toSamalString(SamalContext& ctx, const std::u32string& str) {
 }
 
 void* SamalContext::allocOnOtherPage(size_t len) {
+    len = alignSize(len);
     auto ret = mOtherPage + mOtherPageOffset;
     mOtherPageOffset += len;
     return ret;
@@ -75,6 +83,7 @@ void SamalContext::visitObj(void *toVisit, const Datatype& type) {
     case DatatypeCategory::List: {
         void** rawPtr = (void**)toVisit;
         while(true) {
+            assert((uintptr_t)rawPtr % sizeof(void*) == 0);
             if(*rawPtr == nullptr)
                 break;
             if(isInOtherPage(*rawPtr)) {
@@ -114,10 +123,21 @@ void SamalContext::visitObj(void *toVisit, const Datatype& type) {
         void* newPtr = copyToOther(fn.getCapturedVariablesBuffer(), fn.getCapturedVariablesBufferSize());
         memcpy(fn.getCapturedVariablesBuffer(), &newPtr, sizeof(void*));
         fn.setCapturedVariablesBuffer(newPtr);
+        memset(newPtr, 0, sizeof(void*));
         break;
     }
     }
 }
+
+template<typename T>
+size_t Function<T>::getCapturedVariablesBufferSize() {
+    size_t size = sizeof(void*);
+    for(auto &d: mCapturedDatatypes) {
+        size += d->getSizeOnStack();
+    }
+    return size;
+}
+
 
 
 void* SamalContext::copyToOther(void* rawPtr, size_t size) {

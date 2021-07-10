@@ -16,6 +16,7 @@ using char32_t = uint32_t;
 
 class SamalGCTracker;
 class SamalContext;
+class Datatype;
 
 
 enum class DatatypeCategory {
@@ -29,67 +30,24 @@ static inline size_t alignSize(size_t size) {
     if(size % 8 == 0) {
         return size;
     }
-    return size + (8 - size % 8);
+    auto ret = size + (8 - (size % 8));
+    assert(ret % 8 == 0);
+    assert(ret >= size);
+    return ret;
 }
 
-class Datatype {
-public:
-    struct FurtherInfoUnion {
-        const Datatype* baseType;
-        const Datatype* returnType;
-        std::vector<const Datatype*> params;
-    };
-    Datatype(DatatypeCategory category) {
-        mCategory = category;
-    }
-    Datatype(DatatypeCategory category, const Datatype* baseType) {
-        mCategory = category;
-        mFurtherInfo.baseType = baseType;
-    }
-    Datatype(DatatypeCategory category, const Datatype* returnType, std::vector<const Datatype*> params) {
-        mCategory = category;
-        mFurtherInfo.returnType = returnType;
-        mFurtherInfo.params = std::move(params);
-    }
-    DatatypeCategory getCategory() const {
-        return mCategory;
-    }
-    size_t getSize() const {
-        switch(mCategory) {
-        case DatatypeCategory::Int:
-            return sizeof(int32_t);
-        case DatatypeCategory::Bool:
-            return sizeof(bool);
-        case DatatypeCategory::List:
-            return alignSize(sizeof(void*) + mFurtherInfo.baseType->getSize());
-        }
-        assert(false);
-    }
-    size_t getSizeOnStack() const {
-        switch(mCategory) {
-        case DatatypeCategory::Int:
-            return sizeof(int32_t);
-        case DatatypeCategory::Bool:
-            return sizeof(bool);
-        case DatatypeCategory::List:
-            return sizeof(void*);
-        }
-        assert(false);
-    }
-    const Datatype& getBaseType() const {
-        return *mFurtherInfo.baseType;
-    }
-private:
-    DatatypeCategory mCategory;
-    FurtherInfoUnion mFurtherInfo;
-};
 
-
-class SamalContext {
+class SamalContext final {
 public:
     SamalContext();
-    void setLastGCTracker(SamalGCTracker& last) {
-        mLastGCTracker = &last;
+    ~SamalContext();
+    SamalContext(const SamalContext&) = delete;
+    SamalContext(SamalContext&&) = delete;
+    SamalContext& operator=(const SamalContext&) = delete;
+    SamalContext& operator=(SamalContext&&) = delete;
+
+    void setLastGCTracker(SamalGCTracker *last) {
+        mLastGCTracker = last;
     }
     SamalGCTracker* getLastGCTracker() {
         return mLastGCTracker;
@@ -98,6 +56,7 @@ public:
         len = alignSize(len);
         auto ret = mCurrentPage + mCurrentPageOffset;
         mCurrentPageOffset += len;
+        assert((uintptr_t)ret % sizeof(void*) == 0);
         return ret;
     }
     void setLambdaCapturedVarPtr(void* ptr) {
@@ -146,13 +105,9 @@ public:
         mCapturedVariablesBuffer = buffer;
         mCapturedDatatypes = std::move(capturedDatatypes);
     }
-    size_t getCapturedVariablesBufferSize() {
-        size_t size = sizeof(void*);
-        for(auto &d: mCapturedDatatypes) {
-            size += d->getSizeOnStack();
-        }
-        return size;
-    }
+
+    size_t getCapturedVariablesBufferSize();
+    
     std::vector<Datatype*>& getCapturedTypes() {
         return mCapturedDatatypes;
     }
@@ -163,6 +118,64 @@ public:
     void setCapturedVariablesBuffer(void* ptr) {
         mCapturedVariablesBuffer = ptr;
     }
+};
+
+
+
+class Datatype {
+public:
+    struct FurtherInfoUnion {
+        const Datatype* baseType;
+        const Datatype* returnType;
+        std::vector<const Datatype*> params;
+    };
+    Datatype(DatatypeCategory category) {
+        mCategory = category;
+    }
+    Datatype(DatatypeCategory category, const Datatype* baseType) {
+        mCategory = category;
+        mFurtherInfo.baseType = baseType;
+    }
+    Datatype(DatatypeCategory category, const Datatype* returnType, std::vector<const Datatype*> params) {
+        mCategory = category;
+        mFurtherInfo.returnType = returnType;
+        mFurtherInfo.params = std::move(params);
+    }
+    DatatypeCategory getCategory() const {
+        return mCategory;
+    }
+    size_t getSize() const {
+        switch(mCategory) {
+        case DatatypeCategory::Int:
+            return sizeof(int32_t);
+        case DatatypeCategory::Bool:
+            return sizeof(bool);
+        case DatatypeCategory::List:
+            return alignSize(sizeof(void*) + mFurtherInfo.baseType->getSize());
+        case DatatypeCategory::Function:
+            return sizeof(Function<int(int)>);
+        }
+        assert(false);
+    }
+    size_t getSizeOnStack() const {
+        switch(mCategory) {
+        case DatatypeCategory::Int:
+            return sizeof(int32_t);
+        case DatatypeCategory::Bool:
+            return sizeof(bool);
+        case DatatypeCategory::List:
+            return sizeof(void*);
+        case DatatypeCategory::Function:
+            return sizeof(Function<int(int)>);
+        }
+        assert(false);
+    }
+    const Datatype& getBaseType() const {
+        return *mFurtherInfo.baseType;
+    }
+private:
+    DatatypeCategory mCategory;
+    FurtherInfoUnion mFurtherInfo;
 };
 
 
@@ -187,13 +200,13 @@ class SamalGCTracker {
 public:
     SamalGCTracker(SamalContext& ctx, void *rawPtr, Datatype& type, bool disableGC = false)
     : mPrev(ctx.getLastGCTracker()), mToTrackRawPtr(rawPtr), mDatatype(type), mCtx(ctx) {
-        ctx.setLastGCTracker(*this);
+        ctx.setLastGCTracker(this);
         if(!disableGC) {
             ctx.requestCollection();
         }
     }
     ~SamalGCTracker() {
-        mCtx.setLastGCTracker(*mPrev);
+        mCtx.setLastGCTracker(mPrev);
     }
 
     SamalGCTracker(const SamalGCTracker&) = delete;
