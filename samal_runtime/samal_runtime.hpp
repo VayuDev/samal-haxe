@@ -185,10 +185,12 @@ using SamalString = List<char32_t>*;
 
 class SamalGCTracker {
 public:
-    SamalGCTracker(SamalContext& ctx, void *rawPtr, Datatype& type)
+    SamalGCTracker(SamalContext& ctx, void *rawPtr, Datatype& type, bool disableGC = false)
     : mPrev(ctx.getLastGCTracker()), mToTrackRawPtr(rawPtr), mDatatype(type), mCtx(ctx) {
         ctx.setLastGCTracker(*this);
-        ctx.requestCollection();
+        if(!disableGC) {
+            ctx.requestCollection();
+        }
     }
     ~SamalGCTracker() {
         mCtx.setLastGCTracker(*mPrev);
