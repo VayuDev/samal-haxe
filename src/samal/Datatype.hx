@@ -93,7 +93,7 @@ class DatatypeHelpers {
             case List(base):
                 return "samalrt::List<" + toCppType(base) + ">*";
             case Function(returnType, params):
-                return "std::function<" + toCppType(returnType) + "(samalrt::SamalContext&, " + params.map(function(p) return toCppType(p)).join(", ") + ")>";
+                return "samalrt::Function<" + toCppType(returnType) + "(samalrt::SamalContext&, " + params.map(function(p) return toCppType(p)).join(", ") + ")>";
             case _:
                 throw new Exception("TODO toCppType: " + type);
         }

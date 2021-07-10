@@ -4,6 +4,7 @@ import samal.AST;
 import samal.Tokenizer.SourceCodeRef;
 
 using samal.Datatype.DatatypeHelpers;
+using samal.Util.NullTools;
 
 enum HeaderOrSource {
     Header;
@@ -67,6 +68,7 @@ class CppFile extends CppASTNode {
         var ret = "";
         if(ctx.isHeader()) {
             ret += "#include <cstdint>\n";
+            ret += "#include <cstring>\n";
             ret += "#include <cmath>\n";
             ret += "#include <iostream>\n";
             ret += "#include <cassert>\n";
@@ -98,6 +100,9 @@ class CppScopeNode extends CppASTNode {
     }
     public override function toCpp(ctx : CppContext) : String {
         return "{\n" + mStatements.map((stmt) -> stmt.toCpp(ctx.next()) + ";\n").join("") + indent(ctx.prev()) + "}";
+    }
+    public function getStatements() {
+        return mStatements;
     }
 }
 
@@ -161,9 +166,13 @@ abstract class CppStatement extends CppASTNode {
 
 class CppScopeStatement extends CppStatement {
     var mScope : CppScopeNode;
-    public function new(sourceRef : SourceCodeRef, datatype : Datatype, varName : String) {
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, varName : String, scope : Null<CppScopeNode> = null) {
         super(sourceRef, datatype, varName);
-        mScope = new CppScopeNode(sourceRef);
+        if(scope != null) {
+            mScope = scope.sure();
+        } else {
+            mScope = new CppScopeNode(sourceRef);
+        }
     }
     public function getScope() {
         return mScope;
@@ -366,5 +375,51 @@ class CppListPrependStatement extends CppStatement {
 
     public override function toCpp(ctx : CppContext) : String {
         return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = samalrt::listPrepend<" + mDatatype.getBaseType().toCppType() + ">($ctx, " + mValue + ", " + mList + ")" + getTrackerString();
+    }
+}
+
+class CppCreateLambdaStatement extends CppStatement {
+    final mParams : Array<NamedAndTypedParameter>;
+    final mCapturedVariables : Array<NamedAndTypedParameter>;
+    final mBody : CppScopeNode;
+
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, varName : String, 
+                        params : Array<NamedAndTypedParameter>, capturedVariables : Array<NamedAndTypedParameter>, body : CppScopeNode) {
+        super(sourceRef, datatype, varName);
+        mParams = params;
+        mCapturedVariables = capturedVariables;
+        mBody = body;
+    }
+
+    public override function toCpp(ctx : CppContext) : String {
+        final bufferVarName = "buffer$$$" + Util.getUniqueId();
+        // first the lambda itself
+        var ret = 
+            indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = *[](samalrt::SamalContext& $ctx, "
+            + mParams.map(function(p) return p.getDatatype().toCppType() + " " + p.getName()).join(", ") + ") -> " + mDatatype.getReturnType().toCppType() + " {\n"
+            + indent(ctx.next()) + "uint8_t* " + bufferVarName + " = (uint8_t*)$ctx.getLambdaCapturedVarPtr();\n"
+            + mCapturedVariables.map(function(p) {
+                return 
+                    indent(ctx.next()) + p.getDatatype().toCppType() + " " + p.getName() + ";\n"
+                    + indent(ctx.next()) + "memcpy(&" + p.getName() + ", " + bufferVarName + ", " + p.getDatatype().toCppGCTypeStr() + ".getSizeOnStack());\n"
+                    + indent(ctx.next()) + bufferVarName + " += " + p.getDatatype().toCppGCTypeStr() + ".getSizeOnStack();\n";
+            }).join("")
+            + mBody.getStatements().map(function(stmt) return stmt.toCpp(ctx.next()) + ";").join("\n")
+            + "\n" + indent(ctx) + "};\n";
+        // then the buffer creation
+        ret += indent(ctx.next()) + "uint8_t* " + bufferVarName + " = (uint8_t*) $ctx.alloc(" + "("
+            + mCapturedVariables.map(function(p) {
+                return p.getDatatype().toCppGCTypeStr() + ".getSizeOnStack()";
+            }).join(" + ") + ")" + ");\n";
+        // assign it to the function
+        ret += indent(ctx.next()) + mVarName + ".setCapturedData(" + bufferVarName + ", {" + mCapturedVariables.map(function(p) return "&" + p.getDatatype().toCppGCTypeStr()).join(", ") + "});";
+        
+        // the the memcpys
+        ret += mCapturedVariables.map(function(capturedVar) {
+            return 
+                indent(ctx.next()) + "memcpy(" + bufferVarName + ", &" + capturedVar.getName() + ", " + capturedVar.getDatatype().toCppGCTypeStr() + ".getSizeOnStack());\n"
+                + indent(ctx.next()) + bufferVarName + " += " + capturedVar.getDatatype().toCppGCTypeStr() + ".getSizeOnStack();\n";
+        }).join("");
+       return ret;
     }
 }

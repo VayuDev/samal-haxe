@@ -87,7 +87,7 @@ class Stage2 {
 
     // Upon entering a lambda, this value is set to track which are variables are accessed in the body.
     // Afterwards, it is set back to null.
-    var mOnStackedIdentifierLoadCallback : Null<(Int, String) -> Void> = null;
+    var mOnStackedIdentifierLoadCallback : Null<(Int, NamedAndTypedParameter) -> Void> = null;
 
     public function new(prog : SamalProgram) {
         mProgram = prog;
@@ -338,7 +338,7 @@ class Stage2 {
                         stackCopy.pop();
                         size += 1;
                     }
-                    mOnStackedIdentifierLoadCallback.sure()(size, type.getIdentifier());
+                    mOnStackedIdentifierLoadCallback.sure()(size, new NamedAndTypedParameter(type.getIdentifier(), type.getType()));
                 }
                 return type;
             }

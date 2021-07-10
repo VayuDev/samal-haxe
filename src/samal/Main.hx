@@ -83,7 +83,7 @@ fn main() -> int {
   a = fn(i : int) -> int {
     i + 1 + b
   }
-  a()
+  a(5)
 }");
     var ast = parser.parse();
     var program = new SamalProgram();

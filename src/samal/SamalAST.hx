@@ -197,7 +197,7 @@ class SamalScope extends SamalASTNode {
     public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
         mStatements = Util.replaceNodes(mStatements, preorder, postorder);
     }
-    public function getStatements() {
+    public function getStatements() : Array<SamalExpression> {
         return mStatements;
     }
     public function addStatement(stmt : SamalExpression) {
@@ -564,7 +564,7 @@ class SamalCreateLambdaExpression extends SamalExpression {
     final mParameters : Array<NamedAndTypedParameter>;
     final mReturnType : Datatype;
     var mBody : SamalScope;
-    final mCapturedVariables : Array<String> = [];
+    final mCapturedVariables : Array<NamedAndTypedParameter> = [];
     public function new(sourceRef : SourceCodeRef, parameters: Array<NamedAndTypedParameter>, returnType : Datatype, body : SamalScope) {
         super(sourceRef);    
         mParameters = parameters;
@@ -584,8 +584,11 @@ class SamalCreateLambdaExpression extends SamalExpression {
     public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
         mBody = cast(mBody.replace(preorder, postorder), SamalScope);
     }
-    public function addCapturedVariable(name : String) {
+    public function addCapturedVariable(name : NamedAndTypedParameter) {
         mCapturedVariables.push(name);
+    }
+    public function getCapturedVariables() {
+        return mCapturedVariables;
     }
     public override function dumpSelf() : String {
         return super.dumpSelf() + " Captured: <" + mCapturedVariables.join(", ") + ">";

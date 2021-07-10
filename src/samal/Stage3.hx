@@ -1,5 +1,6 @@
 package samal;
 
+import samal.Tokenizer.SourceCodeRef;
 import haxe.ds.List;
 import samal.Datatype.DatatypeHelpers;
 import haxe.ds.GenericStack;
@@ -238,10 +239,35 @@ class Stage3 {
             addStatement(new CppUnreachable(astNode.getSourceRef()));
             return "";
 
+        } else if(Std.downcast(astNode, SamalCreateLambdaExpression) != null) {
+            var node = Std.downcast(astNode, SamalCreateLambdaExpression);
+            final varName = genTempVarName("lambda");
+            final functionDatatype = node.getDatatype().sure();
+
+            // generate cpp body
+            var scope = new CppScopeNode(node.getSourceRef());
+            mScopeStack.add(scope);
+            
+            var lastStatementResult = "";
+            for(stmt in node.getBody().getStatements()) {
+                lastStatementResult = traverse(stmt);
+            }
+            if(lastStatementResult != "") {
+                scope.addStatement(new CppReturnStatement(node.getSourceRef(), DatatypeHelpers.getReturnType(functionDatatype), lastStatementResult));
+            }
+            mScopeStack.pop();
+
+            addStatement(new CppCreateLambdaStatement(node.getSourceRef(), functionDatatype, varName, node.getParams(), node.getCapturedVariables(), scope));
+            return varName;
+
         } else {
             throw new Exception("TODO! " + Type.getClassName(Type.getClass(astNode)));
         }
         return "";
+    }
+
+    function samalToCppBody() {
+
     }
 
     public function convertToCppAST() : CppProgram {

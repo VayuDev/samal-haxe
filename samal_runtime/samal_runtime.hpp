@@ -6,6 +6,7 @@
 #include <vector>
 #include <memory>
 #include <cassert>
+#include <type_traits>
 
 namespace samalrt {
 
@@ -56,6 +57,17 @@ public:
         }
         assert(false);
     }
+    size_t getSizeOnStack() const {
+        switch(mCategory) {
+        case DatatypeCategory::Int:
+            return sizeof(int32_t);
+        case DatatypeCategory::Bool:
+            return sizeof(bool);
+        case DatatypeCategory::List:
+            return sizeof(void*);
+        }
+        assert(false);
+    }
     const Datatype& getBaseType() const {
         return *mFurtherInfo.baseType;
     }
@@ -80,6 +92,12 @@ public:
         mCurrentPageOffset += len;
         return ret;
     }
+    void setLambdaCapturedVarPtr(void* ptr) {
+        mLambdaCapturedVarPtr = ptr;
+    }
+    void* getLambdaCapturedVarPtr() {
+        return mLambdaCapturedVarPtr;
+    }
     void collect();
     void requestCollection();
 
@@ -92,11 +110,34 @@ private:
     size_t mPageSize = 1024 * 1024 * 1024;
     size_t mCollectionRequestsCounter = 0;
     const size_t mCollectionRequestsPerCollection = 10000;
+    void *mLambdaCapturedVarPtr = nullptr;
 
     void* allocOnOtherPage(size_t len);
     bool isInOtherPage(void*);
     void visitObj(void *rawPtr, const Datatype& type);
     void* copyToOther(void** rawPtr, size_t size);
+};
+
+template<typename FunctionType>
+class Function {
+private:
+    FunctionType& mFunction;
+    std::vector<Datatype*> mCapturedDatatypes;
+    void* mCapturedVariablesBuffer = nullptr;
+public:
+    Function(FunctionType& function)
+    : mFunction(function) {
+
+    }
+    template<typename ...Args>
+    auto operator()(SamalContext& ctx, Args&&... args) -> decltype(mFunction(ctx, args...)) {
+        ctx.setLambdaCapturedVarPtr(mCapturedVariablesBuffer);
+        return mFunction(ctx, std::forward<Args>(args)...);
+    }
+    void setCapturedData(void* buffer, std::vector<Datatype*> capturedDatatypes) {
+        mCapturedVariablesBuffer = buffer;
+        mCapturedDatatypes = std::move(capturedDatatypes);
+    }
 };
 
 
