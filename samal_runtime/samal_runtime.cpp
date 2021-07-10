@@ -72,7 +72,7 @@ void SamalContext::visitObj(void *toVisit, const Datatype& type) {
     case DatatypeCategory::Bool:
     case DatatypeCategory::Int:
         break;
-    case DatatypeCategory::List:
+    case DatatypeCategory::List: {
         void** rawPtr = (void**)toVisit;
         while(true) {
             if(*rawPtr == nullptr)
@@ -85,7 +85,7 @@ void SamalContext::visitObj(void *toVisit, const Datatype& type) {
                 break;
             }
             visitObj((void**) (*(uint8_t***)rawPtr + 8), type.getBaseType());
-            auto newPtr = copyToOther(rawPtr, type.getSize());
+            auto newPtr = copyToOther(*rawPtr, type.getSize());
             auto oldPtrToCurrent = *rawPtr;
             *rawPtr = newPtr;
 
@@ -94,13 +94,36 @@ void SamalContext::visitObj(void *toVisit, const Datatype& type) {
         }
         break;
     }
+    case DatatypeCategory::Function: {
+        Function<int(int)>& fn = *(Function<int(int)>*)toVisit;
+        if(fn.getCapturedVariablesBuffer() == nullptr) {
+            return;
+        }
+        if(isInOtherPage(fn.getCapturedVariablesBuffer())) {
+            return;
+        }
+        if(isInOtherPage(*(void**)fn.getCapturedVariablesBuffer())) {
+            fn.setCapturedVariablesBuffer(*(void**)fn.getCapturedVariablesBuffer());
+            return;
+        }
+        size_t offset = sizeof(void*);
+        for(auto capturedType: fn.getCapturedTypes()) {
+            visitObj((uint8_t*)fn.getCapturedVariablesBuffer() + offset, *capturedType);
+            offset += capturedType->getSizeOnStack();
+        }
+        void* newPtr = copyToOther(fn.getCapturedVariablesBuffer(), fn.getCapturedVariablesBufferSize());
+        memcpy(fn.getCapturedVariablesBuffer(), &newPtr, sizeof(void*));
+        fn.setCapturedVariablesBuffer(newPtr);
+        break;
+    }
+    }
 }
 
 
-void* SamalContext::copyToOther(void** rawPtr, size_t size) {
+void* SamalContext::copyToOther(void* rawPtr, size_t size) {
     assert(rawPtr);
     auto newPtr = allocOnOtherPage(size);
-    memcpy(newPtr, *rawPtr, size);
+    memcpy(newPtr, rawPtr, size);
     //std::cout << "Moved " << *rawPtr << " to " << newPtr << std::endl;
     return newPtr;
 }

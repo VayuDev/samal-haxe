@@ -18,7 +18,7 @@ class Stage3 {
     var mCurrentFileDeclarations : Array<CppDeclaration> = [];
     var mScopeStack : GenericStack<CppScopeNode>;
     var mTempVarNameCounter = 0;
-    var mUsedDatatypes : List<Datatype> = new List<Datatype>();
+    var mUsedDatatypes : Array<Datatype> = [];
 
     public function new(prog : SamalProgram) {
         mSProgram = prog;
@@ -32,7 +32,7 @@ class Stage3 {
                 return newType;
             }
         }
-        mUsedDatatypes.add(newType);
+        mUsedDatatypes.push(newType);
         return newType;
     }
 
@@ -281,7 +281,7 @@ class Stage3 {
             for(decl in ast.getDeclarations()) {
                 traverse(decl);
             }
-            mCProgram.addModule(moduleName, new CppFile(ast.getSourceRef(), moduleName, mCurrentFileDeclarations));
+            mCProgram.addModule(moduleName, new CppFile(ast.getSourceRef(), moduleName, mCurrentFileDeclarations, mUsedDatatypes));
 
             for(type in mUsedDatatypes) {
                 trace(type);

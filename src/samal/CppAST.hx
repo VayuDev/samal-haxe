@@ -56,10 +56,12 @@ class CppASTNode extends ASTNode {
 class CppFile extends CppASTNode {
     var mDeclarations : Array<CppDeclaration>;
     var mName : String;
-    public function new(sourceRef : SourceCodeRef, name : String, declarations : Array<CppDeclaration>) {
+    final mUsedDatatypes : Array<Datatype>;
+    public function new(sourceRef : SourceCodeRef, name : String, declarations : Array<CppDeclaration>, usedDatatypes : Array<Datatype>) {
         super(sourceRef);
         mDeclarations = declarations;
         mName = name;
+        mUsedDatatypes = usedDatatypes;
     }
     public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
         mDeclarations = Util.replaceNodes(mDeclarations, preorder, postorder);
@@ -76,6 +78,12 @@ class CppFile extends CppASTNode {
             ret += "#include \"samal_runtime.hpp\"\n";
         } else {
             ret += '#include "$mName.hpp"\n';
+            ret += "\n";
+            // used datatypes
+            final alreadyDeclared = [];
+            for(d in mUsedDatatypes) {
+                ret += d.toCppGCTypeDeclaration(alreadyDeclared);
+            }
         }
         ret += "\n";
         ret += mDeclarations.map((decl) -> (decl.toCpp(ctx))).join("\n\n");
@@ -397,7 +405,7 @@ class CppCreateLambdaStatement extends CppStatement {
         var ret = 
             indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = *[](samalrt::SamalContext& $ctx, "
             + mParams.map(function(p) return p.getDatatype().toCppType() + " " + p.getName()).join(", ") + ") -> " + mDatatype.getReturnType().toCppType() + " {\n"
-            + indent(ctx.next()) + "uint8_t* " + bufferVarName + " = (uint8_t*)$ctx.getLambdaCapturedVarPtr();\n"
+            + indent(ctx.next()) + "uint8_t* " + bufferVarName + " = (uint8_t*)$ctx.getLambdaCapturedVarPtr() + sizeof(void*);\n"
             + mCapturedVariables.map(function(p) {
                 return 
                     indent(ctx.next()) + p.getDatatype().toCppType() + " " + p.getName() + ";\n"
@@ -410,16 +418,17 @@ class CppCreateLambdaStatement extends CppStatement {
         ret += indent(ctx.next()) + "uint8_t* " + bufferVarName + " = (uint8_t*) $ctx.alloc(" + "("
             + mCapturedVariables.map(function(p) {
                 return p.getDatatype().toCppGCTypeStr() + ".getSizeOnStack()";
-            }).join(" + ") + ")" + ");\n";
+            }).join(" + ") + "+ sizeof(void*)));\n";
         // assign it to the function
-        ret += indent(ctx.next()) + mVarName + ".setCapturedData(" + bufferVarName + ", {" + mCapturedVariables.map(function(p) return "&" + p.getDatatype().toCppGCTypeStr()).join(", ") + "});";
+        ret += indent(ctx.next()) + mVarName + ".setCapturedData(" + bufferVarName + ", {" + mCapturedVariables.map(function(p) return "&" + p.getDatatype().toCppGCTypeStr()).join(", ") + "});\n";
         
         // the the memcpys
+        ret += indent(ctx.next()) + bufferVarName + " += sizeof(void*);\n";
         ret += mCapturedVariables.map(function(capturedVar) {
             return 
                 indent(ctx.next()) + "memcpy(" + bufferVarName + ", &" + capturedVar.getName() + ", " + capturedVar.getDatatype().toCppGCTypeStr() + ".getSizeOnStack());\n"
-                + indent(ctx.next()) + bufferVarName + " += " + capturedVar.getDatatype().toCppGCTypeStr() + ".getSizeOnStack();\n";
-        }).join("");
-       return ret;
+                + indent(ctx.next()) + bufferVarName + " += " + capturedVar.getDatatype().toCppGCTypeStr() + ".getSizeOnStack()";
+        }).join(";\n");
+       return ret + "\n" + indent(ctx) + getTrackerString();
     }
 }

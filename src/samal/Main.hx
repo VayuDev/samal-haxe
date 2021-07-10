@@ -78,6 +78,13 @@ fn mainTwo() -> [int] {
   reverse<int>(sum<int>(list) + list)
 }
 
+fn map<S, T>(l : [S], callback : fn(S) -> T) -> [T] {
+  match l {
+    [] -> [:T]
+    [head + tail] -> callback(head) + map<S, T>(tail)
+  }
+}
+
 fn main() -> int {
   b = 3
   a = fn(i : int) -> int {

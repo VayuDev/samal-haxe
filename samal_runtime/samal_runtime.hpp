@@ -21,7 +21,8 @@ class SamalContext;
 enum class DatatypeCategory {
     List,
     Int,
-    Bool
+    Bool,
+    Function
 };
 
 static inline size_t alignSize(size_t size) {
@@ -33,8 +34,10 @@ static inline size_t alignSize(size_t size) {
 
 class Datatype {
 public:
-    union FurtherInfoUnion {
+    struct FurtherInfoUnion {
         const Datatype* baseType;
+        const Datatype* returnType;
+        std::vector<const Datatype*> params;
     };
     Datatype(DatatypeCategory category) {
         mCategory = category;
@@ -42,6 +45,11 @@ public:
     Datatype(DatatypeCategory category, const Datatype* baseType) {
         mCategory = category;
         mFurtherInfo.baseType = baseType;
+    }
+    Datatype(DatatypeCategory category, const Datatype* returnType, std::vector<const Datatype*> params) {
+        mCategory = category;
+        mFurtherInfo.returnType = returnType;
+        mFurtherInfo.params = std::move(params);
     }
     DatatypeCategory getCategory() const {
         return mCategory;
@@ -109,17 +117,17 @@ private:
     size_t mOtherPageOffset = 0;
     size_t mPageSize = 1024 * 1024 * 1024;
     size_t mCollectionRequestsCounter = 0;
-    const size_t mCollectionRequestsPerCollection = 10000;
+    const size_t mCollectionRequestsPerCollection = 0; //10000;
     void *mLambdaCapturedVarPtr = nullptr;
 
     void* allocOnOtherPage(size_t len);
     bool isInOtherPage(void*);
     void visitObj(void *rawPtr, const Datatype& type);
-    void* copyToOther(void** rawPtr, size_t size);
+    void* copyToOther(void* rawPtr, size_t size);
 };
 
 template<typename FunctionType>
-class Function {
+class Function final {
 private:
     FunctionType& mFunction;
     std::vector<Datatype*> mCapturedDatatypes;
@@ -137,6 +145,23 @@ public:
     void setCapturedData(void* buffer, std::vector<Datatype*> capturedDatatypes) {
         mCapturedVariablesBuffer = buffer;
         mCapturedDatatypes = std::move(capturedDatatypes);
+    }
+    size_t getCapturedVariablesBufferSize() {
+        size_t size = sizeof(void*);
+        for(auto &d: mCapturedDatatypes) {
+            size += d->getSizeOnStack();
+        }
+        return size;
+    }
+    std::vector<Datatype*>& getCapturedTypes() {
+        return mCapturedDatatypes;
+    }
+    void* getCapturedVariablesBuffer() {
+        return mCapturedVariablesBuffer;
+    }
+    // Used for GC
+    void setCapturedVariablesBuffer(void* ptr) {
+        mCapturedVariablesBuffer = ptr;
     }
 };
 
@@ -160,7 +185,7 @@ using SamalString = List<char32_t>*;
 
 class SamalGCTracker {
 public:
-    SamalGCTracker(SamalContext& ctx, void *rawPtr, Datatype type)
+    SamalGCTracker(SamalContext& ctx, void *rawPtr, Datatype& type)
     : mPrev(ctx.getLastGCTracker()), mToTrackRawPtr(rawPtr), mDatatype(type), mCtx(ctx) {
         ctx.setLastGCTracker(*this);
         ctx.requestCollection();
@@ -187,7 +212,7 @@ public:
 private:
     SamalGCTracker* mPrev = nullptr;
     void* mToTrackRawPtr = nullptr;
-    Datatype mDatatype;
+    Datatype& mDatatype;
     SamalContext& mCtx;
 };
 
@@ -223,16 +248,5 @@ SamalString inspect(SamalContext& ctx, List<T>* current) {
 }
 
 std::ostream& operator<<(std::ostream& stream, SamalString str);
-
-}
-
-
-namespace samalds {
-
-using namespace samalrt;
-
-static Datatype int_{DatatypeCategory::Int};
-static Datatype bool_{DatatypeCategory::Bool};
-static Datatype list_sint_e{DatatypeCategory::List, &int_};
 
 }

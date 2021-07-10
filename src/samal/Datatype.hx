@@ -106,12 +106,14 @@ class DatatypeHelpers {
                 return "bool_";
             case List(base):
                 return "list_s" + toMangledName(base) + "e";
+            case Function(returnType, params):
+                return "fn_s" + toMangledName(returnType) + "_" + params.map(function(p) return toMangledName(p)).join("_") + "e";
             case _:
                 throw new Exception("TODO " + type);
         }
     }
     static public function toCppGCTypeStr(type : Datatype) : String {
-        return "samalds::" + toMangledName(type);
+        return toMangledName(type);
     }
     static public function requiresGC(type : Datatype) : Bool {
         switch(type) {
@@ -122,10 +124,38 @@ class DatatypeHelpers {
             case List(_):
                 return true;
             case Function(_, _):
-                return false;
+                return true;
             case _:
                 throw new Exception("TODO requiresGC" + type);
         }
+    }
+    static public function toCppGCTypeDeclaration(type : Datatype, alreadyDone : Array<Datatype>) : String {
+        for(done in alreadyDone) {
+            if(deepEquals(done, type)) {
+                return "";
+            }
+        }
+        final typeStr = toCppGCTypeStr(type);
+        alreadyDone.push(type);
+        switch(type) {
+            case Int:
+                return "static samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Int};\n";
+            case Bool:
+                return "static samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Bool};\n";
+            case List(base):
+                return toCppGCTypeDeclaration(base, alreadyDone) 
+                    + "static samalrt::Datatype " + typeStr +  "{samalrt::DatatypeCategory::List, &" + toCppGCTypeStr(base) + "};\n";
+            case Function(returnType, params):
+                return toCppGCTypeDeclaration(returnType, alreadyDone) 
+                    + params.map(function(p) {
+                        return toCppGCTypeDeclaration(p, alreadyDone);
+                    }).join("")
+                    + "static samalrt::Datatype " + typeStr +  "{samalrt::DatatypeCategory::Function, &" 
+                    + toCppGCTypeStr(returnType) + ", {" + params.map(function(p) return "&" + toCppGCTypeStr(p)).join(", ") + "}};\n";
+            case _:
+                throw new Exception("TODO requiresGC" + type);
+        }
+        throw new Exception("TODO toCppGCTypeDeclaration" + type);
     }
     public static function deepEquals(a : Datatype, b : Datatype) : Bool {
         return Std.string(a) == Std.string(b);
