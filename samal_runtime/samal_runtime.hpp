@@ -117,7 +117,7 @@ private:
     size_t mOtherPageOffset = 0;
     size_t mPageSize = 1024 * 1024 * 1024;
     size_t mCollectionRequestsCounter = 0;
-    const size_t mCollectionRequestsPerCollection = 0; //10000;
+    const size_t mCollectionRequestsPerCollection = 10000;
     void *mLambdaCapturedVarPtr = nullptr;
 
     void* allocOnOtherPage(size_t len);

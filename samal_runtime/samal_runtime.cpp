@@ -81,16 +81,16 @@ void SamalContext::visitObj(void *toVisit, const Datatype& type) {
                 break;
             }
             if(isInOtherPage(**(void***)rawPtr)) {
-                *rawPtr = **(void***)rawPtr;
+                memcpy(rawPtr, *rawPtr, sizeof(void*));
                 break;
             }
-            visitObj((void**) (*(uint8_t***)rawPtr + 8), type.getBaseType());
+            visitObj((void**) ((*(uint8_t***)rawPtr) + sizeof(void*)), type.getBaseType());
             auto newPtr = copyToOther(*rawPtr, type.getSize());
             auto oldPtrToCurrent = *rawPtr;
-            *rawPtr = newPtr;
+            memcpy(rawPtr, &newPtr, sizeof(void*));
 
             rawPtr = *(void***)rawPtr;
-            *(void**)oldPtrToCurrent = newPtr;
+            memcpy(oldPtrToCurrent, &newPtr, sizeof(void*));
         }
         break;
     }

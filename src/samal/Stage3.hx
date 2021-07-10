@@ -143,7 +143,7 @@ class Stage3 {
             var node = Std.downcast(astNode, SamalSimpleListGetTail);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
             var exprVarName = traverse(node.getList());
-            var res = addStatement(new CppUnaryExprStatement(node.getSourceRef(), nodeDatatype, genTempVarName("list_is_empty"), exprVarName, ListGetTail));
+            var res = addStatement(new CppUnaryExprStatement(node.getSourceRef(), nodeDatatype, genTempVarName("list_get_tail"), exprVarName, ListGetTail));
             return res.getVarName();
 
         } else if(Std.downcast(astNode, SamalLiteralIntExpression) != null) {

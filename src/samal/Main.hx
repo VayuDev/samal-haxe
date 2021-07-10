@@ -81,16 +81,15 @@ fn mainTwo() -> [int] {
 fn map<S, T>(l : [S], callback : fn(S) -> T) -> [T] {
   match l {
     [] -> [:T]
-    [head + tail] -> callback(head) + map<S, T>(tail)
+    [head + tail] -> callback(head) + map<S, T>(tail, callback)
   }
 }
 
-fn main() -> int {
-  b = 3
-  a = fn(i : int) -> int {
-    i + 1 + b
-  }
-  a(5)
+fn main() -> [int] {
+  base = 102
+  map<int, int>(seq(10000), fn(i : int) -> int {
+    i + base
+  })
 }");
     var ast = parser.parse();
     var program = new SamalProgram();

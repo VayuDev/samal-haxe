@@ -140,7 +140,12 @@ class CppFunctionDeclaration extends CppDeclaration {
         if(ctx.isHeader()) {
             ret += ";";
         } else {
-            ret += " " + mBody.toCpp(ctx);
+            ret += " {\n";
+            ret += mParams.map(function(p) {
+                return indent(ctx.next()) + "samalrt::SamalGCTracker " + p.getName() + "$$$tracker" + "{$ctx, " + "(void*) &" + p.getName() + ", " + p.getDatatype().toCppGCTypeStr() + "}\n;";
+            }).join("");
+            ret += mBody.getStatements().map((stmt) -> stmt.toCpp(ctx.next()) + ";\n").join("");
+            ret += "}";
             if(mMangledName == ctx.getMainFunctionMangledName()) {
                 ret += '\nint main(int argc, char **argv) {
     samalrt::SamalContext ctx;
