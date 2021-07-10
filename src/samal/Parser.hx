@@ -77,9 +77,30 @@ class Parser {
             case Identifier:
                 final ident = parseIdentifierWithTemplate();
                 return Datatype.Usertype(ident.getName(), ident.getTemplateParams());
+            case Fn:
+                eat(Fn);
+                final params = parseDatatypeList();
+                eat(RightArrow);
+                final returnType = parseDatatype();
+                return Datatype.Function(returnType, params);
             case _:
                 throw new Exception(current().info() + ": Expected datatype");
         }
+    }
+
+    function parseDatatypeList() : Array<Datatype> {
+        var ret = [];
+        eat(LParen);
+        while(current().getType() != RParen) {
+            ret.push(parseDatatype());
+            if(current().getType() == Comma) {
+                eat(Comma);
+            } else {
+                break;
+            }
+        }
+        eat(RParen);
+        return ret;
     }
 
     function parseFunctionParameterList() : Array<NamedAndTypedParameter> {
