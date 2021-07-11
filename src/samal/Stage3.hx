@@ -19,11 +19,13 @@ class Stage3 {
     var mScopeStack : GenericStack<CppScopeNode>;
     var mTempVarNameCounter = 0;
     var mUsedDatatypes : Array<Datatype> = [];
+    final mLiteralHelper : Stage3LiteralHelper;
 
-    public function new(prog : SamalProgram) {
+    public function new(prog : SamalProgram, literalHelper : Stage3LiteralHelper) {
         mSProgram = prog;
         mCProgram = new CppProgram();
         mScopeStack = new GenericStack<CppScopeNode>();
+        mLiteralHelper = literalHelper;
     }
 
     function addUsedDatatype(newType : Datatype) : Datatype {
@@ -148,7 +150,7 @@ class Stage3 {
 
         } else if(Std.downcast(astNode, SamalLiteralIntExpression) != null) {
             var node = Std.downcast(astNode, SamalLiteralIntExpression);
-            return "(int32_t) (" + Std.string(node.getValue()) + ")";
+            return mLiteralHelper.int(node.getValue());
 
         } else if(Std.downcast(astNode, SamalAssignmentExpression) != null) {
             var node = Std.downcast(astNode, SamalAssignmentExpression);
@@ -222,7 +224,7 @@ class Stage3 {
         } else if(Std.downcast(astNode, SamalSimpleCreateEmptyList) != null) {
             var node = Std.downcast(astNode, SamalSimpleCreateEmptyList);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
-            return "(" + DatatypeHelpers.toCppType(nodeDatatype) + ") (nullptr)";
+            return mLiteralHelper.emptyList();
 
         } else if(Std.downcast(astNode, SamalSimpleListPrepend) != null) {
             var node = Std.downcast(astNode, SamalSimpleListPrepend);

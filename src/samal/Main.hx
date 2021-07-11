@@ -11,6 +11,7 @@ import haxe.Log;
 import samal.Tokenizer.TokenType;
 import samal.Tokenizer.Token;
 import samal.Program;
+import samal.Stage3LiteralHelper;
 
 import cloner.Cloner;
 
@@ -112,7 +113,7 @@ fn main() -> int {
     Log.trace(program.dump(), null);
 
     Log.trace("@@@@ Stage 3 @@@@", null);
-    var stage3 = new Stage3(program);
+    var stage3 = new Stage3(program, new Stage3LiteralHelperCpp());
     var cprogram = stage3.convertToCppAST();
     Log.trace(cprogram.dump(), null);
 
