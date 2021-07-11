@@ -129,6 +129,20 @@ class DatatypeHelpers {
                 throw new Exception("TODO requiresGC" + type);
         }
     }
+    static public function toCppDefaultInitializationString(type : Datatype) : String {
+        switch(type) {
+            case Int:
+                return "0";
+            case Bool:
+                return "false";
+            case List(_):
+                return "{ 0 }";
+            case Function(_, _):
+                return "{}";
+            case _:
+                throw new Exception("TODO toDefaultInitializationString" + type);
+        }
+    }
     static public function toCppGCTypeDeclaration(type : Datatype, alreadyDone : Array<Datatype>) : String {
         for(done in alreadyDone) {
             if(deepEquals(done, type)) {

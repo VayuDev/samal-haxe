@@ -88,13 +88,19 @@ private:
 template<typename FunctionType>
 class Function final {
 private:
-    FunctionType& mFunction;
+    FunctionType* mFunction;
     std::vector<Datatype*> mCapturedDatatypes;
     void* mCapturedVariablesBuffer = nullptr;
 public:
     Function(FunctionType& function)
-    : mFunction(function) {
+    : mFunction(&function) {
 
+    }
+    Function() {
+        mFunction = nullptr;
+    }
+    Function& operator=(FunctionType& function) {
+        mFunction = &function;
     }
     template<typename ...Args>
     auto operator()(SamalContext& ctx, Args&&... args) -> decltype(mFunction(ctx, args...)) {

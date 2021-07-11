@@ -310,7 +310,7 @@ class CppAssignmentStatement extends CppStatement {
     public override function toCpp(ctx : CppContext) : String {
         switch(mType) {
             case JustDeclare:
-                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = { 0 }" + getTrackerString();
+                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = " + mDatatype.toCppDefaultInitializationString() + getTrackerString();
             case JustAssign:
                 return indent(ctx) + mVarName + " = " + mRhsVarName;
             case DeclareAndAssign:
