@@ -304,7 +304,7 @@ class Stage2 {
             }
             // track all used variables, used in the C++-target for GC
             mOnStackedIdentifierLoadCallback = function(depth, name) {
-                if(depth > startStackLength) {
+                if(depth <= startStackLength) {
                     node.addCapturedVariable(name);
                 }
             };
@@ -323,26 +323,17 @@ class Stage2 {
 
     function findIdentifierForLoading(name : IdentifierWithTemplate) : VarDeclaration {
         // search in local scope
-        var stackCopy = new GenericStack<Map<String, VarDeclaration>>();
+        var remainingStackSize = mScopeStackLength;
         for(frame in mScopeStack) {
-            stackCopy.add(frame);
-        }
-        while(!stackCopy.isEmpty()) {
-            var type = stackCopy.first().sure().get(name.getName());
+            var type = frame.get(name.getName());
             if(type != null) {
                 // found the variable, call the callback and return
                 if(mOnStackedIdentifierLoadCallback != null) {
-                    // figure our stackCopy size
-                    var size = 0;
-                    while(!stackCopy.isEmpty()) {
-                        stackCopy.pop();
-                        size += 1;
-                    }
-                    mOnStackedIdentifierLoadCallback.sure()(size, new NamedAndTypedParameter(type.getIdentifier(), type.getType()));
+                    mOnStackedIdentifierLoadCallback.sure()(remainingStackSize, new NamedAndTypedParameter(type.getIdentifier(), type.getType()));
                 }
                 return type;
             }
-            stackCopy.pop();
+            remainingStackSize -= 1;
         }
 
         // search in global scope

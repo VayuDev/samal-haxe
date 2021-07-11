@@ -85,12 +85,18 @@ fn map<S, T>(l : [S], callback : fn(S) -> T) -> [T] {
   }
 }
 
-fn main() -> [int] {
-  base = 102
-  map<int, int>(seq(10000), fn(i : int) -> int {
-    i + base
-  })
+fn main() -> int {
+  a = {
+    outer = 1
+    fn(param : int) -> int {
+      inner = 5
+      outer + param + inner
+    }
+  }
+  a(10)
 }");
+
+
     var ast = parser.parse();
     var program = new SamalProgram();
     program.addModule(ast);
