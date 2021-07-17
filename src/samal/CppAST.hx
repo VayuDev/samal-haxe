@@ -5,51 +5,18 @@ import samal.Tokenizer.SourceCodeRef;
 
 using samal.Datatype.DatatypeHelpers;
 using samal.Util.NullTools;
+import samal.targets.LanguageTarget;
 
-enum HeaderOrSource {
-    Header;
-    Source;
-}
-
-class CppContext {
-    var mIndent = 0;
-    var mHos : HeaderOrSource;
-    var mMainFunction : String;
-
-    public function new(indent : Int, hos : HeaderOrSource, mainFunction : String) {
-        mIndent = indent;
-        mHos = hos;
-        mMainFunction = mainFunction;
-    }
-    public function getIndent() {
-        return mIndent;
-    }
-    public function next() {
-        return new CppContext(mIndent + 1, mHos, mMainFunction);
-    }
-    public function prev() {
-        return new CppContext(mIndent - 1, mHos, mMainFunction);
-    }
-    public function isHeader() : Bool {
-        return mHos == Header;
-    }
-    public function isSource() : Bool {
-        return mHos == Source;
-    }
-    public function getMainFunctionMangledName() {
-        return mMainFunction;
-    }
-}
 
 class CppASTNode extends ASTNode {
     public function new(sourceRef : SourceCodeRef) {
         super(sourceRef);
     }
 
-    public function toCpp(ctx : CppContext) : String {
-        return indent(ctx) + "UNKNOWN";
+    public function toSrc(target : LanguageTarget, ctx : SourceCreationContext) : String {
+        return target.makeDefault(ctx, this);
     }
-    function indent(ctx : CppContext) : String {
+    function indent(ctx : SourceCreationContext) : String {
         return Util.createIndentStr(ctx.getIndent());
     }
 }
@@ -66,29 +33,17 @@ class CppFile extends CppASTNode {
     public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
         mDeclarations = Util.replaceNodes(mDeclarations, preorder, postorder);
     }
-    public override function toCpp(ctx : CppContext) : String {
-        var ret = "";
-        if(ctx.isHeader()) {
-            ret += "#include <cstdint>\n";
-            ret += "#include <cstring>\n";
-            ret += "#include <cmath>\n";
-            ret += "#include <iostream>\n";
-            ret += "#include <cassert>\n";
-            ret += "#include <functional>\n";
-            ret += "#include \"samal_runtime.hpp\"\n";
-        } else {
-            ret += '#include "$mName.hpp"\n';
-            ret += "\n";
-            // used datatypes
-            final alreadyDeclared = [];
-            for(d in mUsedDatatypes) {
-                ret += d.toCppGCTypeDeclaration(alreadyDeclared);
-            }
-        }
-        ret += "\n";
-        ret += mDeclarations.map((decl) -> (decl.toCpp(ctx))).join("\n\n");
-        ret += "\n";
-        return ret;
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeFile(ctx, this);
+    }
+    public function getName() {
+        return mName;
+    }
+    public function getDeclarations() {
+        return mDeclarations;
+    }
+    public function getUsedDatatypes() {
+        return mUsedDatatypes;
     }
 }
 
@@ -106,8 +61,8 @@ class CppScopeNode extends CppASTNode {
     public function getLastStatement() : CppStatement {
         return mStatements[mStatements.length - 1];
     }
-    public override function toCpp(ctx : CppContext) : String {
-        return "{\n" + mStatements.map((stmt) -> stmt.toCpp(ctx.next()) + ";\n").join("") + indent(ctx.prev()) + "}";
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeScopeNode(ctx, this);
     }
     public function getStatements() {
         return mStatements;
@@ -133,30 +88,20 @@ class CppFunctionDeclaration extends CppDeclaration {
     public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
         mBody = cast(mBody.replace(preorder, postorder), CppScopeNode);
     }
-
-    public override function toCpp(ctx : CppContext) : String {
-        final paramsAsStrArray = mParams.map((p) -> '${p.getDatatype().toCppType()} ${p.getName()}');
-        var ret = mDatatype.getReturnType().toCppType() + " " + mMangledName + "(" + ["samalrt::SamalContext &$ctx"].concat(paramsAsStrArray).join(", ") + ")";
-        if(ctx.isHeader()) {
-            ret += ";";
-        } else {
-            ret += " {\n";
-            // trackers for params
-            ret += mParams.map(function(p) {
-                return indent(ctx.next()) + "samalrt::SamalGCTracker " + p.getName() + "$$$tracker" 
-                    + "{$ctx, " + "(void*) &" + p.getName() + ", " + p.getDatatype().toCppGCTypeStr() + ", true};\n";
-            }).join("");
-            ret += mBody.getStatements().map((stmt) -> stmt.toCpp(ctx.next()) + ";\n").join("");
-            ret += "}";
-            if(mMangledName == ctx.getMainFunctionMangledName()) {
-                ret += '\nint main(int argc, char **argv) {
-    samalrt::SamalContext ctx;
-    auto res = $mMangledName(ctx);
-    std::cout << samalrt::inspect(ctx, res) << \"\\n\";
-}';
-            }
-        }
-        return ret;
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeFunctionDeclaration(ctx, this);
+    }
+    public function getParams() {
+        return mParams;
+    }
+    public function getDatatype() {
+        return mDatatype;
+    }
+    public function getMangledName() {
+        return mMangledName;
+    }
+    public function getBody() {
+        return mBody;
     }
 }
 
@@ -171,11 +116,8 @@ abstract class CppStatement extends CppASTNode {
     public function getVarName() {
         return mVarName;
     }
-    private function getTrackerString() : String {
-        if(!mDatatype.requiresGC()) {
-            return "";
-        }
-        return "; samalrt::SamalGCTracker " + mVarName + "$$$tracker" + "{$ctx, " + "(void*) &" + mVarName + ", " + mDatatype.toCppGCTypeStr() + "}";
+    public function getDatatype() {
+        return mDatatype;
     }
 }
 
@@ -195,8 +137,8 @@ class CppScopeStatement extends CppStatement {
     public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
         mScope = cast(mScope.replace(preorder, postorder), CppScopeNode);
     }
-    public override function toCpp(ctx : CppContext) : String {
-        return indent(ctx) + mScope.toCpp(ctx.next());
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeScopeStatement(ctx, this);
     }
 }
 
@@ -224,7 +166,7 @@ class CppBinaryExprStatement extends CppStatement {
     public override function dumpSelf() : String {
         return super.dumpSelf() + ": " + mVarName + " = " + mLhsVarName + " " + mOp + " " + mRhsVarName;
     }
-    function opAsStr() : String {
+    public function opAsStr() : String {
         switch(mOp) {
             case Add:
                 return "+";
@@ -244,8 +186,14 @@ class CppBinaryExprStatement extends CppStatement {
                 return ">=";
         }
     }
-    public override function toCpp(ctx : CppContext) : String {
-        return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = " + mLhsVarName + " " + opAsStr() + " " + mRhsVarName + getTrackerString();
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeBinaryExprStatement(ctx, this);
+    }
+    public function getLhsVarName() {
+        return mLhsVarName;
+    }
+    public function getRhsVarName() {
+        return mRhsVarName;
     }
 }
 
@@ -267,17 +215,14 @@ class CppUnaryExprStatement extends CppStatement {
     public override function dumpSelf() : String {
         return super.dumpSelf() + ": " + mVarName + " = " +  mOp + " " + mExpr;
     }
-    public override function toCpp(ctx : CppContext) : String {
-        switch(mOp) {
-            case Not:
-                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = !(" + mExpr + ")" + getTrackerString();
-            case ListGetHead:
-                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = (" + mExpr + ")->value" + getTrackerString();
-            case ListGetTail:
-                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = (" + mExpr + ")->next" + getTrackerString();
-            case ListIsEmpty:
-                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = !(" + mExpr + ")" + getTrackerString();
-        }
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeUnaryExprStatement(ctx, this);
+    }
+    public function getOp() {
+        return mOp;
+    }
+    public function getExpr() {
+        return mExpr;
     }
 }
 
@@ -285,8 +230,8 @@ class CppUnreachable extends CppStatement {
     public function new(sourceRef : SourceCodeRef) {
         super(sourceRef, Datatype.Bool, "");
     }
-    public override function toCpp(ctx : CppContext) : String {
-        return indent(ctx) + " assert(false)";
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeUnreachable(ctx, this);
     }
 }
 
@@ -307,24 +252,14 @@ class CppAssignmentStatement extends CppStatement {
     public override function dumpSelf() : String {
         return super.dumpSelf() + ": " + mVarName + " = " + mRhsVarName + " (" + mType + ")";
     }
-    public override function toCpp(ctx : CppContext) : String {
-        switch(mType) {
-            case JustDeclare:
-                return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = " + mDatatype.toCppDefaultInitializationString() + getTrackerString();
-            case JustAssign:
-                return indent(ctx) + mVarName + " = " + mRhsVarName;
-            case DeclareAndAssign:
-                return indent(ctx) + mDatatype.toCppType() + " " + mVarName +  " = " + mRhsVarName + getTrackerString();
-        }
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeAssignmentStatement(ctx, this);
     }
-}
-
-class CppSimpleLiteral extends CppStatement {
-    public function new(sourceRef : SourceCodeRef, datatype : Datatype, value : String) {
-        super(sourceRef, datatype, value);
+    public function getType() {
+        return mType;
     }
-    public override function toCpp(ctx : CppContext) : String {
-        return mVarName;
+    public function getRhsVarName() {
+        return mRhsVarName;
     }
 }
 
@@ -335,8 +270,8 @@ class CppReturnStatement extends CppStatement {
     public override function dumpSelf() : String {
         return super.dumpSelf() + ": " + mVarName;
     }
-    public override function toCpp(ctx : CppContext) : String {
-        return indent(ctx) + "return " + mVarName;
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeReturnStatement(ctx, this);
     }
 }
 
@@ -351,8 +286,14 @@ class CppFunctionCallStatement extends CppStatement {
     public override function dumpSelf() : String {
         return super.dumpSelf() + ": " + mVarName;
     }
-    public override function toCpp(ctx : CppContext) : String {
-        return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = " + mFunctionName + "(" + ["$ctx"].concat(mParams).join(", ") + ")" + getTrackerString();
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeFunctionCallStatement(ctx, this);
+    }
+    public function getFunctionName() {
+        return mFunctionName;
+    }
+    public function getParams() {
+        return mParams;
     }
 }
 
@@ -369,12 +310,21 @@ class CppIfStatement extends CppStatement {
     public override function dumpSelf() : String {
         return super.dumpSelf() + ": " + mVarName;
     }
-    public override function toCpp(ctx : CppContext) : String {
-        return indent(ctx) + "if (" + mConditionVarName + ") " + mMainBody.toCpp(ctx.next()) + " else " + mElseBody.toCpp(ctx.next());
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeIfStatement(ctx, this);
     }
     public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
         mMainBody = cast(mMainBody.replace(preorder, postorder), CppScopeNode);
         mElseBody = cast(mElseBody.replace(preorder, postorder), CppScopeNode);
+    }
+    public function getConditionVarName() {
+        return mConditionVarName;
+    }
+    public function getMainBody() {
+        return mMainBody;
+    }
+    public function getElseBody() {
+        return mElseBody;
     }
 }
 
@@ -388,8 +338,14 @@ class CppListPrependStatement extends CppStatement {
         mList = list;
     }
 
-    public override function toCpp(ctx : CppContext) : String {
-        return indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = samalrt::listPrepend<" + mDatatype.getBaseType().toCppType() + ">($ctx, " + mValue + ", " + mList + ")" + getTrackerString();
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeListPrependStatement(ctx, this);
+    }
+    public function getValue() {
+        return mValue;
+    }
+    public function getList() {
+        return mList;
     }
 }
 
@@ -406,36 +362,16 @@ class CppCreateLambdaStatement extends CppStatement {
         mBody = body;
     }
 
-    public override function toCpp(ctx : CppContext) : String {
-        final bufferVarName = "buffer$$$" + Util.getUniqueId();
-        // first the lambda itself
-        var ret = 
-            indent(ctx) + mDatatype.toCppType() + " " + mVarName + " = *[](samalrt::SamalContext& $ctx, "
-            + mParams.map(function(p) return p.getDatatype().toCppType() + " " + p.getName()).join(", ") + ") -> " + mDatatype.getReturnType().toCppType() + " {\n"
-            + indent(ctx.next()) + "uint8_t* " + bufferVarName + " = (uint8_t*)$ctx.getLambdaCapturedVarPtr() + sizeof(void*);\n"
-            + mCapturedVariables.map(function(p) {
-                return 
-                    indent(ctx.next()) + p.getDatatype().toCppType() + " " + p.getName() + ";\n"
-                    + indent(ctx.next()) + "memcpy(&" + p.getName() + ", " + bufferVarName + ", " + p.getDatatype().toCppGCTypeStr() + ".getSizeOnStack());\n"
-                    + indent(ctx.next()) + bufferVarName + " += " + p.getDatatype().toCppGCTypeStr() + ".getSizeOnStack();\n";
-            }).join("")
-            + mBody.getStatements().map(function(stmt) return stmt.toCpp(ctx.next()) + ";").join("\n")
-            + "\n" + indent(ctx) + "};\n";
-        // then the buffer creation
-        ret += indent(ctx.next()) + "uint8_t* " + bufferVarName + " = (uint8_t*) $ctx.alloc(" + "("
-            + mCapturedVariables.map(function(p) {
-                return p.getDatatype().toCppGCTypeStr() + ".getSizeOnStack()";
-            }).join(" + ") + "+ sizeof(void*)));\n";
-        // assign it to the function
-        ret += indent(ctx.next()) + mVarName + ".setCapturedData(" + bufferVarName + ", {" + mCapturedVariables.map(function(p) return "&" + p.getDatatype().toCppGCTypeStr()).join(", ") + "});\n";
-        
-        // the the memcpys
-        ret += indent(ctx.next()) + bufferVarName + " += sizeof(void*);\n";
-        ret += mCapturedVariables.map(function(capturedVar) {
-            return 
-                indent(ctx.next()) + "memcpy(" + bufferVarName + ", &" + capturedVar.getName() + ", " + capturedVar.getDatatype().toCppGCTypeStr() + ".getSizeOnStack());\n"
-                + indent(ctx.next()) + bufferVarName + " += " + capturedVar.getDatatype().toCppGCTypeStr() + ".getSizeOnStack()";
-        }).join(";\n");
-       return ret + "\n" + indent(ctx) + getTrackerString();
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeCreateLambdaStatement(ctx, this);
+    }
+    public function getParams() {
+        return mParams;
+    }
+    public function getCapturedVariables() {
+        return mCapturedVariables;
+    }
+    public function getBody() {
+        return mBody;
     }
 }

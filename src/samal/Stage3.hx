@@ -1,5 +1,6 @@
 package samal;
 
+import samal.targets.LanguageTarget;
 import samal.Tokenizer.SourceCodeRef;
 import haxe.ds.List;
 import samal.Datatype.DatatypeHelpers;
@@ -19,13 +20,13 @@ class Stage3 {
     var mScopeStack : GenericStack<CppScopeNode>;
     var mTempVarNameCounter = 0;
     var mUsedDatatypes : Array<Datatype> = [];
-    final mLiteralHelper : Stage3LiteralHelper;
+    final mTarget : LanguageTarget;
 
-    public function new(prog : SamalProgram, literalHelper : Stage3LiteralHelper) {
+    public function new(prog : SamalProgram, target : LanguageTarget) {
         mSProgram = prog;
         mCProgram = new CppProgram();
         mScopeStack = new GenericStack<CppScopeNode>();
-        mLiteralHelper = literalHelper;
+        mTarget = target;
     }
 
     function addUsedDatatype(newType : Datatype) : Datatype {
@@ -150,7 +151,7 @@ class Stage3 {
 
         } else if(Std.downcast(astNode, SamalLiteralIntExpression) != null) {
             var node = Std.downcast(astNode, SamalLiteralIntExpression);
-            return mLiteralHelper.int(node.getValue());
+            return mTarget.getLiteralInt(node.getValue());
 
         } else if(Std.downcast(astNode, SamalAssignmentExpression) != null) {
             var node = Std.downcast(astNode, SamalAssignmentExpression);
@@ -224,7 +225,7 @@ class Stage3 {
         } else if(Std.downcast(astNode, SamalSimpleCreateEmptyList) != null) {
             var node = Std.downcast(astNode, SamalSimpleCreateEmptyList);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
-            return mLiteralHelper.emptyList();
+            return mTarget.getLiteralEmptyList();
 
         } else if(Std.downcast(astNode, SamalSimpleListPrepend) != null) {
             var node = Std.downcast(astNode, SamalSimpleListPrepend);

@@ -4,14 +4,14 @@ package samal;
 import sys.FileSystem;
 import sys.io.File;
 #end
-import samal.CppAST.HeaderOrSource;
-import samal.CppAST.CppContext;
+import samal.CppAST;
 import haxe.display.Display.Platform;
 import haxe.Log;
 import samal.Tokenizer.TokenType;
 import samal.Tokenizer.Token;
 import samal.Program;
 import samal.Stage3LiteralHelper;
+import samal.targets.CppTarget;
 
 import cloner.Cloner;
 
@@ -113,7 +113,8 @@ fn main() -> int {
     Log.trace(program.dump(), null);
 
     Log.trace("@@@@ Stage 3 @@@@", null);
-    var stage3 = new Stage3(program, new Stage3LiteralHelperCpp());
+    final target = new CppTarget();
+    var stage3 = new Stage3(program, target);
     var cprogram = stage3.convertToCppAST();
     Log.trace(cprogram.dump(), null);
 
@@ -124,8 +125,8 @@ fn main() -> int {
       try {
         FileSystem.createDirectory("out");
       } catch(_) {}
-      File.saveContent('out/${mod}.hpp', ast.toCpp(new CppContext(0, HeaderOrSource.Header, mainFunction)));
-      File.saveContent('out/${mod}.cpp', ast.toCpp(new CppContext(0, HeaderOrSource.Source, mainFunction)));
+      File.saveContent('out/${mod}.hpp', ast.toSrc(target, new CppContext(0, HeaderOrSource.Header, mainFunction)));
+      File.saveContent('out/${mod}.cpp', ast.toSrc(target, new CppContext(0, HeaderOrSource.Source, mainFunction)));
 
     });
     File.copy("samal_runtime/samal_runtime.cpp", "out/samal_runtime.cpp");
