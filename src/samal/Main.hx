@@ -12,6 +12,7 @@ import samal.Tokenizer.Token;
 import samal.Program;
 import samal.Stage3LiteralHelper;
 import samal.targets.CppTarget;
+import samal.targets.JSTarget;
 
 import cloner.Cloner;
 
@@ -73,10 +74,10 @@ fn seq(n : int) -> [int] {
   }
 }
 
-fn mainTwo() -> [int] {
+fn mainTwo() -> int {
   a = seq
   list = a(10000)
-  reverse<int>(sum<int>(list) + list)
+  sum<int>(reverse<int>(sum<int>(list) + list))
 }
 
 fn map<S, T>(l : [S], callback : fn(S) -> T) -> [T] {
@@ -118,7 +119,7 @@ fn main() -> int {
     var cprogram = stage3.convertToCppAST();
     Log.trace(cprogram.dump(), null);
 
-    var mainFunction = Util.mangle("A.B.Main.main", []);
+    var mainFunction = Util.mangle("A.B.Main.mainTwo", []);
 
 #if sys
     cprogram.forEachModule(function(mod, ast) {
@@ -131,6 +132,14 @@ fn main() -> int {
     });
     File.copy("samal_runtime/samal_runtime.cpp", "out/samal_runtime.cpp");
     File.copy("samal_runtime/samal_runtime.hpp", "out/samal_runtime.hpp");
+    /*cprogram.forEachModule(function(mod, ast) {
+      try {
+        FileSystem.createDirectory("out");
+      } catch(_) {}
+      File.saveContent('out/${mod}.js', ast.toSrc(target, new JSContext(0, mainFunction, JSExecutionType.Node)));
+
+    });
+    File.copy("samal_runtime/samal_runtime.js", "out/samal_runtime.js");*/
 #end
   }
 }
