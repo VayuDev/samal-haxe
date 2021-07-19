@@ -44,10 +44,13 @@ class JSTarget extends LanguageTarget {
     public function makeFunctionDeclaration(ctx : SourceCreationContext, node : CppFunctionDeclaration) : String {
         final paramsAsStrArray = node.getParams().map((p) -> '${p.getName()}');
         var ret = "function " + node.getMangledName() + "(" 
-            + ["$ctx"].concat(paramsAsStrArray).join(", ") + ")";
+            + ["$ctx"].concat(paramsAsStrArray).join(", ") + ") {\n";
 
-        ret += node.getBody().toSrc(this, ctx.next());
-        ret += "\n";
+        ret += indent(ctx.next()) + "while(true) ";
+        ret += node.getBody().toSrc(this, ctx.next().next());
+
+        ret += indent(ctx) + "\n}\n";
+
         if(node.getMangledName() == ctx.getMainFunctionMangledName()) {
             ret += 'console.log(${node.getMangledName()}(new samalrt.SamalContext()));';
         }
@@ -103,5 +106,13 @@ class JSTarget extends LanguageTarget {
     public function makeCreateLambdaStatement(ctx : SourceCreationContext, node : CppCreateLambdaStatement) : String {
         final paramsStr = ["$ctx"].concat(node.getParams().map(function(p) return p.getName())).join(", ");
         return indent(ctx) + "let " + node.getVarName() + " = function(" + paramsStr + ")" + node.getBody().toSrc(this, ctx.next());
+    }
+    public function makeTailCallSelf(ctx : SourceCreationContext, node : CppTailCallSelf) : String {
+        var ret = "";
+        for(param in node.getParams()) {
+            ret += indent(ctx) + param.paramName + " = " + param.paramValue + ";\n";
+        }
+        ret += indent(ctx) + "continue";
+        return ret;
     }
 }

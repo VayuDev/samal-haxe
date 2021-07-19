@@ -152,12 +152,28 @@ class Parser {
         var statements = [];
         while(current().getType() != TokenType.RCurly) {
             skipNewlines();
-            statements.push(parseExpression());
+            statements.push(parseExpressionOrLineExpression());
             eat(TokenType.NewLine);
             skipNewlines();
         }
         eat(TokenType.RCurly);
         return new SamalScope(makeSourceRef(), statements);
+    }
+
+    function parseExpressionOrLineExpression() : SamalExpression {
+        if(current().getType() == At) {
+            startNode();
+            eat(At);
+            final type = current().getSubstr();
+            eat(Identifier);
+            switch(type) {
+                case "tail_call_self":
+                    return new SamalTailCallSelf(makeSourceRef(), parseExpressionList(LParen, RParen));
+                default:
+                    throw new Exception("Unknown line statement '" + type + "'");
+            }
+        }
+        return parseExpression();
     }
 
     function parseExpression() : SamalExpression {

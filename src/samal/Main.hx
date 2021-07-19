@@ -1,5 +1,6 @@
 package samal;
 
+import sys.io.File;
 import samal.Pipeline;
 
 class Main {
@@ -22,7 +23,7 @@ class Main {
     fn reverseHelper<T>(la : [T], lb : [T]) -> [T] {
       match la {
         [head + tail] -> {
-          reverseHelper<T>(tail, head + lb)
+          @tail_call_self(tail, head + lb)
         }
         [] -> {
           lb
@@ -56,7 +57,7 @@ class Main {
     
     fn mainTwo() -> int {
       a = seq
-      list = a(100000)
+      list = a(10000)
       sum<int>(reverse<int>(sum<int>(list) + list))
     }
     
@@ -77,10 +78,10 @@ class Main {
       }
       a(10)
     }";
-    var pipeline = new Pipeline(TargetType.JSSingleFile(""));
+    var pipeline = new Pipeline(TargetType.JSSingleFile("out/out.js"));
     pipeline.add("Main", code);
     var files = pipeline.generate("A.B.Main.mainTwo");
-    js.Lib.eval(files[0].content);
+    //js.Lib.eval(files[0].content);
     
   }
 }

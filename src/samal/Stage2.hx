@@ -84,6 +84,7 @@ class Stage2 {
     var mCloner = new Cloner();
     var mCurrentTemplateReplacementMap = new Map<String, Datatype>();
     final mCompiledTemplateFunctions = new List<String>();
+    var mCurrentFunction : Null<SamalFunctionDeclarationNode>;
 
     // Upon entering a lambda, this value is set to track which are variables are accessed in the body.
     // Afterwards, it is set back to null.
@@ -143,6 +144,7 @@ class Stage2 {
 
         } else if(Std.downcast(astNode, SamalFunctionDeclarationNode) != null) {
             var node = Std.downcast(astNode, SamalFunctionDeclarationNode);
+            mCurrentFunction = node;
 
             // function params
             pushStackFrame();
@@ -314,6 +316,22 @@ class Stage2 {
                 throw new Exception('${node.errorInfo()} Declared return type is ${node.getDatatype().sure().getReturnType()}, but actual type is ${node.getBody().getDatatype().sure()}');
             }
             popStackFrame();
+
+        }  else if(Std.downcast(astNode, SamalTailCallSelf) != null) {
+            var node = Std.downcast(astNode, SamalTailCallSelf);
+            // check params
+            final functionParams = mCurrentFunction.sure().getDatatype().getParams();
+            if(node.getParams().length != functionParams.length) {
+                throw new Exception('${node.errorInfo()} Parameter length of tail call is wrong; expected ${functionParams.length}, but got ${node.getParams().length}');
+            }
+            for(i in 0...functionParams.length) {
+                traverse(node.getParams()[i]);
+                if(!node.getParams()[i].getDatatype().sure().deepEquals(functionParams[i])) {
+                    throw new Exception('${node.errorInfo()} Parameter at index ${i} is wrong; "
+                        + "expected ${functionParams[i]}, but got ${node.getParams()[i].getDatatype().sure()}');
+                }
+            }
+            node.setDatatype(mCurrentFunction.sure().getDatatype().sure().getReturnType());
         }
     }
 
@@ -357,7 +375,12 @@ class Stage2 {
     }
 
     function preorderReplace(astNode : ASTNode) : ASTNode {
-        if(Std.downcast(astNode, SamalIfExpression) != null) {
+        if(Std.downcast(astNode, SamalFunctionDeclarationNode) != null) {
+            var node = Std.downcast(astNode, SamalFunctionDeclarationNode);
+            mCurrentFunction = node;
+            return node;
+            
+        } else if(Std.downcast(astNode, SamalIfExpression) != null) {
             var node = Std.downcast(astNode, SamalIfExpression);
             if(node.getElseIfs().length == 0) {
                 return withDatatype(node.getDatatype().sure(), new SamalSimpleIfExpression(node.getSourceRef(), node.getMainCondition(), node.getMainBody(), node.getElse()));
@@ -390,6 +413,7 @@ class Stage2 {
 
             if(rhsType.match(List(_)) && lhsType.deepEquals(rhsType.getBaseType()) && node.getOperator() == Add) {
                 // list prepend
+                trace(node.getSourceRef().errorInfo() + "Using PRPEND");
                 return new SamalSimpleListPrepend(node.getSourceRef(), rhsType, node.getLhs(), node.getRhs());
             }
         } else if(Std.downcast(astNode, SamalMatchExpression) != null) {
@@ -433,6 +457,17 @@ class Stage2 {
             }
 
             return withDatatype(returnType, new SamalScopeExpression(node.getSourceRef(), rootScope));
+        } else if(Std.downcast(astNode, SamalTailCallSelf) != null) {
+            var node = Std.downcast(astNode, SamalTailCallSelf);
+            return new SamalSimpleTailCallSelf(
+                node.getSourceRef(), 
+                node.getDatatype().sure(), 
+                Util.createNamedAndValuedParametersArray(
+                    mCurrentFunction.sure().getParams().map(
+                        function(p) return p.getName()), 
+                    node.getParams().map(
+                        function(p) return cast(p.replace(preorderReplace, postorderReplace), SamalExpression))
+                    ));
         }
         return astNode;
     }

@@ -263,6 +263,15 @@ class Stage3 {
             addStatement(new CppCreateLambdaStatement(node.getSourceRef(), functionDatatype, varName, node.getParams(), node.getCapturedVariables(), scope));
             return varName;
 
+        } else if(Std.downcast(astNode, SamalSimpleTailCallSelf) != null) {
+            var node = Std.downcast(astNode, SamalSimpleTailCallSelf);
+            var params : Array<TailCallSelfParam> = [];
+            for(p in node.getParams()) {
+                params.push(new TailCallSelfParam(p.getName(), traverse(p.getValue())));
+            }
+            addStatement(new CppTailCallSelf(astNode.getSourceRef(), node.getDatatype().sure(), "", params));
+            return "";
+
         } else {
             throw new Exception("TODO! " + Type.getClassName(Type.getClass(astNode)));
         }

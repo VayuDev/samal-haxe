@@ -594,3 +594,30 @@ class SamalCreateLambdaExpression extends SamalExpression {
         return super.dumpSelf() + " Captured: <" + mCapturedVariables.join(", ") + ">";
     }
 }
+
+class SamalLineExpression extends SamalExpression {
+
+}
+
+class SamalTailCallSelf extends SamalLineExpression {
+    final mParameters : Array<SamalExpression>;
+    public function new(sourceRef : SourceCodeRef, params : Array<SamalExpression>) {
+        super(sourceRef);
+        mParameters = params;
+    }
+    public function getParams() {
+        return mParameters;
+    }
+}
+
+class SamalSimpleTailCallSelf extends SamalLineExpression {
+    final mParameters : Array<NamedAndValuedParameter>;
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, params : Array<NamedAndValuedParameter>) {
+        super(sourceRef);
+        mParameters = params;
+        mDatatype = datatype;
+    }
+    public function getParams() {
+        return mParameters;
+    }
+}

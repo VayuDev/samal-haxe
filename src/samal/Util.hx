@@ -1,5 +1,6 @@
 package samal;
 
+import samal.SamalAST.SamalExpression;
 import samal.Datatype.DatatypeHelpers;
 using samal.Datatype.DatatypeHelpers;
 import haxe.Exception;
@@ -72,6 +73,17 @@ class Util {
             }
         }
         return false;
+    }
+
+    public static function createNamedAndValuedParametersArray(names : Array<String>, values : Array<SamalExpression>) {
+        if(names.length != values.length) {
+            throw new Exception("Lengthes must match!");
+        }
+        var ret : Array<NamedAndValuedParameter> = [];
+        for(i in 0...names.length) {
+            ret.push(new NamedAndValuedParameter(names[i], values[i]));
+        }
+        return ret;
     }
 }
 

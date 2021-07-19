@@ -87,12 +87,14 @@ class CppTarget extends LanguageTarget {
             ret += ";";
         } else {
             ret += " {\n";
+            ret += " while(true) {\n";
             // trackers for params
             ret += node.getParams().map(function(p) {
                 return indent(ctx.next()) + "samalrt::SamalGCTracker " + p.getName() + "$$$tracker" 
                     + "{$ctx, " + "(void*) &" + p.getName() + ", " + p.getDatatype().toCppGCTypeStr() + ", true};\n";
             }).join("");
-            ret += node.getBody().getStatements().map((stmt) -> stmt.toSrc(this, ctx.next()) + ";\n").join("");
+            ret += node.getBody().getStatements().map((stmt) -> stmt.toSrc(this, ctx.next().next()) + ";\n").join("");
+            ret += " }\n";
             ret += "}";
             if(node.getMangledName() == ctx.getMainFunctionMangledName()) {
                 ret += '\nint main(int argc, char **argv) {
@@ -180,5 +182,13 @@ class CppTarget extends LanguageTarget {
                 + indent(ctx.next()) + bufferVarName + " += " + capturedVar.getDatatype().toCppGCTypeStr() + ".getSizeOnStack()";
         }).join(";\n");
        return ret + "\n" + indent(ctx) + getTrackerString(node);
+    }
+    public function makeTailCallSelf(ctx : SourceCreationContext, node : CppTailCallSelf) : String {
+        var ret = "";
+        for(param in node.getParams()) {
+            ret += indent(ctx) + param.paramName + " = " + param.paramValue + ";\n";
+        }
+        ret += indent(ctx) + "continue";
+        return ret;
     }
 }

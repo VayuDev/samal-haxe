@@ -269,7 +269,7 @@ class TokenGenerator {
                 continue;
             }
             var isIdentifier = false;
-            while(getCurrentChar() != "" && "abcdefghijklmnopqrstuvwyxzABCDEFGHIJKLMNOPQRSTUVWXYZ.".indexOf(getCurrentChar()) != -1) {
+            while(getCurrentChar() != "" && "abcdefghijklmnopqrstuvwyxzABCDEFGHIJKLMNOPQRSTUVWXYZ._".indexOf(getCurrentChar()) != -1) {
                 advance();
                 isIdentifier = true;
             }

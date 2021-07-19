@@ -375,3 +375,29 @@ class CppCreateLambdaStatement extends CppStatement {
         return mBody;
     }
 }
+
+class TailCallSelfParam {
+    public var paramName(default,null) : String;
+    public var paramValue(default, null) : String;
+    public function new(paramName : String, paramValue : String) {
+        this.paramName = paramName;
+        this.paramValue = paramValue;
+    }
+}
+
+class CppTailCallSelf extends CppStatement {
+    final mParams : Array<TailCallSelfParam>;
+
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, varName : String, 
+                        params : Array<TailCallSelfParam>) {
+        super(sourceRef, datatype, varName);
+        mParams = params;
+    }
+
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeTailCallSelf(ctx, this);
+    }
+    public function getParams() {
+        return mParams;
+    }
+}

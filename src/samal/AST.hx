@@ -1,4 +1,5 @@
 package samal;
+import samal.SamalAST.SamalExpression;
 import samal.Tokenizer.SourceCodeRef;
 import samal.Util.Util;
 
@@ -90,6 +91,20 @@ class NamedAndTypedParameter {
     }
     public function getDatatype() {
         return mDatatype;
+    }
+    public function getName() {
+        return mName;
+    }
+}
+class NamedAndValuedParameter {
+    var mName : String;
+    var mValue : SamalExpression;
+    public function new(name : String, value : SamalExpression) {
+        mName = name;
+        mValue = value;
+    }
+    public function getValue() {
+        return mValue;
     }
     public function getName() {
         return mName;

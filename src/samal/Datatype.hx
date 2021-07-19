@@ -25,6 +25,14 @@ class DatatypeHelpers {
                 throw new Exception(type + " is not a function!");
         }
     }
+    static public function getParams(type : Datatype) : Array<Datatype> {
+        switch(type) {
+            case Function(_, params):
+                return params;
+            case _:
+                throw new Exception(type + " is not a function!");
+        }
+    }
     static public function getBaseType(type : Datatype) : Datatype {
         switch(type) {
             case List(baseType):
