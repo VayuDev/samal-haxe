@@ -3,3 +3,4 @@
 .haxelib
 bin
 out/*
+src/samal/generated/*.hx

@@ -1,39 +1,29 @@
 package samal.targets;
+import samal.Pipeline.TargetType;
 import samal.CppAST;
 import samal.targets.LanguageTarget;
 using samal.Datatype.DatatypeHelpers;
 using samal.Util.NullTools;
 
-enum JSExecutionType {
-    Browser;
-    Node;
-}
-
 class JSContext extends SourceCreationContext {
-    var mExecutionType : JSExecutionType;
 
-    public function new(indent : Int, mainFunction : String, executionType : JSExecutionType) {
+    public function new(indent : Int, mainFunction : String) {
         super(indent, mainFunction);
-        mExecutionType = executionType;
-    }
-
-    public function isNode() : Bool {
-        return mExecutionType == Node;
-    }
-    public function isSource() : Bool {
-        return mExecutionType == Browser;
     }
     public override function next() : JSContext {
-        return new JSContext(mIndent + 1, mMainFunction, mExecutionType);
+        return new JSContext(mIndent + 1, mMainFunction);
     }
     public override function prev() : JSContext {
-        return new JSContext(mIndent - 1, mMainFunction, mExecutionType);
+        return new JSContext(mIndent - 1, mMainFunction);
     }
 }
 
 class JSTarget extends LanguageTarget {
     public function new() {}
 
+    public function getNewContext(mainFunction : String, executionType : TargetType) {
+        return new JSContext(0, mainFunction);
+    }
 
     public function getLiteralInt(value : Int) : String {
         return Std.string(value);
@@ -44,9 +34,6 @@ class JSTarget extends LanguageTarget {
     public function makeFile(ctx : SourceCreationContext, node : CppFile) : String {
         var ret = "";
         final jsContext = Std.downcast(ctx, JSContext);
-        if(jsContext.isNode()) {
-            ret += "require(\"./samal_runtime.js\");\n";
-        }
         ret += node.getDeclarations().map((decl) -> (decl.toSrc(this, ctx))).join("\n\n");
         ret += "\n";
         return ret;

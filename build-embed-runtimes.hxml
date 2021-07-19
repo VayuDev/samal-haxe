@@ -1,0 +1,3 @@
+tools/EmbedRuntimes.hx 
+-main tools.EmbedRuntimes 
+-python out/embed_runtimes.py

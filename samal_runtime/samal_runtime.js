@@ -1,4 +1,4 @@
-samalrt = {};
+var samalrt = {};
 
 samalrt.List = class List {
     constructor(value, next) {
