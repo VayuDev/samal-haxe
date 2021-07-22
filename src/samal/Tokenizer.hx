@@ -78,6 +78,7 @@ enum TokenType {
     DoubleAnd;
     DoublePipe;
     Module;
+    Struct;
 }
 
 
@@ -219,7 +220,8 @@ class TokenGenerator {
         "int" => TokenType.Int,
         "&&" => TokenType.DoubleAnd,
         "||" => TokenType.DoublePipe,
-        "module" => TokenType.Module
+        "module" => TokenType.Module,
+        "struct" => TokenType.Struct
     ];
     
 

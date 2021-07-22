@@ -14,6 +14,7 @@ enum Datatype {
     Usertype(name : String, templateParams : Array<Datatype>);
     Function(returnType : Datatype, params : Array<Datatype>);
     Tuple(elements : Array<Datatype>);
+    Struct(name : String, templateParams : Array<Datatype>);
 }
 
 class DatatypeHelpers {
@@ -67,6 +68,8 @@ class DatatypeHelpers {
                 return type;
             case Bool:
                 return type;
+            case Struct(name, fields):
+                return Datatype.Struct(name, fields.map(function(f) return complete(f, map)));
         }
     }
     static public function isComplete(type : Datatype) : Bool {
@@ -90,6 +93,10 @@ class DatatypeHelpers {
                 return true;
             case Bool:
                 return true;
+            case Struct(name, fields):
+                return !fields.any(function(p) {
+                    return !isComplete(p);
+                });
         }
     }
     static public function toCppType(type : Datatype) : String {

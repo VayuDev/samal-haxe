@@ -40,6 +40,7 @@ class SamalModuleNode extends SamalASTNode {
 abstract class SamalDeclarationNode extends SamalASTNode {
     abstract public function getName() : String;
     abstract public function getTemplateParams() : Array<Datatype>;
+    abstract public function cloneWithTemplateParams(typeMap : Map<String, Datatype>, templateParams : Array<Datatype>, cloner : Cloner) : SamalDeclarationNode;
 }
 
 class SamalFunctionDeclarationNode extends SamalDeclarationNode {
@@ -88,6 +89,40 @@ class SamalFunctionDeclarationNode extends SamalDeclarationNode {
         final body = cloner.clone(mBody);
         final returnType = cloner.clone(mReturnType);
         return new SamalFunctionDeclarationNode(getSourceRef(), new IdentifierWithTemplate(getName(), templateParams), params, returnType.complete(typeMap), body);
+    }
+}
+
+class SamalStructDeclaration extends SamalDeclarationNode {    
+    var mName : IdentifierWithTemplate;
+    var mFields : Array<StructField>;
+    public function new(sourceRef : SourceCodeRef, name : IdentifierWithTemplate, fields : Array<StructField>) {
+        super(sourceRef);
+        mName = name;
+        mFields = fields;
+    }
+    public override function dumpSelf() : String {
+        return "\n" + super.dumpSelf() + " " + getDatatype();
+    }
+    public function getDatatype() : Datatype {
+        return Datatype.Struct(mName.getName(), mName.getTemplateParams());
+    }
+    public function getFields() {
+        return mFields;
+    }
+    public function setIdentifier(identifier) {
+        mName = identifier;
+    }
+    public function getName() : String {
+        return mName.getName();
+    }
+    public function getTemplateParams() : Array<Datatype> {
+        return mName.getTemplateParams();
+    }
+    public function cloneWithTemplateParams(typeMap : Map<String, Datatype>, templateParams : Array<Datatype>, cloner : Cloner) : SamalStructDeclaration {
+        final fields = mFields.map(function(p) {
+            return new StructField(p.getName(), p.getDatatype().complete(typeMap));
+        });
+        return new SamalStructDeclaration(getSourceRef(), new IdentifierWithTemplate(getName(), templateParams), fields);
     }
 }
 

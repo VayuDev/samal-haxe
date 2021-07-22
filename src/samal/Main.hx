@@ -1,6 +1,5 @@
 package samal;
 
-import sys.io.File;
 import samal.Pipeline;
 
 class Main {
@@ -67,6 +66,11 @@ class Main {
         [head + tail] -> callback(head) + map<S, T>(tail, callback)
       }
     }
+
+    struct Point {
+      a : int
+      b : int
+    }
     
     fn main() -> int {
       a = {
@@ -81,8 +85,9 @@ class Main {
     var pipeline = new Pipeline(TargetType.JSSingleFile("out/out.js"));
     pipeline.add("Main", code);
     var files = pipeline.generate("A.B.Main.mainTwo");
-    //js.Lib.eval(files[0].content);
-    
+    #if js
+    js.Lib.eval(files[0].content);
+    #end
   }
 }
 

@@ -96,6 +96,11 @@ class NamedAndTypedParameter {
         return mName;
     }
 }
+
+class StructField extends NamedAndTypedParameter {
+    
+}
+
 class NamedAndValuedParameter {
     var mName : String;
     var mValue : SamalExpression;

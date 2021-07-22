@@ -55,6 +55,12 @@ class Parser {
                 startNode();
                 var body = parseScope();
                 return new SamalFunctionDeclarationNode(makeSourceRef(), identifier, params, returnType, body);
+            
+            case TokenType.Struct:
+                eat(Struct);
+                final identifier = parseIdentifierWithTemplate();
+                final fields = parseStructFieldList();
+                return new SamalStructDeclaration(makeSourceRef(), identifier, fields);
             case _:
                 throw new Exception(current().info() + ": Expected declaration");
         }
@@ -120,6 +126,22 @@ class Parser {
         }
         eat(TokenType.RParen);
         
+        return ret;
+    }
+
+    function parseStructFieldList() : Array<StructField> {
+        var ret = [];
+        eat(TokenType.LCurly);
+        while(current().getType() != TokenType.RCurly) {
+            skipNewlines();
+            var name = current().getSubstr();
+            eat(TokenType.Identifier);
+            eat(TokenType.Colons);
+            var type = parseDatatype();
+            ret.push(new StructField(name, type));
+            skipNewlines();
+        }
+        eat(TokenType.RCurly);
         return ret;
     }
 
