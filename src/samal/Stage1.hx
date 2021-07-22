@@ -20,6 +20,10 @@ class Stage1 {
                 if(Std.downcast(astNode, SamalFunctionDeclarationNode) != null) {
                     var node = Std.downcast(astNode, SamalFunctionDeclarationNode);
                     node.setIdentifier(new IdentifierWithTemplate(mCurrentModule + "." + node.getIdentifier().getName(), node.getIdentifier().getTemplateParams()));
+
+                } else if(Std.downcast(astNode, SamalStructDeclaration) != null) {
+                    var node = Std.downcast(astNode, SamalStructDeclaration);
+                    node.setIdentifier(new IdentifierWithTemplate(mCurrentModule + "." + node.getIdentifier().getName(), node.getIdentifier().getTemplateParams()));
                 }
             });
         });

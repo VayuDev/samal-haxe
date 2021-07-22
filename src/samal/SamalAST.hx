@@ -106,6 +106,9 @@ class SamalStructDeclaration extends SamalDeclarationNode {
     public function getDatatype() : Datatype {
         return Datatype.Struct(mName.getName(), mName.getTemplateParams());
     }
+    public function getIdentifier() {
+        return mName;
+    }
     public function getFields() {
         return mFields;
     }
