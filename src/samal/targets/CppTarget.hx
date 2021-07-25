@@ -107,7 +107,15 @@ class CppTarget extends LanguageTarget {
         return ret;
     }
     public function makeStructDeclaration(ctx : SourceCreationContext, node : CppStructDeclaration) : String {
-        return "";
+        final cppCtx = Std.downcast(ctx, CppContext);
+        if(cppCtx.isSource()) {
+            return "";
+        }
+        return "struct " + node.getMangledName() + " {\n"
+            + node.getFields().map(function(f) {
+                return " " + f.getDatatype().toCppType() + " " + f.getName() + ";\n";
+            }).join("")
+            + "};";
     }
     public function makeScopeStatement(ctx : SourceCreationContext, node : CppScopeStatement) : String {
         return indent(ctx) + node.getScope().toSrc(this, ctx.next());
