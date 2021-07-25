@@ -68,11 +68,11 @@ class Main {
     }
 
     struct Point {
-      a : int
-      b : int
+      x : int
+      y : int
     }
     
-    fn main() -> int {
+    fn mainThree() -> int {
       a = {
         outer = 1
         fn(param : int) -> int {
@@ -81,8 +81,12 @@ class Main {
         }
       }
       a(10)
+    }
+    
+    fn main() -> Point {
+      p = Point{x:5, y:10}
     }";
-    var pipeline = new Pipeline(TargetType.JSSingleFile("out/out.js"));
+    var pipeline = new Pipeline(TargetType.CppFiles("out", "gcc"));
     pipeline.add("Main", code);
     var files = pipeline.generate("A.B.Main.mainTwo");
     #if js

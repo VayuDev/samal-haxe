@@ -92,7 +92,11 @@ class SamalFunctionDeclarationNode extends SamalDeclarationNode {
     }
 }
 
-class SamalStructDeclaration extends SamalDeclarationNode {    
+abstract class SamalDatatypeDeclaration extends SamalDeclarationNode {
+
+}
+
+class SamalStructDeclaration extends SamalDatatypeDeclaration {    
     var mName : IdentifierWithTemplate;
     var mFields : Array<StructField>;
     public function new(sourceRef : SourceCodeRef, name : IdentifierWithTemplate, fields : Array<StructField>) {
@@ -423,6 +427,22 @@ class SamalSimpleIfExpression extends SamalExpression {
         mCondition = cast(mCondition.replace(preorder, postorder), SamalExpression);
         mMainBody = cast(mMainBody.replace(preorder, postorder), SamalScope);
         mElseBody = cast(mElseBody.replace(preorder, postorder), SamalScope);
+    }
+}
+
+class SamalCreateStructExpression extends SamalExpression {
+    final mStructName : IdentifierWithTemplate;
+    var mParams : Array<NamedAndValuedParameter>;
+    public function new(sourceRef : SourceCodeRef, structName : IdentifierWithTemplate, params : Array<NamedAndValuedParameter>) {
+        super(sourceRef);
+        mStructName = structName;
+        mParams = params;
+    }
+    
+    public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
+        mParams = mParams.map(function(p) {
+            return new NamedAndValuedParameter(p.getName(), cast(p.getValue().replace(preorder, postorder), SamalExpression));
+        });
     }
 }
 

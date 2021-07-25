@@ -145,6 +145,25 @@ class Parser {
         return ret;
     }
 
+    function parseNamedExpressionParameterList() : Array<NamedAndValuedParameter> {
+        var ret = [];
+        eat(TokenType.LCurly);
+        while(current().getType() != TokenType.RCurly) {
+            var name = current().getSubstr();
+            eat(TokenType.Identifier);
+            eat(TokenType.Colons);
+            var value = parseExpression();
+            ret.push(new NamedAndValuedParameter(name, value));
+            if(current().getType() == TokenType.Comma) {
+                eat(TokenType.Comma);
+            } else {
+                break;
+            }
+        }
+        eat(TokenType.RCurly);
+        return ret;
+    }
+
     function parseTemplateParams() : Array<Datatype> {
         var templateParams = [];
         if(current().getType() == Less && current().getSkippedWhitespaces() == 0) {
@@ -298,11 +317,15 @@ class Parser {
             case TokenType.Identifier:
                 startNode();
                 if (peek().getType() == TokenType.Equals) {
-                    var identifierName = current().getSubstr();
+                    final identifierName = current().getSubstr();
                     eat(TokenType.Identifier);
                     eat(TokenType.Equals);
                     var rhs = parseExpression();
                     return new SamalAssignmentExpression(makeSourceRef(), identifierName, rhs);
+                } else if(peek().getType() == LCurly && peek().getSkippedWhitespaces() == 0) {
+                    final identifier = parseIdentifierWithTemplate();
+                    final params = parseNamedExpressionParameterList();
+                    return new SamalCreateStructExpression(makeSourceRef(), identifier, params);
                 }
                 return new SamalLoadIdentifierExpression(makeSourceRef(), parseIdentifierWithTemplate());
             case TokenType.If:
