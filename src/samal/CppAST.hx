@@ -105,6 +105,30 @@ class CppFunctionDeclaration extends CppDeclaration {
     }
 }
 
+class CppStructDeclaration extends CppDeclaration {
+    var mDatatype : Datatype;
+    var mMangledName : String;
+    var mFields : Array<StructField>;
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, mangledName : String, fields : Array<StructField>) {
+        super(sourceRef);
+        mDatatype = datatype;
+        mMangledName = mangledName;
+        mFields = fields;
+    }
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeStructDeclaration(ctx, this);
+    }
+    public function getFields() {
+        return mFields;
+    }
+    public function getDatatype() {
+        return mDatatype;
+    }
+    public function getMangledName() {
+        return mMangledName;
+    }
+}
+
 abstract class CppStatement extends CppASTNode {
     var mVarName : String;
     var mDatatype : Datatype;

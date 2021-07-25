@@ -38,6 +38,7 @@ abstract class LanguageTarget {
     abstract public function makeFile(ctx : SourceCreationContext, node : CppFile) : String;
     abstract public function makeScopeNode(ctx : SourceCreationContext, node : CppScopeNode) : String;
     abstract public function makeFunctionDeclaration(ctx : SourceCreationContext, node : CppFunctionDeclaration) : String;
+    abstract public function makeStructDeclaration(ctx : SourceCreationContext, node : CppStructDeclaration) : String;
     abstract public function makeScopeStatement(ctx : SourceCreationContext, node : CppScopeStatement) : String;
     abstract public function makeBinaryExprStatement(ctx : SourceCreationContext, node : CppBinaryExprStatement) : String;
     abstract public function makeUnaryExprStatement(ctx : SourceCreationContext, node : CppUnaryExprStatement) : String;

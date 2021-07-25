@@ -106,6 +106,9 @@ class CppTarget extends LanguageTarget {
         }
         return ret;
     }
+    public function makeStructDeclaration(ctx : SourceCreationContext, node : CppStructDeclaration) : String {
+        return "";
+    }
     public function makeScopeStatement(ctx : SourceCreationContext, node : CppScopeStatement) : String {
         return indent(ctx) + node.getScope().toSrc(this, ctx.next());
     }    

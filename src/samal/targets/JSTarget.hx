@@ -5,25 +5,31 @@ import samal.targets.LanguageTarget;
 using samal.Datatype.DatatypeHelpers;
 using samal.Util.NullTools;
 
-class JSContext extends SourceCreationContext {
+enum DeclareDatatypesOrFunctions {
+    Datatypes;
+    Functions;
+}
 
-    public function new(indent : Int, mainFunction : String) {
+class JSContext extends SourceCreationContext {
+    final mDof : DeclareDatatypesOrFunctions;
+
+    public function new(indent : Int, mainFunction : String, dof : DeclareDatatypesOrFunctions) {
         super(indent, mainFunction);
+        mDof = dof;
     }
     public override function next() : JSContext {
-        return new JSContext(mIndent + 1, mMainFunction);
+        return new JSContext(mIndent + 1, mMainFunction, mDof);
     }
     public override function prev() : JSContext {
-        return new JSContext(mIndent - 1, mMainFunction);
+        return new JSContext(mIndent - 1, mMainFunction, mDof);
+    }
+    public function getDof() {
+        return mDof;
     }
 }
 
 class JSTarget extends LanguageTarget {
     public function new() {}
-
-    public function getNewContext(mainFunction : String, executionType : TargetType) {
-        return new JSContext(0, mainFunction);
-    }
 
     public function getLiteralInt(value : Int) : String {
         return Std.string(value);
@@ -42,6 +48,8 @@ class JSTarget extends LanguageTarget {
         return "{\n" + node.getStatements().map((stmt) -> stmt.toSrc(this, ctx.next()) + ";\n").join("") + indent(ctx.prev()) + "}";
     }    
     public function makeFunctionDeclaration(ctx : SourceCreationContext, node : CppFunctionDeclaration) : String {
+        if(Std.downcast(ctx, JSContext).getDof() == Datatypes)
+            return "";
         final paramsAsStrArray = node.getParams().map((p) -> '${p.getName()}');
         var ret = "function " + node.getMangledName() + "(" 
             + ["$ctx"].concat(paramsAsStrArray).join(", ") + ") {\n";
@@ -49,14 +57,24 @@ class JSTarget extends LanguageTarget {
         ret += indent(ctx.next()) + "while(true) ";
         ret += node.getBody().toSrc(this, ctx.next().next());
 
-        ret += indent(ctx) + "\n}\n";
+        ret += indent(ctx) + "\n}";
 
         if(node.getMangledName() == ctx.getMainFunctionMangledName()) {
-            ret += 'console.log(${node.getMangledName()}(new samalrt.SamalContext()));';
+            ret += '\nconsole.log(${node.getMangledName()}(new samalrt.SamalContext()));\n';
         }
-        ret += "\n";
         
         return ret;
+    }
+    public function makeStructDeclaration(ctx : SourceCreationContext, node : CppStructDeclaration) : String {
+        if(Std.downcast(ctx, JSContext).getDof() == Functions)
+            return "";
+        return "class " + node.getMangledName() + " {\n" 
+            + " constructor(" + node.getFields().map(function(f) return f.getName()).join(",") + ") {\n"
+            + node.getFields().map(function(f) {
+                return "  this." + f.getName() + " = " + f.getName() + ";\n";
+            }).join("")
+            + " }\n"
+            + "}";
     }
     public function makeScopeStatement(ctx : SourceCreationContext, node : CppScopeStatement) : String {
         return indent(ctx) + node.getScope().toSrc(this, ctx.next());

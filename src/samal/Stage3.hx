@@ -65,6 +65,10 @@ class Stage3 {
             
             mCurrentFileDeclarations.push(new CppFunctionDeclaration(node.getSourceRef(), functionDatatype, node.getIdentifier().mangled(), node.getParams(), scope));
             mScopeStack.pop();
+        } else if(Std.downcast(astNode, SamalStructDeclaration) != null) {
+            var node = Std.downcast(astNode, SamalStructDeclaration);
+            mCurrentFileDeclarations.push(new CppStructDeclaration(node.getSourceRef(), node.getDatatype(), node.getIdentifier().mangled(), node.getFields()));
+
         } else if(Std.downcast(astNode, SamalScopeExpression) != null) {
             var node = Std.downcast(astNode, SamalScopeExpression);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
