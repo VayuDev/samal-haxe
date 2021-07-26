@@ -336,7 +336,7 @@ class Stage2 {
     }
 
     function complete(datatype : Datatype) : Datatype {
-        return datatype.complete(mCurrentTemplateReplacementMap);
+        return datatype.complete(new StringToDatatypeMapperUsingTypeMap(mCurrentTemplateReplacementMap));
     }
 
     function findIdentifierForLoading(name : IdentifierWithTemplate) : VarDeclaration {
@@ -361,7 +361,7 @@ class Stage2 {
             //try {
                 final passedTemplateParams = name.getTemplateParams().map(function(p) return complete(p));
                 final replacementMap = Util.buildTemplateReplacementMap(func.getTemplateParams(), passedTemplateParams);
-                final completedFunctionType = func.getDatatype().complete(replacementMap);
+                final completedFunctionType = func.getDatatype().complete(new StringToDatatypeMapperUsingTypeMap(replacementMap));
                 final requiredMangledName = Util.mangle(func.getIdentifier().getName(), passedTemplateParams);
                 if(!mTemplateFunctionsToCompile.exists(requiredMangledName)) {
                     mTemplateFunctionsToCompile.set(requiredMangledName, new TemplateFunctionToCompile(func, replacementMap, passedTemplateParams));
@@ -576,7 +576,8 @@ class Stage2 {
                 final current = it.next();
                 
                 mCurrentTemplateReplacementMap = current.value.getTypeMap();
-                final decl = current.value.getFunctionDeclaration().cloneWithTemplateParams(current.value.getTypeMap(), current.value.getPassedTemplateParams(), mCloner);
+                final decl = current.value.getFunctionDeclaration().cloneWithTemplateParams(
+                    new StringToDatatypeMapperUsingTypeMap(current.value.getTypeMap()), current.value.getPassedTemplateParams(), mCloner);
                 traverse(decl);
                 ast.getDeclarations().push(decl);
                 mTemplateFunctionsToCompile.remove(current.key);

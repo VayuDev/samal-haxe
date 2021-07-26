@@ -1,5 +1,7 @@
 package samal;
 
+import samal.Datatype.StringToDatatypeMapper;
+import samal.Datatype.StringToDatatypeMapperUsingTypeMap;
 import cloner.Cloner;
 import haxe.macro.Expr;
 import haxe.Int32;
@@ -40,7 +42,7 @@ class SamalModuleNode extends SamalASTNode {
 abstract class SamalDeclarationNode extends SamalASTNode {
     abstract public function getName() : String;
     abstract public function getTemplateParams() : Array<Datatype>;
-    abstract public function cloneWithTemplateParams(typeMap : Map<String, Datatype>, templateParams : Array<Datatype>, cloner : Cloner) : SamalDeclarationNode;
+    abstract public function cloneWithTemplateParams(typeMap : StringToDatatypeMapper, templateParams : Array<Datatype>, cloner : Cloner) : SamalDeclarationNode;
 }
 
 class SamalFunctionDeclarationNode extends SamalDeclarationNode {
@@ -60,6 +62,12 @@ class SamalFunctionDeclarationNode extends SamalDeclarationNode {
     }
     public override function dumpSelf() : String {
         return "\n" + super.dumpSelf() + " " + mName.dump() + " " + getDatatype();
+    }
+    public function completeWithUserTypeMap(mapper : StringToDatatypeMapper) {
+        mReturnType = mReturnType.complete(mapper);
+        mParams = mParams.map(function(p) {
+            return new NamedAndTypedParameter(p.getName(), p.getDatatype().complete(mapper));
+        });
     }
     public function getDatatype() : Datatype {
         return Datatype.Function(mReturnType, mParams.map(function(p) {return p.getDatatype();}));
@@ -82,18 +90,18 @@ class SamalFunctionDeclarationNode extends SamalDeclarationNode {
     public function getTemplateParams() : Array<Datatype> {
         return mName.getTemplateParams();
     }
-    public function cloneWithTemplateParams(typeMap : Map<String, Datatype>, templateParams : Array<Datatype>, cloner : Cloner) : SamalFunctionDeclarationNode {
+    public function cloneWithTemplateParams(mapper : StringToDatatypeMapper, templateParams : Array<Datatype>, cloner : Cloner) : SamalFunctionDeclarationNode {
         final params = mParams.map(function(p) {
-            return new NamedAndTypedParameter(p.getName(), p.getDatatype().complete(typeMap));
+            return new NamedAndTypedParameter(p.getName(), p.getDatatype().complete(mapper));
         });
         final body = cloner.clone(mBody);
         final returnType = cloner.clone(mReturnType);
-        return new SamalFunctionDeclarationNode(getSourceRef(), new IdentifierWithTemplate(getName(), templateParams), params, returnType.complete(typeMap), body);
+        return new SamalFunctionDeclarationNode(getSourceRef(), new IdentifierWithTemplate(getName(), templateParams), params, returnType.complete(mapper), body);
     }
 }
 
 abstract class SamalDatatypeDeclaration extends SamalDeclarationNode {
-
+    abstract public function getDatatype() : Datatype;
 }
 
 class SamalStructDeclaration extends SamalDatatypeDeclaration {    
@@ -125,9 +133,9 @@ class SamalStructDeclaration extends SamalDatatypeDeclaration {
     public function getTemplateParams() : Array<Datatype> {
         return mName.getTemplateParams();
     }
-    public function cloneWithTemplateParams(typeMap : Map<String, Datatype>, templateParams : Array<Datatype>, cloner : Cloner) : SamalStructDeclaration {
+    public function cloneWithTemplateParams(mapper : StringToDatatypeMapper, templateParams : Array<Datatype>, cloner : Cloner) : SamalStructDeclaration {
         final fields = mFields.map(function(p) {
-            return new StructField(p.getName(), p.getDatatype().complete(typeMap));
+            return new StructField(p.getName(), p.getDatatype().complete(mapper));
         });
         return new SamalStructDeclaration(getSourceRef(), new IdentifierWithTemplate(getName(), templateParams), fields);
     }

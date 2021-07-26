@@ -1,13 +1,26 @@
 package samal;
 
+import samal.Datatype;
 import haxe.Exception;
-import samal.SamalAST.SamalFunctionDeclarationNode;
+import samal.SamalAST;
 import samal.CppAST.CppASTNode;
 import samal.CppAST.CppFile;
 import samal.SamalAST.SamalModuleNode;
 import samal.SamalAST.SamalASTNode;
 import samal.AST;
 using samal.Util.NullTools;
+
+class StringToDatatypeMapperUsingSamalProgram extends StringToDatatypeMapper {
+    final mProgram : SamalProgram;
+    final mModuleScope : String;
+    public function new(program : SamalProgram, moduleScope : String) {
+        mProgram = program;
+        mModuleScope = moduleScope;
+    }
+    public function getDatatype(name : String) : Datatype {
+        return mProgram.findDatatype(name, mModuleScope).getDatatype();
+    }
+}
 
 class SamalProgram {
     var mModules = new Map<String, SamalModuleNode>();
@@ -41,6 +54,18 @@ class SamalProgram {
             }
         }
         throw new Exception('Function $functionName not found!');
+    }
+    public function findDatatype(name : String, moduleScope : String) : SamalDatatypeDeclaration {
+        for(decl in mModules[moduleScope].sure().getDeclarations()) {
+            //trace(decl.getName());
+            if(decl.getName().substr(decl.getName().lastIndexOf(".") + 1) == name && Std.downcast(decl, SamalDatatypeDeclaration) != null) {
+                return Std.downcast(decl, SamalDatatypeDeclaration);
+            }
+        }
+        throw new DatatypeNotFound(name);
+    }
+    public function makeStringToDatatypeMapper(moduleScope : String) : StringToDatatypeMapper {
+        return new StringToDatatypeMapperUsingSamalProgram(this, moduleScope);
     }
 }
 class CppProgram {

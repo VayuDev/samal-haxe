@@ -17,6 +17,30 @@ enum Datatype {
     Struct(name : String, templateParams : Array<Datatype>);
 }
 
+class DatatypeNotFound extends Exception {
+    public function new(typeNotFound) {
+        super('Type $typeNotFound not found!');
+    }
+}
+
+abstract class StringToDatatypeMapper {
+    abstract public function getDatatype(name : String) : Datatype;
+}
+
+class StringToDatatypeMapperUsingTypeMap extends StringToDatatypeMapper {
+    final mTypeMap : Map<String, Datatype>;
+    public function new(typeMap : Map<String, Datatype>) {
+        mTypeMap = typeMap;
+    }
+    public function getDatatype(name : String) : Datatype {
+        final value = mTypeMap[name];
+        if(value == null) {
+            throw new DatatypeNotFound(name);
+        }
+        return value.sure();
+    }
+}
+
 class DatatypeHelpers {
     static public function getReturnType(type : Datatype) : Datatype {
         switch(type) {
@@ -50,10 +74,10 @@ class DatatypeHelpers {
                 throw new Exception(type + " is not a user type!");
         }
     }
-    static public function complete(type : Datatype, map : Map<String, Datatype>) : Datatype {
+    static public function complete(type : Datatype, map : StringToDatatypeMapper) : Datatype {
         switch(type) {
             case Usertype(name, params):
-                return map[name].sure();
+                return map.getDatatype(name);
             case List(base):
                 return Datatype.List(complete(base, map));
             case Function(returnType, params):
