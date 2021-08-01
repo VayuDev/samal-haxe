@@ -9,6 +9,7 @@ import samal.SamalAST.SamalModuleNode;
 import samal.SamalAST.SamalASTNode;
 import samal.AST;
 using samal.Util.NullTools;
+using samal.Datatype.DatatypeHelpers;
 
 class StringToDatatypeMapperUsingSamalProgram extends StringToDatatypeMapper {
     final mProgram : SamalProgram;
@@ -68,12 +69,12 @@ class SamalProgram {
         for(mod in mModules) {
             for(decl in mod.getDeclarations()) {
                 final typeDecl = Std.downcast(decl, SamalDatatypeDeclaration);
-                if(typeDecl != null && typeDecl.getDatatype() == datatype) {
+                if(typeDecl != null && typeDecl.getDatatype().deepEquals(datatype)) {
                     return typeDecl;
                 }
             }
         }
-        throw new Exception("Datatype not found!");
+        throw new Exception("Datatype " + datatype + " not found!");
     }
     public function makeStringToDatatypeMapper(moduleScope : String) : StringToDatatypeMapper {
         return new StringToDatatypeMapperUsingSamalProgram(this, moduleScope);

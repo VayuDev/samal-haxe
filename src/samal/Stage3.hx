@@ -270,10 +270,16 @@ class Stage3 {
         } else if(Std.downcast(astNode, SamalCreateStructExpression) != null) {
             var node = Std.downcast(astNode, SamalCreateStructExpression);
             final varName = genTempVarName("struct");
-            //final decl = Std.downcast(mSProgram.findDatatypeDeclaration(node.getDatatype()), SamalStructDeclaration).sure();
+
+            final decl = Std.downcast(mSProgram.findDatatypeDeclaration(node.getDatatype().sure()), SamalStructDeclaration).sure();
             final params : Array<NamedAndValueStringedParameter> = [];
-            for(i in 0...node.getParams().length) {
-                params.push({name : node.getParams()[i].sure().getName(), value : traverse(node.getParams()[i].sure().getValue())});
+            for(expectedField in decl.getFields()) {
+                // find passed param for field
+                for(p in node.getParams()) {
+                    if(p.getName() != expectedField.getName())
+                        continue;
+                    params.push({name : p.getName(), value : traverse(p.getValue())});
+                }
             }
             addStatement(new CppCreateStructStatement(node.getSourceRef(), node.getDatatype().sure(), varName, params));
             return varName;
