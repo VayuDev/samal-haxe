@@ -147,6 +147,22 @@ class DatatypeHelpers {
                 throw new Exception("TODO toCppType: " + type);
         }
     }
+    static public function toSamalType(type : Datatype) : String {
+        switch(type) {
+            case Int:
+                return "int";
+            case Bool:
+                return "bool";
+            case List(base):
+                return "[" + toCppType(base) + "]";
+            case Struct(name, []):
+                return name;
+            case Struct(name, params):
+                return name + "<" + params.map(function(p) return toSamalType(p)).join(", ") + ">";
+            case _:
+                throw new Exception("TODO toSamalType: " + type);
+        }
+    }
     static public function toMangledName(type : Datatype) : String {
         switch(type) {
             case Int:

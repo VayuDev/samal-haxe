@@ -199,6 +199,18 @@ List<T>* listPrepend(SamalContext& ctx, T lhs, List<T>* rhs) {
     prev->next = rhs;
     return prev;
 }
+template<typename T>
+List<T>* listConcat(SamalContext& ctx, List<T>* lhs, List<T>* rhs) {
+    if(lhs == nullptr) {
+        return rhs;
+    }
+    List<T>* current = lhs;
+    while(current->next != nullptr) {
+        current = current->next;
+    }
+    current->next = rhs;
+    return lhs;
+}
 
 using SamalString = List<char32_t>*;
 

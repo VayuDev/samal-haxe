@@ -111,11 +111,25 @@ class CppTarget extends LanguageTarget {
         if(cppCtx.isSource()) {
             return "";
         }
+        final reversedFields = node.getFields().copy();
+        reversedFields.reverse();
+
         return "struct " + node.getDatatype().toCppType() + " {\n"
             + node.getFields().map(function(f) {
                 return " " + f.getDatatype().toCppType() + " " + f.getName() + ";\n";
             }).join("")
-            + "};";
+            + "};\n"
+            + "namespace samalrt {\n"
+            + "samalrt::SamalString inspect(samalrt::SamalContext& ctx, const " + node.getDatatype().toCppType() + "& value) {\n"
+            + ' samalrt::SamalString ret = samalrt::toSamalString(ctx, "}");\n'
+            + reversedFields.map(function(f) {
+                return ' ret = samalrt::listConcat(ctx, inspect(ctx, value.${f.getName()}), ret);\n'
+                    + ' ret = samalrt::listConcat(ctx, samalrt::toSamalString(ctx, "${f.getName()} = "), ret);\n';
+            }).join(' ret = samalrt::listConcat(ctx, samalrt::toSamalString(ctx, ", "), ret);\n')
+            + ' ret = samalrt::listConcat(ctx, samalrt::toSamalString(ctx, "${node.getDatatype().toSamalType()}{"), ret);\n'
+            + " return ret;\n"
+            + "}\n"
+            + "}\n";
     }
     public function makeScopeStatement(ctx : SourceCreationContext, node : CppScopeStatement) : String {
         return indent(ctx) + node.getScope().toSrc(this, ctx.next());

@@ -86,7 +86,7 @@ class Main {
     fn main() -> Point {
       p = Point{y:5, x:10}
     }";
-    var pipeline = new Pipeline(TargetType.JSSingleFile("out/out.js"));
+    var pipeline = new Pipeline(TargetType.CppFiles("out", "gcc"));
     pipeline.add("Main", code);
     var files = pipeline.generate("A.B.Main.main");
     #if js
