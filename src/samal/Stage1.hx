@@ -50,6 +50,10 @@ class Stage1 {
                         var node = Std.downcast(astNode, SamalCreateLambdaExpression);
                         node.setDatatype(node.getDatatype().sure().complete(mProgram.makeStringToDatatypeMapper(mCurrentModule)));
                         
+                    } else if(Std.downcast(astNode, SamalCreateStructExpression) != null) {
+                        var node = Std.downcast(astNode, SamalCreateStructExpression);
+                        node.setDatatype(node.getDatatype().sure().complete(mProgram.makeStringToDatatypeMapper(mCurrentModule)));
+                        
                     }
                 } catch(e : DatatypeNotFound) {
                     // no need to worry (yet) as the datatype might be a template parameter

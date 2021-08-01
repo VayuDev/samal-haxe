@@ -317,7 +317,10 @@ class Stage2 {
             }
             popStackFrame();
 
-        }  else if(Std.downcast(astNode, SamalTailCallSelf) != null) {
+        } else if(Std.downcast(astNode, SamalCreateStructExpression) != null) {
+            var node = Std.downcast(astNode, SamalCreateStructExpression);
+
+        } else if(Std.downcast(astNode, SamalTailCallSelf) != null) {
             var node = Std.downcast(astNode, SamalTailCallSelf);
             // check params
             final functionParams = mCurrentFunction.sure().getDatatype().getParams();
@@ -406,7 +409,7 @@ class Stage2 {
                     currentChild, 
                     new SamalCreateListExpression(node.getSourceRef(), node.getDatatype().sure().getBaseType(), node.getChildren())));
 
-        } else if(Std.downcast(astNode, SamalBinaryExpression) != null) {
+        }  else if(Std.downcast(astNode, SamalBinaryExpression) != null) {
             var node = Std.downcast(astNode, SamalBinaryExpression);
             final lhsType = node.getLhs().getDatatype().sure();
             final rhsType = node.getRhs().getDatatype().sure();

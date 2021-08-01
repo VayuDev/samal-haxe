@@ -74,6 +74,14 @@ class DatatypeHelpers {
                 throw new Exception(type + " is not a user type!");
         }
     }
+    static public function getStructMangledName(type : Datatype) : String {
+        switch(type) {
+            case Struct(name, params):
+                return "struct_" + Util.mangle(name, params);
+            case _:
+                throw new Exception(type + " is not a struct type!");
+        }
+    }
     static public function complete(type : Datatype, map : StringToDatatypeMapper) : Datatype {
         switch(type) {
             case Usertype(name, params):
@@ -92,8 +100,8 @@ class DatatypeHelpers {
                 return type;
             case Bool:
                 return type;
-            case Struct(name, fields):
-                return Datatype.Struct(name, fields.map(function(f) return complete(f, map)));
+            case Struct(name, templateParams):
+                return Datatype.Struct(name, templateParams.map(function(f) return complete(f, map)));
         }
     }
     static public function isComplete(type : Datatype) : Bool {
@@ -133,6 +141,8 @@ class DatatypeHelpers {
                 return "samalrt::List<" + toCppType(base) + ">*";
             case Function(returnType, params):
                 return "samalrt::Function<" + toCppType(returnType) + "(samalrt::SamalContext&, " + params.map(function(p) return toCppType(p)).join(", ") + ")>";
+            case Struct(name, params):
+                return getStructMangledName(type);
             case _:
                 throw new Exception("TODO toCppType: " + type);
         }
@@ -147,6 +157,8 @@ class DatatypeHelpers {
                 return "list_s" + toMangledName(base) + "e";
             case Function(returnType, params):
                 return "fn_s" + toMangledName(returnType) + "_" + params.map(function(p) return toMangledName(p)).join("_") + "e";
+            case Struct(name, params):
+                return "struct_s" + Util.mangle(name, params) + "e";
             case _:
                 throw new Exception("TODO " + type);
         }
@@ -163,6 +175,8 @@ class DatatypeHelpers {
             case List(_):
                 return true;
             case Function(_, _):
+                return true;
+            case Struct(_, _):
                 return true;
             case _:
                 throw new Exception("TODO requiresGC" + type);
@@ -205,8 +219,10 @@ class DatatypeHelpers {
                     }).join("")
                     + "static samalrt::Datatype " + typeStr +  "{samalrt::DatatypeCategory::Function, &" 
                     + toCppGCTypeStr(returnType) + ", {" + params.map(function(p) return "&" + toCppGCTypeStr(p)).join(", ") + "}};\n";
+            case Struct(name, params):
+                return "static samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Struct};\n";
             case _:
-                throw new Exception("TODO requiresGC" + type);
+                throw new Exception("TODO requiresGC " + type);
         }
         throw new Exception("TODO toCppGCTypeDeclaration" + type);
     }

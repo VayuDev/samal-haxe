@@ -64,6 +64,17 @@ class SamalProgram {
         }
         throw new DatatypeNotFound(name);
     }
+    public function findDatatypeDeclaration(datatype : Datatype) : SamalDatatypeDeclaration {
+        for(mod in mModules) {
+            for(decl in mod.getDeclarations()) {
+                final typeDecl = Std.downcast(decl, SamalDatatypeDeclaration);
+                if(typeDecl != null && typeDecl.getDatatype() == datatype) {
+                    return typeDecl;
+                }
+            }
+        }
+        throw new Exception("Datatype not found!");
+    }
     public function makeStringToDatatypeMapper(moduleScope : String) : StringToDatatypeMapper {
         return new StringToDatatypeMapperUsingSamalProgram(this, moduleScope);
     }

@@ -445,12 +445,16 @@ class SamalCreateStructExpression extends SamalExpression {
         super(sourceRef);
         mStructName = structName;
         mParams = params;
+        mDatatype = Datatype.Usertype(mStructName.getName(), mStructName.getTemplateParams());
     }
     
     public override function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
         mParams = mParams.map(function(p) {
             return new NamedAndValuedParameter(p.getName(), cast(p.getValue().replace(preorder, postorder), SamalExpression));
         });
+    }
+    public function getParams() {
+        return mParams;
     }
 }
 

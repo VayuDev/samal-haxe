@@ -84,11 +84,11 @@ class Main {
     }
     
     fn main() -> Point {
-      p = Point{x:5, y:10}
+      p = Point{y:5, x:10}
     }";
-    var pipeline = new Pipeline(TargetType.CppFiles("out", "gcc"));
+    var pipeline = new Pipeline(TargetType.JSSingleFile("out/out.js"));
     pipeline.add("Main", code);
-    var files = pipeline.generate("A.B.Main.mainTwo");
+    var files = pipeline.generate("A.B.Main.main");
     #if js
     js.Lib.eval(files[0].content);
     #end

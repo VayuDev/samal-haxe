@@ -107,12 +107,10 @@ class CppFunctionDeclaration extends CppDeclaration {
 
 class CppStructDeclaration extends CppDeclaration {
     var mDatatype : Datatype;
-    var mMangledName : String;
     var mFields : Array<StructField>;
-    public function new(sourceRef : SourceCodeRef, datatype : Datatype, mangledName : String, fields : Array<StructField>) {
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, fields : Array<StructField>) {
         super(sourceRef);
         mDatatype = datatype;
-        mMangledName = mangledName;
         mFields = fields;
     }
     public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
@@ -123,9 +121,6 @@ class CppStructDeclaration extends CppDeclaration {
     }
     public function getDatatype() {
         return mDatatype;
-    }
-    public function getMangledName() {
-        return mMangledName;
     }
 }
 
@@ -397,6 +392,25 @@ class CppCreateLambdaStatement extends CppStatement {
     }
     public function getBody() {
         return mBody;
+    }
+}
+
+typedef NamedAndValueStringedParameter = { name : String, value : String }
+
+class CppCreateStructStatement extends CppStatement {
+    final mParams : Array<NamedAndValueStringedParameter>;
+
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, varName : String, 
+                        params : Array<NamedAndValueStringedParameter>) {
+        super(sourceRef, datatype, varName);
+        mParams = params;
+    }
+
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeCreateStructStatement(ctx, this);
+    }
+    public function getParams() {
+        return mParams;
     }
 }
 

@@ -111,7 +111,7 @@ class CppTarget extends LanguageTarget {
         if(cppCtx.isSource()) {
             return "";
         }
-        return "struct " + node.getMangledName() + " {\n"
+        return "struct " + node.getDatatype().toCppType() + " {\n"
             + node.getFields().map(function(f) {
                 return " " + f.getDatatype().toCppType() + " " + f.getName() + ";\n";
             }).join("")
@@ -162,6 +162,7 @@ class CppTarget extends LanguageTarget {
     public function makeListPrependStatement(ctx : SourceCreationContext, node : CppListPrependStatement) : String {
         return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = samalrt::listPrepend<" + node.getDatatype().getBaseType().toCppType() + ">($ctx, " + node.getValue() + ", " + node.getList() + ")" + getTrackerString(node);
     }
+    
     public function makeCreateLambdaStatement(ctx : SourceCreationContext, node : CppCreateLambdaStatement) : String {
         final bufferVarName = "buffer$$$" + Util.getUniqueId();
         // first the lambda itself
@@ -193,6 +194,10 @@ class CppTarget extends LanguageTarget {
                 + indent(ctx.next()) + bufferVarName + " += " + capturedVar.getDatatype().toCppGCTypeStr() + ".getSizeOnStack()";
         }).join(";\n");
        return ret + "\n" + indent(ctx) + getTrackerString(node);
+    }
+    public function makeCreateStructStatement(ctx : SourceCreationContext, node : CppCreateStructStatement) : String {
+        final paramsStr = node.getParams().map(function(p) return "." + p.name + " = " + p.value).join(", ");
+        return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = " + node.getDatatype().getStructMangledName() + "{" + paramsStr + "}";
     }
     public function makeTailCallSelf(ctx : SourceCreationContext, node : CppTailCallSelf) : String {
         var ret = "";

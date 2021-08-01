@@ -67,7 +67,7 @@ class Stage3 {
             mScopeStack.pop();
         } else if(Std.downcast(astNode, SamalStructDeclaration) != null) {
             var node = Std.downcast(astNode, SamalStructDeclaration);
-            mCurrentFileDeclarations.push(new CppStructDeclaration(node.getSourceRef(), node.getDatatype(), node.getIdentifier().mangled(), node.getFields()));
+            mCurrentFileDeclarations.push(new CppStructDeclaration(node.getSourceRef(), node.getDatatype(), node.getFields()));
 
         } else if(Std.downcast(astNode, SamalScopeExpression) != null) {
             var node = Std.downcast(astNode, SamalScopeExpression);
@@ -265,6 +265,17 @@ class Stage3 {
             mScopeStack.pop();
 
             addStatement(new CppCreateLambdaStatement(node.getSourceRef(), functionDatatype, varName, node.getParams(), node.getCapturedVariables(), scope));
+            return varName;
+
+        } else if(Std.downcast(astNode, SamalCreateStructExpression) != null) {
+            var node = Std.downcast(astNode, SamalCreateStructExpression);
+            final varName = genTempVarName("struct");
+            //final decl = Std.downcast(mSProgram.findDatatypeDeclaration(node.getDatatype()), SamalStructDeclaration).sure();
+            final params : Array<NamedAndValueStringedParameter> = [];
+            for(i in 0...node.getParams().length) {
+                params.push({name : node.getParams()[i].sure().getName(), value : traverse(node.getParams()[i].sure().getValue())});
+            }
+            addStatement(new CppCreateStructStatement(node.getSourceRef(), node.getDatatype().sure(), varName, params));
             return varName;
 
         } else if(Std.downcast(astNode, SamalSimpleTailCallSelf) != null) {
