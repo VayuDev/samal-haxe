@@ -1,4 +1,5 @@
 package samal.targets;
+import samal.Program.CppProgram;
 import samal.CppAST;
 import samal.targets.LanguageTarget;
 using samal.Datatype.DatatypeHelpers;
@@ -10,11 +11,13 @@ enum HeaderOrSource {
 }
 
 class CppContext extends SourceCreationContext {
-    var mHos : HeaderOrSource;
+    final mHos : HeaderOrSource;
+    final mProgram : CppProgram;
 
-    public function new(indent : Int, hos : HeaderOrSource, mainFunction : String) {
+    public function new(indent : Int, mainFunction : String, hos : HeaderOrSource, program : CppProgram) {
         super(indent, mainFunction);
         mHos = hos;
+        mProgram = program;
     }
 
     public function isHeader() : Bool {
@@ -24,10 +27,13 @@ class CppContext extends SourceCreationContext {
         return mHos == Source;
     }
     public override function next() : CppContext {
-        return new CppContext(mIndent + 1, mHos, mMainFunction);
+        return new CppContext(mIndent + 1, mMainFunction, mHos, mProgram);
     }
     public override function prev() : CppContext {
-        return new CppContext(mIndent - 1, mHos, mMainFunction);
+        return new CppContext(mIndent - 1, mMainFunction, mHos, mProgram);
+    }
+    public function getProgram() : CppProgram {
+        return mProgram;
     }
 }
 
@@ -67,6 +73,17 @@ class CppTarget extends LanguageTarget {
             final alreadyDeclared = [];
             for(d in node.getUsedDatatypes()) {
                 ret += d.toCppGCTypeDeclaration(alreadyDeclared);
+            }
+            // now assign the fields to the structs. We need to do it in this order, because structs can be recursive.
+            ret += "\n";
+            var placerCounter = 0;
+            for(declaredType in alreadyDeclared) {
+                if(declaredType.match(Struct(_, _))) {
+                    for(i => field in cppCtx.getProgram().findStructDeclaration(declaredType).getFields()) {
+                        ret += 'static samalrt::DatatypeStructPlacer placer$placerCounter{${declaredType.toCppGCTypeStr()}, $i, ${field.getDatatype().toCppGCTypeStr()}};\n';
+                        placerCounter += 1;
+                    }
+                }
             }
         }
         ret += "\n";
@@ -114,7 +131,9 @@ class CppTarget extends LanguageTarget {
         final reversedFields = node.getFields().copy();
         reversedFields.reverse();
 
-        return "struct " + node.getDatatype().toCppType() + " {\n"
+        return 
+            "#pragma pack(1)\n"
+            + "struct " + node.getDatatype().toCppType() + " {\n"
             + node.getFields().map(function(f) {
                 return " " + f.getDatatype().toCppType() + " " + f.getName() + ";\n";
             }).join("")
@@ -211,7 +230,7 @@ class CppTarget extends LanguageTarget {
     }
     public function makeCreateStructStatement(ctx : SourceCreationContext, node : CppCreateStructStatement) : String {
         final paramsStr = node.getParams().map(function(p) return "." + p.name + " = " + p.value).join(", ");
-        return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = " + node.getDatatype().getStructMangledName() + "{" + paramsStr + "}";
+        return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = " + node.getDatatype().getStructMangledName() + "{" + paramsStr + "}" + getTrackerString(node);
     }
     public function makeTailCallSelf(ctx : SourceCreationContext, node : CppTailCallSelf) : String {
         var ret = "";

@@ -222,18 +222,18 @@ class DatatypeHelpers {
         alreadyDone.push(type);
         switch(type) {
             case Int:
-                return "static samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Int};\n";
+                return "static const samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Int};\n";
             case Bool:
-                return "static samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Bool};\n";
+                return "static const samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Bool};\n";
             case List(base):
                 return toCppGCTypeDeclaration(base, alreadyDone) 
-                    + "static samalrt::Datatype " + typeStr +  "{samalrt::DatatypeCategory::List, &" + toCppGCTypeStr(base) + "};\n";
+                    + "static const samalrt::Datatype " + typeStr +  "{samalrt::DatatypeCategory::List, &" + toCppGCTypeStr(base) + "};\n";
             case Function(returnType, params):
                 return toCppGCTypeDeclaration(returnType, alreadyDone) 
                     + params.map(function(p) {
                         return toCppGCTypeDeclaration(p, alreadyDone);
                     }).join("")
-                    + "static samalrt::Datatype " + typeStr +  "{samalrt::DatatypeCategory::Function, &" 
+                    + "static const samalrt::Datatype " + typeStr +  "{samalrt::DatatypeCategory::Function, &" 
                     + toCppGCTypeStr(returnType) + ", {" + params.map(function(p) return "&" + toCppGCTypeStr(p)).join(", ") + "}};\n";
             case Struct(name, params):
                 return "static samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Struct};\n";

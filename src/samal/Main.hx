@@ -71,6 +71,13 @@ class Main {
       x : int
       y : int
     }
+    struct Sample {
+      l : [int]
+      m : [int]
+    }
+    struct SampleCollector {
+      samples : [Sample]
+    }
     
     fn mainThree() -> int {
       a = {
@@ -82,11 +89,26 @@ class Main {
       }
       a(10)
     }
+
+    fn createSample(salt : int) -> Sample {
+      a = seq(salt)
+      b = map<int, int>(seq(salt), fn(n : int) -> int {
+        n + 1
+      })
+      Sample{l : a, m : b}
+    }
+
+    fn createSamples() -> SampleCollector {
+      samples = map<int, Sample>(seq(200), fn(i : int) -> Sample {
+        createSample(i)
+      })
+      SampleCollector{samples : samples}
+    }
     
-    fn main() -> Point {
-      p = Point{y:5, x:10}
+    fn main() -> SampleCollector {
+      createSamples()
     }";
-    var pipeline = new Pipeline(TargetType.CppFiles("out", "gcc"));
+    var pipeline = new Pipeline(TargetType.JSSingleFile("out/out.js"));
     pipeline.add("Main", code);
     var files = pipeline.generate("A.B.Main.main");
     #if js

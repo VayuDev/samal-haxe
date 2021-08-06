@@ -43,6 +43,7 @@ abstract class SamalDeclarationNode extends SamalASTNode {
     abstract public function getName() : String;
     abstract public function getTemplateParams() : Array<Datatype>;
     abstract public function cloneWithTemplateParams(typeMap : StringToDatatypeMapper, templateParams : Array<Datatype>, cloner : Cloner) : SamalDeclarationNode;
+    abstract public function completeWithUserTypeMap(mapper : StringToDatatypeMapper) : Void;
 }
 
 class SamalFunctionDeclarationNode extends SamalDeclarationNode {
@@ -138,6 +139,11 @@ class SamalStructDeclaration extends SamalDatatypeDeclaration {
             return new StructField(p.getName(), p.getDatatype().complete(mapper));
         });
         return new SamalStructDeclaration(getSourceRef(), new IdentifierWithTemplate(getName(), templateParams), fields);
+    }
+    public function completeWithUserTypeMap(mapper : StringToDatatypeMapper) : Void {
+        mFields = mFields.map(function(p) {
+            return new StructField(p.getName(), p.getDatatype().complete(mapper));
+        });
     }
 }
 

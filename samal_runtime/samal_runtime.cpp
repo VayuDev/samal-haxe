@@ -93,7 +93,7 @@ void SamalContext::visitObj(void *toVisit, const Datatype& type) {
                 memcpy(rawPtr, *rawPtr, sizeof(void*));
                 break;
             }
-            visitObj((void**) ((*(uint8_t***)rawPtr) + sizeof(void*)), type.getBaseType());
+            visitObj((void**) ((*(uint8_t***)rawPtr) + 1), type.getBaseType());
             auto newPtr = copyToOther(*rawPtr, type.getSize());
             auto oldPtrToCurrent = *rawPtr;
             memcpy(rawPtr, &newPtr, sizeof(void*));
@@ -124,6 +124,14 @@ void SamalContext::visitObj(void *toVisit, const Datatype& type) {
         memcpy(fn.getCapturedVariablesBuffer(), &newPtr, sizeof(void*));
         fn.setCapturedVariablesBuffer(newPtr);
         memset(newPtr, 0, sizeof(void*));
+        break;
+    }
+    case DatatypeCategory::Struct: {
+        auto current = toVisit;
+        for(const auto* field: type.getParams()) {
+            visitObj(current, *field);
+            current = (uint8_t*)current + field->getSizeOnStack();
+        }
         break;
     }
     }

@@ -1,5 +1,6 @@
 package samal;
 
+import samal.CppAST.CppStructDeclaration;
 import samal.Datatype;
 import haxe.Exception;
 import samal.SamalAST;
@@ -102,5 +103,16 @@ class CppProgram {
         for(mod in mModules.keyValueIterator()) {
             callback(mod.key, mod.value);
         }
+    }
+    public function findStructDeclaration(datatype : Datatype) : CppStructDeclaration {
+        for(mod in mModules) {
+            for(decl in mod.getDeclarations()) {
+                final typeDecl = Std.downcast(decl, CppStructDeclaration);
+                if(typeDecl != null && typeDecl.getDatatype().deepEquals(datatype)) {
+                    return typeDecl;
+                }
+            }
+        }
+        throw new Exception("Datatype " + datatype + " not found!");
     }
 }

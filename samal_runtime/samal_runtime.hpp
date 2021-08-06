@@ -7,6 +7,7 @@
 #include <memory>
 #include <cassert>
 #include <type_traits>
+#include <iostream>
 
 namespace samalrt {
 
@@ -90,7 +91,7 @@ template<typename FunctionType>
 class Function final {
 private:
     FunctionType* mFunction;
-    std::vector<Datatype*> mCapturedDatatypes;
+    std::vector<const Datatype*> mCapturedDatatypes;
     void* mCapturedVariablesBuffer = nullptr;
 public:
     Function(FunctionType& function)
@@ -108,14 +109,14 @@ public:
         ctx.setLambdaCapturedVarPtr(mCapturedVariablesBuffer);
         return mFunction(ctx, std::forward<Args>(args)...);
     }
-    void setCapturedData(void* buffer, std::vector<Datatype*> capturedDatatypes) {
+    void setCapturedData(void* buffer, std::vector<const Datatype*> capturedDatatypes) {
         mCapturedVariablesBuffer = buffer;
         mCapturedDatatypes = std::move(capturedDatatypes);
     }
 
     size_t getCapturedVariablesBufferSize();
     
-    std::vector<Datatype*>& getCapturedTypes() {
+    const std::vector<const Datatype*>& getCapturedTypes() {
         return mCapturedDatatypes;
     }
     void* getCapturedVariablesBuffer() {
@@ -161,7 +162,10 @@ public:
             return alignSize(sizeof(void*) + mFurtherInfo.baseType->getSize());
         case DatatypeCategory::Function:
             return sizeof(Function<int(int)>);
+        case DatatypeCategory::Struct:
+            return getSizeOnStack();
         }
+        std::cout << static_cast<int>(mCategory) << std::endl;
         assert(false);
     }
     size_t getSizeOnStack() const {
@@ -174,15 +178,36 @@ public:
             return sizeof(void*);
         case DatatypeCategory::Function:
             return sizeof(Function<int(int)>);
+        case DatatypeCategory::Struct:
+            size_t size = 0;
+            for(const auto* field: mFurtherInfo.params) {
+                size += field->getSizeOnStack();
+            }
+            return size;
         }
+        std::cout << static_cast<int>(mCategory) << std::endl;
         assert(false);
     }
     const Datatype& getBaseType() const {
         return *mFurtherInfo.baseType;
     }
+    const std::vector<const Datatype*>& getParams() const {
+        return mFurtherInfo.params;
+    }
 private:
+    friend class DatatypeStructPlacer;
     DatatypeCategory mCategory;
     FurtherInfoUnion mFurtherInfo;
+};
+
+class DatatypeStructPlacer {
+public:
+    DatatypeStructPlacer(Datatype& structType, size_t index, const Datatype& fieldType) {
+        if(structType.mFurtherInfo.params.size() <= index) {
+            structType.mFurtherInfo.params.resize(index + 1);
+        }
+        structType.mFurtherInfo.params.at(index) = &fieldType;
+    }
 };
 
 
@@ -217,7 +242,7 @@ using SamalString = List<char32_t>*;
 
 class SamalGCTracker {
 public:
-    SamalGCTracker(SamalContext& ctx, void *rawPtr, Datatype& type, bool disableGC = false)
+    SamalGCTracker(SamalContext& ctx, void *rawPtr, const Datatype& type, bool disableGC = false)
     : mPrev(ctx.getLastGCTracker()), mToTrackRawPtr(rawPtr), mDatatype(type), mCtx(ctx) {
         ctx.setLastGCTracker(this);
         if(!disableGC) {
@@ -246,7 +271,7 @@ public:
 private:
     SamalGCTracker* mPrev = nullptr;
     void* mToTrackRawPtr = nullptr;
-    Datatype& mDatatype;
+    const Datatype& mDatatype;
     SamalContext& mCtx;
 };
 

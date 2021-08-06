@@ -36,8 +36,8 @@ class Stage1 {
             mCurrentModule = moduleName;
             moduleAST.traverse(function(astNode) {}, function(astNode) {
                 try {
-                    if(Std.downcast(astNode, SamalFunctionDeclarationNode) != null) {
-                        var node = Std.downcast(astNode, SamalFunctionDeclarationNode);
+                    if(Std.downcast(astNode, SamalDeclarationNode) != null) {
+                        var node = Std.downcast(astNode, SamalDeclarationNode);
                         node.completeWithUserTypeMap(mProgram.makeStringToDatatypeMapper(mCurrentModule));
     
                     } else if(Std.downcast(astNode, SamalCreateListExpression) != null) {
@@ -54,6 +54,12 @@ class Stage1 {
                         var node = Std.downcast(astNode, SamalCreateStructExpression);
                         node.setDatatype(node.getDatatype().sure().complete(mProgram.makeStringToDatatypeMapper(mCurrentModule)));
                         
+                    } else if(Std.downcast(astNode, SamalLoadIdentifierExpression) != null) {
+                        var node = Std.downcast(astNode, SamalLoadIdentifierExpression);
+                        final newTemplateParams = node.getIdentifier().getTemplateParams().map(function(param) {
+                            return param.complete(mProgram.makeStringToDatatypeMapper(mCurrentModule));
+                        });
+                        node.setIdentifier(new IdentifierWithTemplate(node.getIdentifier().getName(), newTemplateParams));
                     }
                 } catch(e : DatatypeNotFound) {
                     // no need to worry (yet) as the datatype might be a template parameter
