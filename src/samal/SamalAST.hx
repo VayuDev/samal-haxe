@@ -1,7 +1,6 @@
 package samal;
 
 import samal.Datatype.StringToDatatypeMapper;
-import samal.Datatype.StringToDatatypeMapperUsingTypeMap;
 import cloner.Cloner;
 import haxe.macro.Expr;
 import haxe.Int32;

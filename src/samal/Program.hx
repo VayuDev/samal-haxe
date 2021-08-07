@@ -12,18 +12,6 @@ import samal.AST;
 using samal.Util.NullTools;
 using samal.Datatype.DatatypeHelpers;
 
-class StringToDatatypeMapperUsingSamalProgram extends StringToDatatypeMapper {
-    final mProgram : SamalProgram;
-    final mModuleScope : String;
-    public function new(program : SamalProgram, moduleScope : String) {
-        mProgram = program;
-        mModuleScope = moduleScope;
-    }
-    public function getDatatype(name : String) : Datatype {
-        return mProgram.findDatatype(name, mModuleScope).getDatatype();
-    }
-}
-
 class SamalProgram {
     var mModules = new Map<String, SamalModuleNode>();
     public function new() {
@@ -76,9 +64,6 @@ class SamalProgram {
             }
         }
         throw new Exception("Datatype " + datatype + " not found!");
-    }
-    public function makeStringToDatatypeMapper(moduleScope : String) : StringToDatatypeMapper {
-        return new StringToDatatypeMapperUsingSamalProgram(this, moduleScope);
     }
 }
 class CppProgram {

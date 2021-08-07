@@ -24,7 +24,7 @@ class DatatypeNotFound extends Exception {
 }
 
 abstract class StringToDatatypeMapper {
-    abstract public function getDatatype(name : String) : Datatype;
+    abstract public function getDatatype(name : String, templateParams : Array<Datatype>) : Datatype;
 }
 
 class StringToDatatypeMapperUsingTypeMap extends StringToDatatypeMapper {
@@ -32,7 +32,7 @@ class StringToDatatypeMapperUsingTypeMap extends StringToDatatypeMapper {
     public function new(typeMap : Map<String, Datatype>) {
         mTypeMap = typeMap;
     }
-    public function getDatatype(name : String) : Datatype {
+    public function getDatatype(name : String, templateParams : Array<Datatype>) : Datatype {
         final value = mTypeMap[name];
         if(value == null) {
             throw new DatatypeNotFound(name);
@@ -85,7 +85,7 @@ class DatatypeHelpers {
     static public function complete(type : Datatype, map : StringToDatatypeMapper) : Datatype {
         switch(type) {
             case Usertype(name, params):
-                return map.getDatatype(name);
+                return map.getDatatype(name, params);
             case List(base):
                 return Datatype.List(complete(base, map));
             case Function(returnType, params):

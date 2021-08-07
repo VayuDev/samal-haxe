@@ -1,5 +1,6 @@
 package samal;
 
+import samal.Tokenizer.SourceCodeRef;
 import cloner.Cloner;
 import haxe.EnumTools;
 import haxe.ds.GenericStack;
@@ -154,7 +155,7 @@ class Stage2 {
             traverse(node.getBody());
 
             // check return type
-            final expectedReturnType = complete(DatatypeHelpers.getReturnType(node.getDatatype()));
+            final expectedReturnType = DatatypeHelpers.getReturnType(node.getDatatype());
             if(!expectedReturnType.deepEquals(node.getBody().getDatatype().sure())) {
                 throw new Exception(
                     node.errorInfo() 
@@ -319,6 +320,7 @@ class Stage2 {
 
         } else if(Std.downcast(astNode, SamalCreateStructExpression) != null) {
             var node = Std.downcast(astNode, SamalCreateStructExpression);
+            node.setDatatype(complete(node.getDatatype().sure()));
 
         } else if(Std.downcast(astNode, SamalTailCallSelf) != null) {
             var node = Std.downcast(astNode, SamalTailCallSelf);
@@ -416,7 +418,6 @@ class Stage2 {
 
             if(rhsType.match(List(_)) && lhsType.deepEquals(rhsType.getBaseType()) && node.getOperator() == Add) {
                 // list prepend
-                trace(node.getSourceRef().errorInfo() + "Using PRPEND");
                 return new SamalSimpleListPrepend(node.getSourceRef(), rhsType, node.getLhs(), node.getRhs());
             }
         } else if(Std.downcast(astNode, SamalMatchExpression) != null) {
@@ -564,12 +565,13 @@ class Stage2 {
         mProgram.forEachModule(function (moduleName : String, ast : SamalModuleNode) {
             mCurrentModule = moduleName;
             // traverse all normal functions
-            final pureTemplateFunctions = new List<SamalDeclarationNode>();
+            final pureTemplateDeclarations = new List<SamalDeclarationNode>();
             for(decl in ast.getDeclarations()) {
                 if(decl.getTemplateParams().length == 0) {
                     traverse(decl);
-                } else {
-                    pureTemplateFunctions.add(decl);
+                } else if((Std.downcast(decl, SamalDatatypeDeclaration) != null && !Std.downcast(decl, SamalDatatypeDeclaration).getDatatype().isComplete()) 
+                || Std.downcast(decl, SamalFunctionDeclarationNode) != null) {
+                    pureTemplateDeclarations.add(decl);
                 }
             }
 
@@ -589,7 +591,7 @@ class Stage2 {
             }
 
             // delete pure template functions
-            for(pureDecl in pureTemplateFunctions) {
+            for(pureDecl in pureTemplateDeclarations) {
                 ast.getDeclarations().remove(pureDecl);
             }
 

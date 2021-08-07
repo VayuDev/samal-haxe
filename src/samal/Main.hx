@@ -67,10 +67,6 @@ class Main {
       }
     }
 
-    struct Point {
-      x : int
-      y : int
-    }
     struct Sample {
       l : [int]
       m : [int]
@@ -105,10 +101,14 @@ class Main {
       SampleCollector{samples : samples}
     }
     
-    fn main() -> SampleCollector {
-      createSamples()
+    struct Point<T> {
+      x : T
+      y : T
+    }
+    fn main() -> Point<int> {
+      Point<int>{x : 5, y : 10}
     }";
-    var pipeline = new Pipeline(TargetType.JSSingleFile("out/out.js"));
+    var pipeline = new Pipeline(TargetType.CppFiles("out", "gcc"));
     pipeline.add("Main", code);
     var files = pipeline.generate("A.B.Main.main");
     #if js

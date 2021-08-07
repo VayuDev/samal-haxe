@@ -322,8 +322,12 @@ class Parser {
                     eat(TokenType.Equals);
                     var rhs = parseExpression();
                     return new SamalAssignmentExpression(makeSourceRef(), identifierName, rhs);
-                } else if(peek().getType() == LCurly && peek().getSkippedWhitespaces() == 0) {
+                } else if((peek().getType() == LCurly || peek().getType() == Less) && peek().getSkippedWhitespaces() == 0) {
                     final identifier = parseIdentifierWithTemplate();
+                    if(current().getType() != LCurly) {
+                        // probably just a function call like fib<int>(5), not a struct creation Point<int>{...}
+                        return new SamalLoadIdentifierExpression(makeSourceRef(), identifier);
+                    }
                     final params = parseNamedExpressionParameterList();
                     return new SamalCreateStructExpression(makeSourceRef(), identifier, params);
                 }
