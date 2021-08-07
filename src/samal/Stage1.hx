@@ -48,12 +48,12 @@ class Stage1 {
         mProgram = prog;
     }
 
-    public function makeStringToDatatypeMapper(moduleScope : String, instantiatedTypesOut : Map<String, InstantiatedUserType>) : StringToDatatypeMapperUsingSamalProgram {
-        return new StringToDatatypeMapperUsingSamalProgram(mProgram, moduleScope, instantiatedTypesOut);
+    public function makeStringToDatatypeMapper(moduleScope : String) : StringToDatatypeMapperUsingSamalProgram {
+        return new StringToDatatypeMapperUsingSamalProgram(mProgram, moduleScope, mInstantiatedUserTypes);
     }
 
     private function complete(datatype : Datatype) : Datatype {
-        return datatype.complete(makeStringToDatatypeMapper(mCurrentModule, mInstantiatedUserTypes));
+        return datatype.complete(makeStringToDatatypeMapper(mCurrentModule));
     }
 
     public function completeGlobalIdentifiers() : SamalProgram {
@@ -80,7 +80,7 @@ class Stage1 {
                 try {
                     if(Std.downcast(astNode, SamalDeclarationNode) != null) {
                         var node = Std.downcast(astNode, SamalDeclarationNode);
-                        node.completeWithUserTypeMap(makeStringToDatatypeMapper(mCurrentModule, mInstantiatedUserTypes));
+                        node.completeWithUserTypeMap(makeStringToDatatypeMapper(mCurrentModule));
     
                     } else if(Std.downcast(astNode, SamalCreateListExpression) != null) {
                         var node = Std.downcast(astNode, SamalCreateListExpression);
@@ -99,7 +99,7 @@ class Stage1 {
                     } else if(Std.downcast(astNode, SamalLoadIdentifierExpression) != null) {
                         var node = Std.downcast(astNode, SamalLoadIdentifierExpression);
                         final newTemplateParams = node.getIdentifier().getTemplateParams().map(function(param) {
-                            return param.complete(makeStringToDatatypeMapper(mCurrentModule, mInstantiatedUserTypes));
+                            return param.complete(makeStringToDatatypeMapper(mCurrentModule));
                         });
                         node.setIdentifier(new IdentifierWithTemplate(node.getIdentifier().getName(), newTemplateParams));
                     }
