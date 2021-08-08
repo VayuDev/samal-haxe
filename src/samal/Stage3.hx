@@ -315,10 +315,6 @@ class Stage3 {
                 traverse(decl);
             }
             mCProgram.addModule(moduleName, new CppFile(ast.getSourceRef(), moduleName, mCurrentFileDeclarations, mUsedDatatypes));
-
-            for(type in mUsedDatatypes) {
-                trace(type);
-            }
         });
 
         return mCProgram;

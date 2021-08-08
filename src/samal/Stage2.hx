@@ -122,7 +122,7 @@ class Stage2 {
         mScopeStackLength -= 1;
     }
 
-    function traverse(astNode : ASTNode) {
+    function traverse(astNode : ASTNode) : Void {
         if(Std.downcast(astNode, SamalScope) != null) {
             var node = Std.downcast(astNode, SamalScope);
             pushStackFrame();
@@ -321,6 +321,26 @@ class Stage2 {
         } else if(Std.downcast(astNode, SamalCreateStructExpression) != null) {
             var node = Std.downcast(astNode, SamalCreateStructExpression);
             node.setDatatype(complete(node.getDatatype().sure()));
+            final decl = Std.downcast(mProgram.findDatatypeDeclaration(node.getDatatype().sure()), SamalStructDeclaration).sure();
+            if(decl.getFields().length != node.getParams().length) {
+                throw new Exception('${node.errorInfo()} Invalid number of parameters; struct expects ${decl.getFields().length} parameters, but you passed ${node.getParams().length}');
+            }
+            for(param in node.getParams()) {
+                traverse(param.getValue());
+                final actualType = param.getValue().getDatatype().sure();
+                var found = false;
+                for(field in decl.getFields()) {
+                    if(field.getName() == param.getName()) {
+                        if(!actualType.deepEquals(field.getDatatype())) {
+                            throw new Exception('${node.errorInfo()} Struct param ${field.getName()} has the wrong datatype; expected ${field.getDatatype()}, got ${actualType}');
+                        }
+                        found = true;
+                    }
+                }
+                if(!found) {
+                    throw new Exception('${node.errorInfo()} Struct param ${param.getName()} doesn\'t appear in the struct\'s declaration');
+                }
+            }
 
         } else if(Std.downcast(astNode, SamalTailCallSelf) != null) {
             var node = Std.downcast(astNode, SamalTailCallSelf);
