@@ -6,7 +6,8 @@ using samal.Datatype.DatatypeHelpers;
 using samal.Util.NullTools;
 
 enum HeaderOrSource {
-    Header;
+    HeaderStart;
+    HeaderEnd;
     Source;
 }
 
@@ -20,11 +21,8 @@ class CppContext extends SourceCreationContext {
         mProgram = program;
     }
 
-    public function isHeader() : Bool {
-        return mHos == Header;
-    }
-    public function isSource() : Bool {
-        return mHos == Source;
+    public function getHos() {
+        return mHos;
     }
     public override function next() : CppContext {
         return new CppContext(mIndent + 1, mMainFunction, mHos, mProgram);
@@ -58,7 +56,8 @@ class CppTarget extends LanguageTarget {
     public function makeFile(ctx : SourceCreationContext, node : CppFile) : String {
         var ret = "";
         final cppCtx = Std.downcast(ctx, CppContext);
-        if(cppCtx.isHeader()) {
+        if(cppCtx.getHos() == HeaderStart) {
+            ret += "#pragma once\n";
             ret += "#include <cstdint>\n";
             ret += "#include <cstring>\n";
             ret += "#include <cmath>\n";
@@ -66,7 +65,7 @@ class CppTarget extends LanguageTarget {
             ret += "#include <cassert>\n";
             ret += "#include <functional>\n";
             ret += "#include \"samal_runtime.hpp\"\n";
-        } else {
+        } else if(cppCtx.getHos() == Source) {
             ret += '#include "${node.getName()}.hpp"\n';
             ret += "\n";
             // used datatypes
@@ -87,7 +86,7 @@ class CppTarget extends LanguageTarget {
             }
         }
         ret += "\n";
-        ret += node.getDeclarations().map((decl) -> (decl.toSrc(this, ctx))).join("\n\n");
+        ret += node.getDeclarations().map((decl) -> (decl.toSrc(this, ctx))).filter(function(d) return d != "").join("\n\n");
         ret += "\n";
         return ret;
     }
@@ -95,12 +94,16 @@ class CppTarget extends LanguageTarget {
         return "{\n" + node.getStatements().map((stmt) -> stmt.toSrc(this, ctx.next()) + ";\n").join("") + indent(ctx.prev()) + "}";
     }    
     public function makeFunctionDeclaration(ctx : SourceCreationContext, node : CppFunctionDeclaration) : String {
+        final cppCtx = Std.downcast(ctx, CppContext);
+        if(cppCtx.getHos() == HeaderStart) {
+            return "";
+        }
+        
         final paramsAsStrArray = node.getParams().map((p) -> '${p.getDatatype().toCppType()} ${p.getName()}');
         var ret = node.getDatatype().getReturnType().toCppType() + " " + node.getMangledName() + "(" 
             + ["samalrt::SamalContext &$ctx"].concat(paramsAsStrArray).join(", ") + ")";
 
-        final cppCtx = Std.downcast(ctx, CppContext);
-        if(cppCtx.isHeader()) {
+        if(cppCtx.getHos() == HeaderEnd) {
             ret += ";";
         } else {
             ret += " {\n";
@@ -125,7 +128,7 @@ class CppTarget extends LanguageTarget {
     }
     public function makeStructDeclaration(ctx : SourceCreationContext, node : CppStructDeclaration) : String {
         final cppCtx = Std.downcast(ctx, CppContext);
-        if(cppCtx.isSource()) {
+        if(cppCtx.getHos() != HeaderStart) {
             return "";
         }
         final reversedFields = node.getFields().copy();
@@ -139,7 +142,7 @@ class CppTarget extends LanguageTarget {
             }).join("")
             + "};\n"
             + "namespace samalrt {\n"
-            + "samalrt::SamalString inspect(samalrt::SamalContext& ctx, const " + node.getDatatype().toCppType() + "& value) {\n"
+            + "inline samalrt::SamalString inspect(samalrt::SamalContext& ctx, const " + node.getDatatype().toCppType() + "& value) {\n"
             + ' samalrt::SamalString ret = samalrt::toSamalString(ctx, "}");\n'
             + reversedFields.map(function(f) {
                 return ' ret = samalrt::listConcat(ctx, inspect(ctx, value.${f.getName()}), ret);\n'

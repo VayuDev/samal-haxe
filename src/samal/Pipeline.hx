@@ -86,7 +86,9 @@ class Pipeline {
                 if(outPath == "" || compiler == "") {
                     var ret = [];
                     cprogram.forEachModule(function(mod, ast) {
-                        ret.push(new GeneratedFile(mod + ".hpp", ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.Header, cprogram))));
+                        ret.push(new GeneratedFile(mod + ".hpp", 
+                            ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.HeaderStart, cprogram))
+                            + ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.HeaderEnd, cprogram))));
                         ret.push(new GeneratedFile(mod + ".cpp", ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.Source, cprogram))));
                     });
                     ret.push(new GeneratedFile("samal_runtime.cpp", Embedded_samal_runtime_cpp.getContent()));
@@ -98,8 +100,9 @@ class Pipeline {
                         try {
                             FileSystem.createDirectory(outPath);
                         } catch(_) {}
-            
-                        File.saveContent('${outPath}/${mod}.hpp', ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.Header, cprogram)));
+                        File.saveContent('${outPath}/${mod}.hpp', 
+                            ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.HeaderStart, cprogram))
+                            + ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.HeaderEnd, cprogram)));
                         File.saveContent('${outPath}/${mod}.cpp', ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.Source, cprogram)));
                     });
                     File.saveContent('${outPath}/samal_runtime.hpp', Embedded_samal_runtime_hpp.getContent());

@@ -106,7 +106,7 @@ class Main {
       y : T
     }
     fn main() -> Point<int> {
-      Point<int>{x : 5, y : 10}
+      Point<int>{y : 5, x : 10}
     }";
     var pipeline = new Pipeline(TargetType.CppFiles("out", "gcc"));
     pipeline.add("Main", code);
