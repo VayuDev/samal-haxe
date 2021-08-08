@@ -178,7 +178,6 @@ class Stage2 {
                     node.setDatatype(rhsType);
                     return;
                 }
-                trace(lhsType.deepEquals(rhsType.getBaseType()));
                 throw new Exception('${node.errorInfo()} Lhs and rhs types aren\'t equal. Lhs is ${node.getLhs().getDatatype().sure()}, rhs is ${node.getRhs().getDatatype().sure()}');
             }
             if(!([Int].contains(lhsType))) {
@@ -213,12 +212,17 @@ class Stage2 {
             }
             mScopeStack.first().sure().set(node.getIdentifier(), decl);
             node.setIdentifier(decl.getIdentifier());
+
         } else if(Std.downcast(astNode, SamalLoadIdentifierExpression) != null) {
             var node = Std.downcast(astNode, SamalLoadIdentifierExpression);
-
-            var decl = findIdentifierForLoading(node.getIdentifier());
-            node.setIdentifier(new IdentifierWithTemplate(decl.getIdentifier(), []));
-            node.setDatatype(decl.getType());
+            //trace(node.errorInfo() + ": " +  node.getIdentifier());
+            try {
+                var decl = findIdentifierForLoading(node.getIdentifier());
+                node.setIdentifier(new IdentifierWithTemplate(decl.getIdentifier(), []));
+                node.setDatatype(decl.getType());
+            } catch(e) {
+                throw new Exception('${node.errorInfo()} ${e.message}');
+            }
             
         } else if(Std.downcast(astNode, SamalFunctionCallExpression) != null) {
             var node = Std.downcast(astNode, SamalFunctionCallExpression);
@@ -253,6 +257,7 @@ class Stage2 {
                 throw new Exception('${node.errorInfo()} All previous branches returned ${returnType}, but the else returns ${node.getElse().getDatatype().sure()}');
             }
             node.setDatatype(returnType);
+
         } else if(Std.downcast(astNode, SamalCreateListExpression) != null) {
             var node = Std.downcast(astNode, SamalCreateListExpression);
             for(child in node.getChildren()) {
@@ -594,7 +599,7 @@ class Stage2 {
                     pureTemplateDeclarations.add(decl);
                 }
             }
-
+            trace("Instantiating template functions!");
             // instantiate used template functions
             var it = mTemplateFunctionsToCompile.keyValueIterator();
             while(it.hasNext()) {
@@ -603,6 +608,7 @@ class Stage2 {
                 mCurrentTemplateReplacementMap = current.value.getTypeMap();
                 final decl = current.value.getFunctionDeclaration().cloneWithTemplateParams(
                     new StringToDatatypeMapperUsingTypeMap(current.value.getTypeMap()), current.value.getPassedTemplateParams(), mCloner);
+                trace(decl.getDatatype());
                 traverse(decl);
                 ast.getDeclarations().push(decl);
                 mTemplateFunctionsToCompile.remove(current.key);

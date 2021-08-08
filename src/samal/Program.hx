@@ -49,10 +49,10 @@ class SamalProgram {
         }
         throw new Exception('Function $functionName not found!');
     }
-    public function findDatatype(name : String, moduleScope : String) : SamalDatatypeDeclaration {
+    public function findDatatypeUsingNameAndScope(name : String, moduleScope : String) : SamalDatatypeDeclaration {
         for(decl in mModules[moduleScope].sure().getDeclarations()) {
             //trace(decl.getName());
-            if(decl.getName().substr(decl.getName().lastIndexOf(".") + 1) == name && Std.downcast(decl, SamalDatatypeDeclaration) != null) {
+            if(decl.getName().substr(decl.getName().lastIndexOf(".") + 1) == name && Std.isOfType(decl, SamalDatatypeDeclaration)) {
                 return Std.downcast(decl, SamalDatatypeDeclaration);
             }
         }

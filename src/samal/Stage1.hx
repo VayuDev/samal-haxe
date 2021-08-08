@@ -22,7 +22,7 @@ class StringToDatatypeMapperUsingSamalProgram extends StringToDatatypeMapper {
         mInstantiatedUserTypesOut = instantiatedTypesOut;
     }
     public function getDatatype(name : String, templateParams : Array<Datatype>) : Datatype {
-        final decl = mProgram.findDatatype(name, mModuleScope);
+        final decl = mProgram.findDatatypeUsingNameAndScope(name, mModuleScope);
         final value = decl.getDatatype();
         final module = decl.getName().substr(0, decl.getName().lastIndexOf("."));
         switch(value.sure()) {
