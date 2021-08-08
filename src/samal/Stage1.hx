@@ -10,7 +10,7 @@ import haxe.Exception;
 import samal.Tokenizer.SourceCodeRef;
 import cloner.Cloner;
 
-typedef InstantiatedUserType = {originalTemplatedType : Datatype, passedTemplateParams : Array<Datatype>}
+typedef InstantiatedUserType = {originalTemplatedType : Datatype, passedTemplateParams : Array<Datatype>, module : String}
 
 class StringToDatatypeMapperUsingSamalProgram extends StringToDatatypeMapper {
     final mProgram : SamalProgram;
@@ -22,11 +22,13 @@ class StringToDatatypeMapperUsingSamalProgram extends StringToDatatypeMapper {
         mInstantiatedUserTypesOut = instantiatedTypesOut;
     }
     public function getDatatype(name : String, templateParams : Array<Datatype>) : Datatype {
-        final value = mProgram.findDatatype(name, mModuleScope).getDatatype();
+        final decl = mProgram.findDatatype(name, mModuleScope);
+        final value = decl.getDatatype();
+        final module = decl.getName().substr(0, decl.getName().lastIndexOf("."));
         switch(value.sure()) {
             case Struct(structName, _):
                 final retType = Datatype.Struct(structName, templateParams);
-                mInstantiatedUserTypesOut.set(retType.getStructMangledName(), {originalTemplatedType: value, passedTemplateParams: templateParams});
+                mInstantiatedUserTypesOut.set(retType.getStructMangledName(), {originalTemplatedType: value, passedTemplateParams: templateParams, module: module});
                 return retType;
             default:
                 return value.sure();
@@ -110,8 +112,6 @@ class Stage1 {
         });
 
         // step 3: instantiate template structs
-        final structs = [];
-        trace(mInstantiatedUserTypes);
         for(entry in mInstantiatedUserTypes) {
             final decl = mProgram.findDatatypeDeclaration(entry.originalTemplatedType);
             if(decl.getDatatype().isComplete())
@@ -121,9 +121,8 @@ class Stage1 {
                 new StringToDatatypeMapperUsingTypeMap(Util.buildTemplateReplacementMap(decl.getTemplateParams(), entry.passedTemplateParams)), 
                 entry.passedTemplateParams,
                 mCloner);
-            structs.push(newDecl);
+            mProgram.getModule(entry.module).sure().getDeclarations().push(newDecl);
         }
-        mProgram.addModule(new SamalModuleNode(new SourceCodeRef(0, 0, 0, 0, 0, 0, ""), "$templates", structs));
         return mProgram;
     }
 }

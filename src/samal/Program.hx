@@ -36,6 +36,10 @@ class SamalProgram {
         }
     }
 
+    public function getModule(name : String) : Null<SamalModuleNode> {
+        return mModules[name];
+    }
+
     public function findFunction(functionName : String, moduleScope : String) : SamalFunctionDeclarationNode {
         for(decl in mModules[moduleScope].sure().getDeclarations()) {
             //trace(decl.getName());
