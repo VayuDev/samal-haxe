@@ -40,7 +40,7 @@ class JSTarget extends LanguageTarget {
     public function makeFile(ctx : SourceCreationContext, node : CppFile) : String {
         var ret = "";
         final jsContext = Std.downcast(ctx, JSContext);
-        ret += node.getDeclarations().map((decl) -> (decl.toSrc(this, ctx))).join("\n\n");
+        ret += node.getDeclarations().map((decl) -> (decl.toSrc(this, ctx))).filter(function(d) return d != "").join("\n\n");
         ret += "\n";
         return ret;
     }
