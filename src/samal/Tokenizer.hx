@@ -79,6 +79,7 @@ enum TokenType {
     DoublePipe;
     Module;
     Struct;
+    Hashtag;
 }
 
 
@@ -111,14 +112,19 @@ class Token {
     }
 }
 
+enum TokenizerMode {
+    Normal;
+    DisableMulticharRecognition;
+}
+
 @:nullSafety(Off)
 class Tokenizer {
     var tokens : Array<Token>;
     var indexStack = new GenericStack<Int>();
     var origianlString : String;
 
-    public function new(code : String) {
-        var generator = new TokenGenerator(code);
+    public function new(code : String, mode : TokenizerMode) {
+        var generator = new TokenGenerator(code, mode);
         tokens = generator.getTokens();
         indexStack.add(0);
         this.origianlString = code;    
@@ -166,8 +172,12 @@ class Tokenizer {
     public function getOriginalString() : String {
         return origianlString;
     }
+    public function skipNewlines() {
+        while(current().getType() == NewLine) {
+            eat(NewLine);
+        }
+    }
 }
-
 
 class TokenGenerator {
     var code : String;
@@ -202,7 +212,8 @@ class TokenGenerator {
         '.' => TokenType.Dot,
         '*' => TokenType.Star,
         '/' => TokenType.Slash,
-        "|" => TokenType.Pipe
+        "|" => TokenType.Pipe,
+        "#" => TokenType.Hashtag
     ];
 
     static final MULTI_CHAR_TOKENS = [
@@ -225,7 +236,7 @@ class TokenGenerator {
     ];
     
 
-    public function new(code) {
+    public function new(code : String, mode : TokenizerMode) {
         this.code = code;
         while(index < code.length) {
             skippedSpaces = 0;
@@ -233,20 +244,22 @@ class TokenGenerator {
             lineStart = line;
             columnStart = column;
             indexStart = index;
-
-            var isMultiCharToken = false;
-            for(str => type in MULTI_CHAR_TOKENS.keyValueIterator()) {
-                if(str == getNChars(str.length)) {
-                    isMultiCharToken = true;
-                    for(_ in 0...str.length) {
-                        advance();
+            
+            if(mode != TokenizerMode.DisableMulticharRecognition) {
+                var isMultiCharToken = false;
+                for(str => type in MULTI_CHAR_TOKENS.keyValueIterator()) {
+                    if(str == getNChars(str.length)) {
+                        isMultiCharToken = true;
+                        for(_ in 0...str.length) {
+                            advance();
+                        }
+                        tokens.push(new Token(makeSourceRef(), type, skippedSpaces));
+                        break;
                     }
-                    tokens.push(new Token(makeSourceRef(), type, skippedSpaces));
-                    break;
                 }
-            }
-            if(isMultiCharToken) {
-                continue;
+                if(isMultiCharToken) {
+                    continue;
+                }
             }
             
             var isInteger = false;

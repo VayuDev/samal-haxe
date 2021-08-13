@@ -87,6 +87,10 @@ class Util {
     }
 }
 
+interface Cloneable {
+    public function clone() : Cloneable;
+}
+
 class NullTools {
     public static function sure<T>(value:Null<T>):T {
         if (value == null) {

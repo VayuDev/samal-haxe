@@ -4,7 +4,7 @@ import sys.io.File;
 
 class EmbedRuntimes {
     static function main() {
-        final prefix = "samal_runtime/";
+        final prefix = "assets/";
         final outputDir = "src/samal/generated/";
         final files = ["samal_runtime.cpp", "samal_runtime.hpp", "samal_runtime.js"];
         var res = 'package samal.generated;\n\n';

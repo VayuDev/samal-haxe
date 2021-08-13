@@ -1,12 +1,14 @@
 package samal;
+import samal.Util.Cloneable;
+import haxe.Exception;
 import samal.SamalAST.SamalExpression;
 import samal.Tokenizer.SourceCodeRef;
 import samal.Util.Util;
 
-class ASTNode {
-    var mSourceRef : SourceCodeRef;
+class ASTNode implements Cloneable {
+    var mSourceCodeRef : SourceCodeRef;
     function new(sourceRef : SourceCodeRef) {
-        this.mSourceRef = sourceRef;
+        this.mSourceCodeRef = sourceRef;
     }
 
 
@@ -51,10 +53,13 @@ class ASTNode {
     }
 
     public function errorInfo() : String {
-        return mSourceRef.errorInfo() + ": ";
+        return mSourceCodeRef.errorInfo() + ": ";
     }
     public function getSourceRef() {
-        return mSourceRef;
+        return mSourceCodeRef;
+    }
+    public function clone() : ASTNode {
+        throw new Exception("Clone not implemented for " + Type.getClassName(Type.getClass(this)));
     }
 }
 

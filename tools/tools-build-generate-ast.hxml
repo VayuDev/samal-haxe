@@ -1,0 +1,5 @@
+tools/GenerateAstClasses.hx 
+-p src
+-lib cloner
+-main tools.GenerateAstClasses
+-python out/generate_ast_classes.py

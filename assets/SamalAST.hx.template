@@ -1,0 +1,187 @@
+
+class SamalFuncDeclParam {
+    -name : String
+    -datatype : Datatype
+}
+class SamalCreateStructParam {
+    -fieldName : String
+    -value : SamalExpression
+}
+
+class SamalSimpleTailCallSelfParam {
+    -paramName : String
+    -value : SamalExpression
+}
+
+class SamalStructDeclField {
+    -fieldName : String
+    -datatype : Datatype
+}
+
+
+class SamalASTNode extends ASTNode {
+    
+}
+
+class SamalModule extends SamalASTNode {
+    -moduleName : String
+    +declarations : Array<SamalDeclaration>
+}
+
+class SamalDeclaration extends SamalASTNode {
+    +name : IdentifierWithTemplate
+}
+
+class SamalFunctionDeclaration extends SamalDeclaration {
+    -params : Array<SamalFuncDeclParam>
+    -returnType : Datatype
+    -body : SamalScope
+}
+class SamalDatatypeDeclaration extends SamalDeclaration {
+    -datatype : Datatype
+}
+
+class SamalStructDeclaration extends SamalDeclaration {
+    -fields : Array<SamalStructDeclField>
+}
+
+class SamalScope extends SamalASTNode {
+    -statements : Array<SamalExpression>
+    -datatype : Null<Datatype>
+}
+
+class SamalExpression extends SamalASTNode {
+    #datatype : Datatype
+}
+
+
+class SamalAssignmentExpression extends SamalExpression {
+    +identifier : String
+    -rhs : SamalExpression
+}
+
+class SamalBinaryExpression extends SamalExpression {
+    -lhs : SamalExpression
+    -op : SamalBinaryExpressionOp
+    -rhs : SamalExpression
+}
+
+class SamalCreateLambdaExpression extends SamalExpression {
+    -parameters : Array<SamalFuncDeclParam>
+    -returnType : Datatype
+    -body : SamalScope
+    -capturedVariables : Array<SamalFuncDeclParam>
+}
+
+class SamalCreateListExpression extends SamalExpression {
+    -children : Array<SamalExpression>
+}
+
+class SamalCreateStructExpression extends SamalExpression {
+    -structName : IdentifierWithTemplate
+    -params : Array<SamalCreateStructParam>
+}
+
+class SamalFunctionCallExpression extends SamalExpression {
+    -function : SamalExpression
+    -params : Array<SamalExpression>
+}
+
+class SamalIfExpression extends SamalExpression {
+    -condition : SamalExpression
+    -mainBody : SamalScope
+    -elseIfs : Array<SamalElseIfBranch>
+    -else : SamalScope
+}
+
+class SamalElseIfBranch {
+    -condition : SamalExpression
+    -body : SamalScope
+}
+
+class SamalLineExpression extends SamalExpression {
+
+}
+
+class SamalLiteralIntExpression extends SamalExpression {
+    -val : Int32
+}
+
+class SamalLoadIdentifierExpression extends SamalExpression {
+    -identifier : IdentifierWithTemplate
+}
+
+class SamalMatchExpression extends SamalExpression {
+    -toMatch : SamalExpression
+    -rows : Array<SamalMatchRow>
+}
+
+class SamalMatchRow extends SamalASTNode {
+    -shape : SamalShape
+    -body : SamalExpression
+}
+
+class SamalScopeExpression extends SamalExpression {
+    -scope : SamalScope
+}
+
+class SamalSimpleListCreateEmpty extends SamalExpression {
+
+}
+
+class SamalSimpleListGetHead extends SamalExpression {
+    -list : SamalExpression
+}
+
+class SamalSimpleListGetTail extends SamalExpression {
+    -list : SamalExpression
+}
+
+class SamalSimpleListIsEmpty extends SamalExpression {
+    -list : SamalExpression
+}
+
+class SamalSimpleListPrepend extends SamalExpression {
+    -value : SamalExpression
+    -list : SamalExpression
+}
+
+class SamalSimpleIfExpression extends SamalExpression {
+    -condition : SamalExpression
+    -mainBody : SamalScope
+    -elseBody : SamalScope
+}
+
+class SimpleTailCallSelf extends SamalLineExpression {
+    -parameters : Array<SamalSimpleTailCallSelfParam>
+}
+
+class SamalShape extends ASTNode {
+
+}
+
+class SamalShapeEmptyList extends SamalShape {
+
+}
+
+class SamalShapeSplitList extends SamalShape {
+    -head : SamalShape
+    -tail : SamalShape
+}
+
+class SamalShapeVariable extends SamalShape {
+    -variableName : String
+}
+
+class SamalTailCallSelf extends SamalLineExpression {
+    -parameters : Array<SamalExpression>
+}
+
+class SamalUnaryExpression extends SamalExpression {
+    -expr : SamalExpression
+    -op : SamalUnaryExpressionOp
+}
+
+class SamalSimpleUnreachable extends SamalExpression {
+
+}
