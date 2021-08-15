@@ -1,16 +1,16 @@
-package samal;
+package samal.lang;
 
-import samal.targets.LanguageTarget;
-import samal.Tokenizer.SourceCodeRef;
+import samal.lang.targets.LanguageTarget;
+import samal.bootstrap.Tokenizer.SourceCodeRef;
 import haxe.ds.List;
-import samal.Datatype.DatatypeHelpers;
+import samal.lang.Datatype.DatatypeHelpers;
 import haxe.ds.GenericStack;
 import haxe.Exception;
-import samal.CppAST;
-import samal.SamalAST;
-import samal.Program;
-import samal.Util.NullTools;
-using samal.Util.NullTools;
+import samal.lang.CppAST;
+import samal.lang.generated.SamalAST;
+import samal.lang.Program;
+import samal.lang.Util.NullTools;
+using samal.lang.Util.NullTools;
 
 class Stage3 {
     var mSProgram : SamalProgram;
@@ -49,8 +49,8 @@ class Stage3 {
     }
 
     function traverse(astNode : SamalASTNode) : String {
-        if(Std.downcast(astNode, SamalFunctionDeclarationNode) != null) {
-            var node = Std.downcast(astNode, SamalFunctionDeclarationNode);
+        if(Std.downcast(astNode, SamalFunctionDeclaration) != null) {
+            var node = Std.downcast(astNode, SamalFunctionDeclaration);
             final functionDatatype = addUsedDatatype(node.getDatatype());
             var scope = new CppScopeNode(node.getSourceRef());
             mScopeStack.add(scope);
@@ -63,7 +63,7 @@ class Stage3 {
                 scope.addStatement(new CppReturnStatement(node.getSourceRef(), DatatypeHelpers.getReturnType(functionDatatype), lastStatementResult));
             }
             
-            mCurrentFileDeclarations.push(new CppFunctionDeclaration(node.getSourceRef(), functionDatatype, node.getIdentifier().mangled(), node.getParams(), scope));
+            mCurrentFileDeclarations.push(new CppFunctionDeclaration(node.getSourceRef(), functionDatatype, node.getName().mangled(), node.getParams(), scope));
             mScopeStack.pop();
         } else if(Std.downcast(astNode, SamalStructDeclaration) != null) {
             var node = Std.downcast(astNode, SamalStructDeclaration);
@@ -98,7 +98,7 @@ class Stage3 {
             final rhsVarName = traverse(node.getRhs());
             
             var op : CppBinaryExprOp;
-            switch(node.getOperator()) {
+            switch(node.getOp()) {
                 case Add:
                     op = CppBinaryExprOp.Add;
                 case Sub:
@@ -121,9 +121,9 @@ class Stage3 {
         } else if(Std.downcast(astNode, SamalUnaryExpression) != null) {
             var node = Std.downcast(astNode, SamalUnaryExpression);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
-            var exprVarName = traverse(node.getExpression());
+            var exprVarName = traverse(node.getExpr());
             var op : CppUnaryOp;
-            switch(node.getOperator()) {
+            switch(node.getOp()) {
                 case Not:
                     op = CppUnaryOp.Not;
                 case _:
@@ -155,7 +155,7 @@ class Stage3 {
 
         } else if(Std.downcast(astNode, SamalLiteralIntExpression) != null) {
             var node = Std.downcast(astNode, SamalLiteralIntExpression);
-            return mTarget.getLiteralInt(node.getValue());
+            return mTarget.getLiteralInt(node.getVal());
 
         } else if(Std.downcast(astNode, SamalAssignmentExpression) != null) {
             var node = Std.downcast(astNode, SamalAssignmentExpression);
@@ -193,7 +193,7 @@ class Stage3 {
             var umbrellaScope = new CppScopeStatement(node.getSourceRef(), nodeDatatype, returnVarnmae);
             mScopeStack.add(umbrellaScope.getScope());
 
-            var conditionVarName = traverse(node.getMainCondition());
+            var conditionVarName = traverse(node.getCondition());
 
             var mainScope = new CppScopeNode(node.getSourceRef());
             mScopeStack.add(mainScope);
@@ -226,8 +226,8 @@ class Stage3 {
             
             return resultDeclaration.getVarName();
 
-        } else if(Std.downcast(astNode, SamalSimpleCreateEmptyList) != null) {
-            var node = Std.downcast(astNode, SamalSimpleCreateEmptyList);
+        } else if(Std.downcast(astNode, SamalSimpleListCreateEmpty) != null) {
+            var node = Std.downcast(astNode, SamalSimpleListCreateEmpty);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
             return mTarget.getLiteralEmptyList();
 
@@ -264,7 +264,7 @@ class Stage3 {
             }
             mScopeStack.pop();
 
-            addStatement(new CppCreateLambdaStatement(node.getSourceRef(), functionDatatype, varName, node.getParams(), node.getCapturedVariables(), scope));
+            addStatement(new CppCreateLambdaStatement(node.getSourceRef(), functionDatatype, varName, node.getParameters(), node.getCapturedVariables(), scope));
             return varName;
 
         } else if(Std.downcast(astNode, SamalCreateStructExpression) != null) {
@@ -276,9 +276,9 @@ class Stage3 {
             for(expectedField in decl.getFields()) {
                 // find passed param for field
                 for(p in node.getParams()) {
-                    if(p.getName() != expectedField.getName())
+                    if(p.getFieldName() != expectedField.getFieldName())
                         continue;
-                    params.push({name : p.getName(), value : traverse(p.getValue())});
+                    params.push({name : p.getFieldName(), value : traverse(p.getValue())});
                 }
             }
             addStatement(new CppCreateStructStatement(node.getSourceRef(), node.getDatatype().sure(), varName, params));
@@ -287,8 +287,8 @@ class Stage3 {
         } else if(Std.downcast(astNode, SamalSimpleTailCallSelf) != null) {
             var node = Std.downcast(astNode, SamalSimpleTailCallSelf);
             var params : Array<TailCallSelfParam> = [];
-            for(p in node.getParams()) {
-                params.push(new TailCallSelfParam(p.getName(), traverse(p.getValue())));
+            for(p in node.getParameters()) {
+                params.push(new TailCallSelfParam(p.getParamName(), traverse(p.getValue())));
             }
             addStatement(new CppTailCallSelf(astNode.getSourceRef(), node.getDatatype().sure(), "", params));
             return "";
@@ -306,7 +306,7 @@ class Stage3 {
     public function convertToCppAST() : CppProgram {
         mCProgram = new CppProgram();
         
-        mSProgram.forEachModule(function(moduleName : String, ast : SamalModuleNode) {
+        mSProgram.forEachModule(function(moduleName : String, ast : SamalModule) {
             moduleName = Util.mangle(moduleName, []);
             mCurrentModuleName = moduleName;
             mCurrentFileDeclarations = [];

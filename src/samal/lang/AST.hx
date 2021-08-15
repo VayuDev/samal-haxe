@@ -1,9 +1,10 @@
-package samal;
-import samal.Util.Cloneable;
+package samal.lang;
+
+import samal.lang.Util.Cloneable;
 import haxe.Exception;
-import samal.SamalAST.SamalExpression;
-import samal.Tokenizer.SourceCodeRef;
-import samal.Util.Util;
+import samal.lang.generated.SamalAST.SamalExpression;
+import samal.bootstrap.Tokenizer.SourceCodeRef;
+import samal.lang.Util;
 
 class ASTNode implements Cloneable {
     var mSourceCodeRef : SourceCodeRef;

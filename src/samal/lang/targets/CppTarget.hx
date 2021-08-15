@@ -1,9 +1,9 @@
-package samal.targets;
-import samal.Program.CppProgram;
-import samal.CppAST;
-import samal.targets.LanguageTarget;
-using samal.Datatype.DatatypeHelpers;
-using samal.Util.NullTools;
+package samal.lang.targets;
+import samal.lang.Program.CppProgram;
+import samal.lang.CppAST;
+import samal.lang.targets.LanguageTarget;
+using samal.lang.Datatype.DatatypeHelpers;
+using samal.lang.Util.NullTools;
 
 enum HeaderOrSource {
     HeaderStart;
@@ -138,15 +138,15 @@ class CppTarget extends LanguageTarget {
             "#pragma pack(1)\n"
             + "struct " + node.getDatatype().toCppType() + " {\n"
             + node.getFields().map(function(f) {
-                return " " + f.getDatatype().toCppType() + " " + f.getName() + ";\n";
+                return " " + f.getDatatype().toCppType() + " " + f.getFieldName() + ";\n";
             }).join("")
             + "};\n"
             + "namespace samalrt {\n"
             + "inline samalrt::SamalString inspect(samalrt::SamalContext& ctx, const " + node.getDatatype().toCppType() + "& value) {\n"
             + ' samalrt::SamalString ret = samalrt::toSamalString(ctx, "}");\n'
             + reversedFields.map(function(f) {
-                return ' ret = samalrt::listConcat(ctx, inspect(ctx, value.${f.getName()}), ret);\n'
-                    + ' ret = samalrt::listConcat(ctx, samalrt::toSamalString(ctx, "${f.getName()} = "), ret);\n';
+                return ' ret = samalrt::listConcat(ctx, inspect(ctx, value.${f.getFieldName()}), ret);\n'
+                    + ' ret = samalrt::listConcat(ctx, samalrt::toSamalString(ctx, "${f.getFieldName()} = "), ret);\n';
             }).join(' ret = samalrt::listConcat(ctx, samalrt::toSamalString(ctx, ", "), ret);\n')
             + ' ret = samalrt::listConcat(ctx, samalrt::toSamalString(ctx, "${node.getDatatype().toSamalType()}{"), ret);\n'
             + " return ret;\n"

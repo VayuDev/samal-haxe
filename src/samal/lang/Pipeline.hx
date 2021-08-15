@@ -1,9 +1,9 @@
-package samal;
+package samal.lang;
 
 import haxe.Exception;
-import samal.targets.JSTarget;
-import samal.targets.CppTarget;
-import samal.Program;
+import samal.lang.targets.JSTarget;
+import samal.lang.targets.CppTarget;
+import samal.lang.Program;
 import haxe.Log;
 #if sys
 import sys.FileSystem;
@@ -13,7 +13,7 @@ import sys.io.File;
 import js.Lib;
 #end
 
-import samal.generated.Runtimes;
+import samal.lang.generated.Runtimes;
 
 // If any string parameter is empty, the resulting files are returned from generate
 enum TargetType {

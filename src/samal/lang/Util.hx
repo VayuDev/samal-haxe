@@ -1,10 +1,11 @@
-package samal;
+package samal.lang;
 
-import samal.Datatype.DatatypeHelpers;
-using samal.Datatype.DatatypeHelpers;
+import samal.lang.CppAST.TailCallSelfParam;
+import samal.lang.Datatype.DatatypeHelpers;
+using samal.lang.Datatype.DatatypeHelpers;
 import haxe.Exception;
-import samal.AST;
-import samal.generated.SamalAST;
+import samal.lang.AST;
+import samal.lang.generated.SamalAST;
 
 class Util {
 
@@ -61,17 +62,6 @@ class Util {
         }
         return false;
     }
-
-    public static function createNamedAndValuedParametersArray(names : Array<String>, values : Array<SamalExpression>) {
-        if(names.length != values.length) {
-            throw new Exception("Lengthes must match!");
-        }
-        var ret : Array<NamedAndValuedParameter> = [];
-        for(i in 0...names.length) {
-            ret.push(new NamedAndValuedParameter(names[i], values[i]));
-        }
-        return ret;
-    }
 }
 
 interface Cloneable {
@@ -81,7 +71,7 @@ interface Cloneable {
 class NullTools {
     public static function sure<T>(value:Null<T>):T {
         if (value == null) {
-            throw "null pointer in .sure() call";
+            throw new Exception("null pointer in .sure() call");
         }
         return @:nullSafety(Off) (value:T);
     }

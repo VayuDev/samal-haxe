@@ -1,7 +1,7 @@
-package samal.targets;
+package samal.lang.targets;
 
-import samal.CppAST;
-import samal.AST;
+import samal.lang.CppAST;
+import samal.lang.AST;
 
 class SourceCreationContext {
     var mIndent = 0;

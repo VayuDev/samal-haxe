@@ -1,15 +1,15 @@
-package samal;
+package samal.lang;
 import haxe.Int32;
-import samal.generated.SamalAST;
+import samal.lang.generated.SamalAST;
 import haxe.Exception;
-import samal.Tokenizer;
+import samal.bootstrap.Tokenizer;
 import haxe.macro.Expr;
 
-import samal.AST;
+import samal.lang.AST;
 import haxe.ds.GenericStack;
-import samal.Util;
+import samal.lang.Util;
 
-using samal.Util.NullTools;
+using samal.lang.Util.NullTools;
 
 class Parser {
     var mTokenizer : Tokenizer;
@@ -21,7 +21,7 @@ class Parser {
         mTokenizer = new Tokenizer(code, TokenizerMode.Normal);
         mBaseFileName = baseFileName;
     }
-    public function parse() : SamalModuleNode {
+    public function parse() : SamalModule {
         startNode();
         var moduleName = mBaseFileName;
         skipNewlines();
@@ -31,7 +31,7 @@ class Parser {
             eat(TokenType.Identifier);
             eat(TokenType.NewLine);
         }
-        var decls : Array<SamalDeclarationNode> = [];
+        var decls : Array<SamalDeclaration> = [];
         while(current().getType() != TokenType.Invalid) {
             skipNewlines();
             var decl = parseDeclaration();
@@ -40,10 +40,10 @@ class Parser {
             }
             skipNewlines();
         }
-        return new SamalModuleNode(makeSourceRef(), moduleName, decls);
+        return SamalModule.create(makeSourceRef(), moduleName, decls);
     }
 
-    function parseDeclaration() : Null<SamalDeclarationNode> {
+    function parseDeclaration() : Null<SamalDeclaration> {
         startNode();
         switch (current().getType()) {
             case TokenType.Fn:
@@ -54,13 +54,13 @@ class Parser {
                 var returnType = parseDatatype();
                 startNode();
                 var body = parseScope();
-                return new SamalFunctionDeclarationNode(makeSourceRef(), identifier, params, returnType, body);
+                return SamalFunctionDeclaration.create(makeSourceRef(), identifier, params, returnType, body);
             
             case TokenType.Struct:
                 eat(Struct);
                 final identifier = parseIdentifierWithTemplate();
                 final fields = parseStructFieldList();
-                return new SamalStructDeclaration(makeSourceRef(), identifier, fields);
+                return SamalStructDeclaration.create(makeSourceRef(), identifier, fields);
             case _:
                 throw new Exception(current().info() + ": Expected declaration");
         }
@@ -109,7 +109,7 @@ class Parser {
         return ret;
     }
 
-    function parseFunctionParameterList() : Array<NamedAndTypedParameter> {
+    function parseFunctionParameterList() : Array<SamalFuncDeclParam> {
         var ret = [];
         eat(TokenType.LParen);
         while(current().getType() != TokenType.RParen) {
@@ -117,7 +117,7 @@ class Parser {
             eat(TokenType.Identifier);
             eat(TokenType.Colons);
             var type = parseDatatype();
-            ret.push(new NamedAndTypedParameter(name, type));
+            ret.push(SamalFuncDeclParam.create(name, type));
             if(current().getType() == TokenType.Comma) {
                 eat(TokenType.Comma);
             } else {
@@ -129,7 +129,7 @@ class Parser {
         return ret;
     }
 
-    function parseStructFieldList() : Array<StructField> {
+    function parseStructFieldList() : Array<SamalStructDeclField> {
         var ret = [];
         eat(TokenType.LCurly);
         while(current().getType() != TokenType.RCurly) {
@@ -138,14 +138,14 @@ class Parser {
             eat(TokenType.Identifier);
             eat(TokenType.Colons);
             var type = parseDatatype();
-            ret.push(new StructField(name, type));
+            ret.push(SamalStructDeclField.create(name, type));
             skipNewlines();
         }
         eat(TokenType.RCurly);
         return ret;
     }
 
-    function parseNamedExpressionParameterList() : Array<NamedAndValuedParameter> {
+    function parseStructParamList() : Array<SamalCreateStructParam> {
         var ret = [];
         eat(TokenType.LCurly);
         while(current().getType() != TokenType.RCurly) {
@@ -153,7 +153,7 @@ class Parser {
             eat(TokenType.Identifier);
             eat(TokenType.Colons);
             var value = parseExpression();
-            ret.push(new NamedAndValuedParameter(name, value));
+            ret.push(new SamalCreateStructParam(name, value));
             if(current().getType() == TokenType.Comma) {
                 eat(TokenType.Comma);
             } else {
@@ -198,7 +198,7 @@ class Parser {
             skipNewlines();
         }
         eat(TokenType.RCurly);
-        return new SamalScope(makeSourceRef(), statements);
+        return SamalScope.create(makeSourceRef(), statements);
     }
 
     function parseExpressionOrLineExpression() : SamalExpression {
@@ -209,7 +209,7 @@ class Parser {
             eat(Identifier);
             switch(type) {
                 case "tail_call_self":
-                    return new SamalTailCallSelf(makeSourceRef(), parseExpressionList(LParen, RParen));
+                    return SamalTailCallSelf.create(makeSourceRef(), parseExpressionList(LParen, RParen));
                 default:
                     throw new Exception("Unknown line statement '" + type + "'");
             }
@@ -243,7 +243,7 @@ class Parser {
             var op = binaryExprInfo[0][current().getType()];
             mTokenizer.next();
             var rhs = parseBinaryExpression(nextStepInfo);
-            lhs = new SamalBinaryExpression(makeSourceRef(), lhs, op.sure(), rhs);
+            lhs = SamalBinaryExpression.create(makeSourceRef(), lhs, op.sure(), rhs);
             startNode();
         }
         dropNode();
@@ -270,7 +270,7 @@ class Parser {
         var lhs = parseLiteralExpression();
         while(current().getType() == TokenType.LParen) {
             var params = parseExpressionList(LParen, RParen);
-            lhs = new SamalFunctionCallExpression(makeSourceRef(), lhs, params);
+            lhs = SamalFunctionCallExpression.create(makeSourceRef(), lhs, params);
             startNode();
         }
         dropNode();
@@ -310,10 +310,10 @@ class Parser {
                 if(valAsInt == null) {
                     throw new Exception(current().info() + " Couldn't convert " + val + " to int");
                 }
-                return new SamalLiteralIntExpression(makeSourceRef(), valAsInt);
+                return SamalLiteralIntExpression.create(makeSourceRef(), valAsInt);
             case TokenType.LCurly:
                 startNode();
-                return new SamalScopeExpression(makeSourceRef(), parseScope());
+                return SamalScopeExpression.create(makeSourceRef(), parseScope());
             case TokenType.Identifier:
                 startNode();
                 if (peek().getType() == TokenType.Equals) {
@@ -321,17 +321,17 @@ class Parser {
                     eat(TokenType.Identifier);
                     eat(TokenType.Equals);
                     var rhs = parseExpression();
-                    return new SamalAssignmentExpression(makeSourceRef(), identifierName, rhs);
+                    return SamalAssignmentExpression.create(makeSourceRef(), identifierName, rhs);
                 } else if((peek().getType() == LCurly || peek().getType() == Less) && peek().getSkippedWhitespaces() == 0) {
                     final identifier = parseIdentifierWithTemplate();
                     if(current().getType() != LCurly) {
                         // probably just a function call like fib<int>(5), not a struct creation Point<int>{...}
-                        return new SamalLoadIdentifierExpression(makeSourceRef(), identifier);
+                        return SamalLoadIdentifierExpression.create(makeSourceRef(), identifier);
                     }
-                    final params = parseNamedExpressionParameterList();
-                    return new SamalCreateStructExpression(makeSourceRef(), identifier, params);
+                    final params = parseStructParamList();
+                    return SamalCreateStructExpression.create(makeSourceRef(), identifier, params);
                 }
-                return new SamalLoadIdentifierExpression(makeSourceRef(), parseIdentifierWithTemplate());
+                return SamalLoadIdentifierExpression.create(makeSourceRef(), parseIdentifierWithTemplate());
             case TokenType.If:
                 startNode();
                 eat(If);
@@ -343,16 +343,16 @@ class Parser {
                     eat(If);
                     var branchCondition = parseExpression();
                     var branchBody = parseScope();
-                    elseIfs.push(new SamalElseIfBranch(branchCondition, branchBody));
+                    elseIfs.push(SamalElseIfBranch.create(branchCondition, branchBody));
                 }
                 var elseScope;
                 if(current().getType() == Else) {
                     eat(Else);
                     elseScope = parseScope();
                 } else {
-                    elseScope = new SamalScope(makeSourceRefNonDestructive(), []);
+                    elseScope = SamalScope.create(makeSourceRefNonDestructive(), []);
                 }
-                return new SamalIfExpression(makeSourceRef(), mainCondition, mainBody, elseIfs, elseScope);
+                return SamalIfExpression.create(makeSourceRef(), mainCondition, mainBody, elseIfs, elseScope);
 
             case LSquare:
                 startNode();
@@ -364,7 +364,7 @@ class Parser {
                     return new SamalCreateListExpression(makeSourceRef(), type, []);
                 }
                 var expressions = parseExpressionList(LSquare, RSquare);
-                return new SamalCreateListExpression(makeSourceRef(), null, expressions);
+                return SamalCreateListExpression.create(makeSourceRef(), expressions);
 
             case Match:
                 startNode();
@@ -378,12 +378,12 @@ class Parser {
                     var shape = parseMatchShape();
                     eat(RightArrow);
                     var body = parseExpression();
-                    rows.push(new SamalMatchRow(makeSourceRef(), shape, body));
+                    rows.push(SamalMatchRow.create(makeSourceRef(), shape, body));
                     skipNewlines();
                 }
 
                 eat(RCurly);
-                return new SamalMatchExpression(makeSourceRef(), toMatch, rows);
+                return SamalMatchExpression.create(makeSourceRef(), toMatch, rows);
 
             case Fn:
                 startNode();
@@ -392,7 +392,7 @@ class Parser {
                 eat(RightArrow);
                 final returnType = parseDatatype();
                 final body = parseScope();
-                return new SamalCreateLambdaExpression(makeSourceRef(), params, returnType, body);
+                return SamalCreateLambdaExpression.create(makeSourceRef(), params, returnType, body, []);
             case _:
                 throw new Exception(current().info() + " Expected expression");
         }

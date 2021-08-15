@@ -1,5 +1,5 @@
 -cp src
--main samal.Main
+-main samal.lang.Main
 -lib cloner
 --macro nullSafety("samal", Strict)
 -cpp bin/cpp

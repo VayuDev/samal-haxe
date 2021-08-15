@@ -1,4 +1,4 @@
 -cp src
--main samal.Main
+-main samal.lang.Main
 -lib cloner
 -js bin/samal.js

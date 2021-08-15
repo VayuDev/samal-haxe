@@ -1,13 +1,13 @@
-package samal;
+package samal.lang;
 
-import samal.Program;
-import samal.SamalAST;
-import samal.AST;
-import samal.Datatype;
-using samal.Util.NullTools;
-using samal.Datatype.DatatypeHelpers;
+import samal.lang.Program;
+import samal.lang.generated.SamalAST;
+import samal.lang.AST;
+import samal.lang.Datatype;
+using samal.lang.Util.NullTools;
+using samal.lang.Datatype.DatatypeHelpers;
 import haxe.Exception;
-import samal.Tokenizer.SourceCodeRef;
+import samal.bootstrap.Tokenizer.SourceCodeRef;
 import cloner.Cloner;
 
 typedef InstantiatedUserType = {originalTemplatedType : Datatype, passedTemplateParams : Array<Datatype>, module : String}
@@ -24,7 +24,7 @@ class StringToDatatypeMapperUsingSamalProgram extends StringToDatatypeMapper {
     public function getDatatype(name : String, templateParams : Array<Datatype>) : Datatype {
         final decl = mProgram.findDatatypeUsingNameAndScope(name, mModuleScope);
         final value = decl.getDatatype();
-        final module = decl.getName().substr(0, decl.getName().lastIndexOf("."));
+        final module = decl.getName().getName().substr(0, decl.getName().getName().lastIndexOf("."));
         switch(value.sure()) {
             case Struct(structName, _):
                 final retType = Datatype.Struct(structName, templateParams);
@@ -63,13 +63,13 @@ class Stage1 {
         mProgram.forEachModule(function (moduleName, moduleAST) {
             mCurrentModule = moduleName;
             moduleAST.traverse(function(astNode) {}, function(astNode) {
-                if(Std.downcast(astNode, SamalFunctionDeclarationNode) != null) {
-                    var node = Std.downcast(astNode, SamalFunctionDeclarationNode);
-                    node.setIdentifier(new IdentifierWithTemplate(mCurrentModule + "." + node.getIdentifier().getName(), node.getIdentifier().getTemplateParams()));
+                if(Std.downcast(astNode, SamalFunctionDeclaration) != null) {
+                    var node = Std.downcast(astNode, SamalFunctionDeclaration);
+                    node.setName(new IdentifierWithTemplate(mCurrentModule + "." + node.getName().getName(), node.getName().getTemplateParams()));
 
                 } else if(Std.downcast(astNode, SamalStructDeclaration) != null) {
                     var node = Std.downcast(astNode, SamalStructDeclaration);
-                    node.setIdentifier(new IdentifierWithTemplate(mCurrentModule + "." + node.getIdentifier().getName(), node.getIdentifier().getTemplateParams()));
+                    node.setName(new IdentifierWithTemplate(mCurrentModule + "." + node.getName().getName(), node.getName().getTemplateParams()));
                 
                 }
             });
@@ -80,8 +80,8 @@ class Stage1 {
             mCurrentModule = moduleName;
             moduleAST.traverse(function(astNode) {}, function(astNode) {
                 try {
-                    if(Std.downcast(astNode, SamalDeclarationNode) != null) {
-                        var node = Std.downcast(astNode, SamalDeclarationNode);
+                    if(Std.downcast(astNode, SamalDeclaration) != null) {
+                        var node = Std.downcast(astNode, SamalDeclaration);
                         node.completeWithUserTypeMap(makeStringToDatatypeMapper(mCurrentModule));
     
                     } else if(Std.downcast(astNode, SamalCreateListExpression) != null) {
@@ -119,8 +119,7 @@ class Stage1 {
 
             final newDecl = decl.cloneWithTemplateParams(
                 new StringToDatatypeMapperUsingTypeMap(Util.buildTemplateReplacementMap(decl.getTemplateParams(), entry.passedTemplateParams)), 
-                entry.passedTemplateParams,
-                mCloner);
+                entry.passedTemplateParams);
             mProgram.getModule(entry.module).sure().getDeclarations().push(newDecl);
         }
         return mProgram;

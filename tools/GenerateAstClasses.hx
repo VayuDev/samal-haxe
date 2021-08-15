@@ -129,7 +129,7 @@ class Translator {
         mCustomCodeSnippets = parsingResult.customCode;
     }
     public function translate() : String {
-        var ret = "package samal.generated;\nimport samal.AST;\nimport samal.Tokenizer.SourceCodeRef;\n\n";
+        var ret = "package samal.lang.generated;\nimport samal.lang.AST;\nimport samal.bootstrap.Tokenizer.SourceCodeRef;\n\n";
 
         for(snippet in mCustomCodeSnippets) {
             ret += snippet += "\n";
@@ -165,7 +165,7 @@ class Translator {
             final allParams = parentParams.concat(fields);
             ret += " public function new(" 
                 + allParams.map(function(f) { 
-                    return "p" + toCamelCase(f.name) + " : " + f.datatype;
+                    return "p" + toCamelCase(f.name) + " : " + getFieldDatatype(f);
                 }).join(", ") 
                 + ") {\n";
             if(parent != null) {
@@ -180,7 +180,7 @@ class Translator {
             final allFilteredParams = filteredParentParams.concat(filterClassExtensionFields(fields));
             ret += " public static function create(" 
                 + allFilteredParams.map(function(f) { 
-                    return "p" + toCamelCase(f.name) + " : " + f.datatype;
+                    return "p" + toCamelCase(f.name) + " : " + getFieldDatatype(f);
                 }).join(", ") 
                 + ") {\n";
             ret += "  return new " + className + "(";
@@ -194,9 +194,14 @@ class Translator {
 
             // now getters and setters
             for(field in fields) {
-                ret += " public function get" + toCamelCase(field.name) + "() : " + field.datatype + " {\n";
+                ret += " public function get" + toCamelCase(field.name) + "() : " + getFieldDatatype(field) + " {\n";
                 ret += "  return m" + toCamelCase(field.name) + ";\n";
                 ret += " }\n";
+                if(field.access != Read) {
+                    ret += " public function set" + toCamelCase(field.name) + "(pNewValue : " + field.datatype + ") : Void {\n";
+                    ret += "  m" + toCamelCase(field.name) + " = pNewValue;\n";
+                    ret += " }\n";
+                }
             }
             // now replaceChildren
             ret += " public " + (isASTNode(className) ? "override " : "") + "function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) : Void {\n";
@@ -238,7 +243,12 @@ class Translator {
                 ret += "super.dumpSelf() + \"-\" + ";
             allParams.map(function(f) {
                 if(f.datatype == "String" || f.datatype == "Datatype") {
-                    ret += "m" + toCamelCase(f.name) + " + \", \" + ";
+                    if(f.access == ReadWriteNullable) {
+                        ret += "(" + getFieldAttributeName(f) + " == null ? \"()\" : '' + " + getFieldAttributeName(f) + ".sure())"; 
+                    } else {
+                        ret += getFieldAttributeName(f);
+                    }
+                    ret += " + \", \" + ";
                 }
             });
             ret += '""';
@@ -254,6 +264,15 @@ class Translator {
             ret += "}\n\n";
         }
         return ret;
+    }
+    private static function getFieldAttributeName(field : Field) {
+        return "m" + toCamelCase(field.name);
+    }
+    private static function getFieldDatatype(field : Field) : String {
+        if(field.access == ReadWriteNullable) {
+            return "Null<" + field.datatype + ">";
+        }
+        return field.datatype;
     }
     private function generateFieldReplaceString(field : Field) : String {
         if(isASTNode(field.datatype)) {

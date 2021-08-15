@@ -1,23 +1,23 @@
-package samal;
+package samal.lang;
 
-import samal.CppAST.CppStructDeclaration;
-import samal.Datatype;
+import samal.lang.CppAST.CppStructDeclaration;
+import samal.lang.Datatype;
 import haxe.Exception;
-import samal.SamalAST;
-import samal.CppAST.CppASTNode;
-import samal.CppAST.CppFile;
-import samal.SamalAST.SamalModuleNode;
-import samal.SamalAST.SamalASTNode;
-import samal.AST;
-using samal.Util.NullTools;
-using samal.Datatype.DatatypeHelpers;
+import samal.lang.generated.SamalAST;
+import samal.lang.CppAST.CppASTNode;
+import samal.lang.CppAST.CppFile;
+import samal.lang.generated.SamalAST.SamalModule;
+import samal.lang.generated.SamalAST.SamalASTNode;
+import samal.lang.AST;
+using samal.lang.Util.NullTools;
+using samal.lang.Datatype.DatatypeHelpers;
 
 class SamalProgram {
-    var mModules = new Map<String, SamalModuleNode>();
+    var mModules = new Map<String, SamalModule>();
     public function new() {
     }
 
-    public function addModule(ast : SamalModuleNode) : Void {
+    public function addModule(ast : SamalModule) : Void {
         mModules.set(ast.getModuleName(), ast);
     }
 
@@ -30,21 +30,21 @@ class SamalProgram {
         return ret;
     }
 
-    public function forEachModule(callback : (String, SamalModuleNode) -> Void) {
+    public function forEachModule(callback : (String, SamalModule) -> Void) {
         for(mod in mModules.keyValueIterator()) {
             callback(mod.key, mod.value);
         }
     }
 
-    public function getModule(name : String) : Null<SamalModuleNode> {
+    public function getModule(name : String) : Null<SamalModule> {
         return mModules[name];
     }
 
-    public function findFunction(functionName : String, moduleScope : String) : SamalFunctionDeclarationNode {
+    public function findFunction(functionName : String, moduleScope : String) : SamalFunctionDeclaration {
         for(decl in mModules[moduleScope].sure().getDeclarations()) {
             //trace(decl.getName());
-            if(decl.getName().substr(decl.getName().lastIndexOf(".") + 1) == functionName && Std.downcast(decl, SamalFunctionDeclarationNode) != null) {
-                return Std.downcast(decl, SamalFunctionDeclarationNode);
+            if(decl.getName().getName().substr(decl.getName().getName().lastIndexOf(".") + 1) == functionName && Std.downcast(decl, SamalFunctionDeclaration) != null) {
+                return Std.downcast(decl, SamalFunctionDeclaration);
             }
         }
         throw new Exception('Function $functionName not found!');
@@ -52,7 +52,7 @@ class SamalProgram {
     public function findDatatypeUsingNameAndScope(name : String, moduleScope : String) : SamalDatatypeDeclaration {
         for(decl in mModules[moduleScope].sure().getDeclarations()) {
             //trace(decl.getName());
-            if(decl.getName().substr(decl.getName().lastIndexOf(".") + 1) == name && Std.isOfType(decl, SamalDatatypeDeclaration)) {
+            if(decl.getName().getName().substr(decl.getName().getName().lastIndexOf(".") + 1) == name && Std.isOfType(decl, SamalDatatypeDeclaration)) {
                 return Std.downcast(decl, SamalDatatypeDeclaration);
             }
         }

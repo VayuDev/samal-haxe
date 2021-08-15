@@ -1,9 +1,9 @@
-package samal.targets;
-import samal.Pipeline.TargetType;
-import samal.CppAST;
-import samal.targets.LanguageTarget;
-using samal.Datatype.DatatypeHelpers;
-using samal.Util.NullTools;
+package samal.lang.targets;
+import samal.lang.Pipeline.TargetType;
+import samal.lang.CppAST;
+import samal.lang.targets.LanguageTarget;
+using samal.lang.Datatype.DatatypeHelpers;
+using samal.lang.Util.NullTools;
 
 enum DeclareDatatypesOrFunctions {
     Datatypes;
@@ -69,9 +69,9 @@ class JSTarget extends LanguageTarget {
         if(Std.downcast(ctx, JSContext).getDof() == Functions)
             return "";
         return "class " + node.getDatatype().getStructMangledName() + " {\n" 
-            + " constructor(" + node.getFields().map(function(f) return f.getName()).join(",") + ") {\n"
+            + " constructor(" + node.getFields().map(function(f) return f.getFieldName()).join(",") + ") {\n"
             + node.getFields().map(function(f) {
-                return "  this." + f.getName() + " = " + f.getName() + ";\n";
+                return "  this." + f.getFieldName() + " = " + f.getFieldName() + ";\n";
             }).join("")
             + " }\n"
             + "}";

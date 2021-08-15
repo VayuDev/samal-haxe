@@ -1,6 +1,6 @@
-package samal;
+package samal.lang;
 
-import samal.Pipeline;
+import samal.lang.Pipeline;
 
 class Main {
   static function main() {

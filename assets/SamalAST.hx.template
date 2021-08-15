@@ -1,8 +1,9 @@
 @start_hx
 import haxe.Int32;
-import samal.Datatype;
-using samal.Util.NullTools;
-using samal.Datatype.DatatypeHelpers;
+import samal.lang.Datatype;
+import haxe.Exception;
+using samal.lang.Util.NullTools;
+using samal.lang.Datatype.DatatypeHelpers;
 @end_hx
 
 class SamalFuncDeclParam {
@@ -36,6 +37,22 @@ class SamalModule extends SamalASTNode {
 
 class SamalDeclaration extends SamalASTNode {
     +name : IdentifierWithTemplate
+    @start_hx
+    public function completeWithUserTypeMap(mapper : StringToDatatypeMapper) : Void {
+        throw new Exception("Not implemented!");
+    }
+    public function cloneWithTemplateParams(typeMap : StringToDatatypeMapper, templateParams : Array<Datatype>) : SamalDeclaration {
+        var cpy = clone();
+        cpy.setName(new IdentifierWithTemplate(mName.getName(), templateParams));
+        return cpy;
+    }
+    public function getDatatype() : Datatype {
+        throw new Exception("Not implemented!");
+    }
+    public function getTemplateParams() : Array<Datatype> {
+        return mName.getTemplateParams();
+    }
+    @end_hx
 }
 
 class SamalFunctionDeclaration extends SamalDeclaration {
@@ -43,25 +60,37 @@ class SamalFunctionDeclaration extends SamalDeclaration {
     -returnType : Datatype
     -body : SamalScope
     @start_hx
-    public function completeWithUserTypeMap(mapper : StringToDatatypeMapper) {
+    public override function completeWithUserTypeMap(mapper : StringToDatatypeMapper) {
         mReturnType = mReturnType.complete(mapper);
         mParams = mParams.map(function(p) {
             return new SamalFuncDeclParam(p.getName(), p.getDatatype().complete(mapper));
         });
     }
+    public override function getDatatype() : Datatype {
+        return Datatype.Function(mReturnType, mParams.map(function(p) {return p.getDatatype();}));
+    }
     @end_hx
 }
 class SamalDatatypeDeclaration extends SamalDeclaration {
-    -datatype : Datatype
 }
 
-class SamalStructDeclaration extends SamalDeclaration {
+class SamalStructDeclaration extends SamalDatatypeDeclaration {
     -fields : Array<SamalStructDeclField>
+    @start_hx
+    public override function completeWithUserTypeMap(mapper : StringToDatatypeMapper) : Void {
+        mFields = mFields.map(function(p) {
+            return new SamalStructDeclField(p.getFieldName(), p.getDatatype().complete(mapper));
+        });
+    }
+    public override function getDatatype() : Datatype {
+        return Datatype.Struct(mName.getName(), mName.getTemplateParams());
+    }
+    @end_hx
 }
 
 class SamalScope extends SamalASTNode {
     -statements : Array<SamalExpression>
-    -datatype : Null<Datatype>
+    #datatype : Datatype
 }
 
 class SamalExpression extends SamalASTNode {
@@ -118,6 +147,12 @@ class SamalIfExpression extends SamalExpression {
     -mainBody : SamalScope
     -elseIfs : Array<SamalElseIfBranch>
     -else : SamalScope
+
+    @start_hx
+    public function getAllBranches() : Array<SamalElseIfBranch> {
+        return [new SamalElseIfBranch(mCondition, mMainBody)].concat(mElseIfs);
+    }
+    @end_hx
 }
 
 class SamalElseIfBranch {
@@ -134,7 +169,7 @@ class SamalLiteralIntExpression extends SamalExpression {
 }
 
 class SamalLoadIdentifierExpression extends SamalExpression {
-    -identifier : IdentifierWithTemplate
+    +identifier : IdentifierWithTemplate
 }
 
 class SamalMatchExpression extends SamalExpression {
@@ -178,7 +213,7 @@ class SamalSimpleIfExpression extends SamalExpression {
     -elseBody : SamalScope
 }
 
-class SimpleTailCallSelf extends SamalLineExpression {
+class SamalSimpleTailCallSelf extends SamalLineExpression {
     -parameters : Array<SamalSimpleTailCallSelfParam>
 }
 
@@ -210,8 +245,8 @@ enum SamalUnaryExpressionOp {
 @end_hx
 
 class SamalUnaryExpression extends SamalExpression {
-    -expr : SamalExpression
     -op : SamalUnaryExpressionOp
+    -expr : SamalExpression
 }
 
 class SamalSimpleUnreachable extends SamalExpression {

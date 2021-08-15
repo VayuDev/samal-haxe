@@ -1,10 +1,10 @@
-package samal;
+package samal.lang;
 
-import samal.AST.IdentifierWithTemplate;
+import samal.lang.AST.IdentifierWithTemplate;
 import haxe.Exception;
 
-using samal.Util.NullTools;
-using samal.Util.Util;
+using samal.lang.Util.NullTools;
+using samal.lang.Util.Util;
 
 
 enum Datatype {
