@@ -18,7 +18,7 @@ class Parser {
     var mBaseFileName : String;
 
     public function new(baseFileName : String, code : String) {
-        mTokenizer = new Tokenizer(code);
+        mTokenizer = new Tokenizer(code, TokenizerMode.Normal);
         mBaseFileName = baseFileName;
     }
     public function parse() : SamalModuleNode {
@@ -411,9 +411,7 @@ class Parser {
     }
 
     function skipNewlines() {
-        while(mTokenizer.current().getType() == TokenType.NewLine) {
-            mTokenizer.next();
-        }
+        mTokenizer.skipNewlines();
     }
     
     function startNode() {

@@ -33,10 +33,14 @@ class SourceCodeRef {
     public function getSubstr() {
         return substr;
     }
+    public function getStartIndex() {
+        return indexStart;
+    }
 }
 
 enum TokenType {
     Invalid;
+    Unknown;
     Plus;
     Minus;
     LCurly;
@@ -151,19 +155,19 @@ class Tokenizer {
     public function next() : Void {
         indexStack.add(indexStack.pop() + 1);
     }
-    public function push() {
+    public function push() : Void {
         indexStack.add(indexStack.first());
     }
-    public function pop() {
+    public function pop() : Void {
         indexStack.pop();
     }
-    public function acceptState() {
+    public function acceptState() : Void {
         var top = indexStack.first();
         indexStack.pop();
         indexStack.pop();
         indexStack.add(top);
     }
-    public function eat(type : TokenType) {
+    public function eat(type : TokenType) : Void {
         if(current().getType() != type && CompileConfig.get().shouldThrowErrors()) {
             throw new Exception(current().info() + ": Expected " + type.getName());
         }
@@ -176,6 +180,14 @@ class Tokenizer {
         while(current().getType() == NewLine) {
             eat(NewLine);
         }
+    }
+    public function acceptAndGetSubstring() : String {
+        final end = indexStack.pop();
+        final start = indexStack.pop();
+        indexStack.add(end);
+        return origianlString.substring(
+            tokens[start].getSourceRef().getStartIndex(), 
+            tokens[end].getSourceRef().getStartIndex());
     }
 }
 
@@ -337,8 +349,8 @@ class TokenGenerator {
                 advance();
                 tokens.push(new Token(new SourceCodeRef(lineStart, line, columnStart, column, indexStart, index, ch), TokenType.CharLiteral, skippedSpaces));
             }
-
-            throwException("Unknown token " + getCurrentChar());
+            advance();
+            tokens.push(new Token(makeSourceRef(), TokenType.Unknown, skippedSpaces));
         }
     }
 
