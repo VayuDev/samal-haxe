@@ -1,3 +1,9 @@
+@start_hx
+import haxe.Int32;
+import samal.Datatype;
+using samal.Util.NullTools;
+using samal.Datatype.DatatypeHelpers;
+@end_hx
 
 class SamalFuncDeclParam {
     -name : String
@@ -36,6 +42,14 @@ class SamalFunctionDeclaration extends SamalDeclaration {
     -params : Array<SamalFuncDeclParam>
     -returnType : Datatype
     -body : SamalScope
+    @start_hx
+    public function completeWithUserTypeMap(mapper : StringToDatatypeMapper) {
+        mReturnType = mReturnType.complete(mapper);
+        mParams = mParams.map(function(p) {
+            return new SamalFuncDeclParam(p.getName(), p.getDatatype().complete(mapper));
+        });
+    }
+    @end_hx
 }
 class SamalDatatypeDeclaration extends SamalDeclaration {
     -datatype : Datatype
@@ -59,6 +73,18 @@ class SamalAssignmentExpression extends SamalExpression {
     +identifier : String
     -rhs : SamalExpression
 }
+
+@start_hx
+enum SamalBinaryExpressionOp {
+    Add;
+    Sub;
+    FunctionChain;
+    Less;
+    More;
+    LessEqual;
+    MoreEqual;
+}
+@end_hx
 
 class SamalBinaryExpression extends SamalExpression {
     -lhs : SamalExpression
@@ -176,6 +202,12 @@ class SamalShapeVariable extends SamalShape {
 class SamalTailCallSelf extends SamalLineExpression {
     -parameters : Array<SamalExpression>
 }
+
+@start_hx
+enum SamalUnaryExpressionOp {
+    Not;
+}
+@end_hx
 
 class SamalUnaryExpression extends SamalExpression {
     -expr : SamalExpression

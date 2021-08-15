@@ -11,15 +11,14 @@ enum Access {
 }
 
 typedef Field = {access : Access, name : String, datatype : String, datatypeTokens : Array<String>};
-typedef GeneratedClass = {fields : Array<Field>, parent : Null<String>};
+typedef GeneratedClass = {fields : Array<Field>, parent : Null<String>, customCodeSnippets : Array<String>};
+typedef ParsingResult = {generatedClasses : Map<String, GeneratedClass>, customCode : Array<String>}
 
 class Generator {
     final mTokenizer : Tokenizer;
-    final mGeneratedClasses : Map<String, GeneratedClass> = new Map();
     public function new(path : String) {
         var contents = File.getContent(path);
         mTokenizer = new Tokenizer(contents, DisableMulticharRecognition);
-        mGeneratedClasses.set("ASTNode", {fields: [{access: Read, name: "sourceCodeRef", datatype: "SourceCodeRef", datatypeTokens: ["SourceCodeRef"]}], parent: null});
     }
 
     function current() : Token {
@@ -45,7 +44,7 @@ class Generator {
         } else if(current().getSubstr() == "#") {
             access = Access.ReadWriteNullable;
         } else {
-            throw new Exception("You need specify the access of each field with a + or -");
+            throw new Exception("You need specify the access of each field with a + or -, not '" + current().getSubstr() + "'");
         }
         eat();
         final name = current().getSubstr();
@@ -61,9 +60,37 @@ class Generator {
         return {access: access, name: name, datatype: datatypeTokens.join(""), datatypeTokens: datatypeTokens};
     }
 
-    public function parse() : Map<String, GeneratedClass>{
+    private function parseCodeSnippet() : String {
+        eat();
+        eatSubstr("start_hx");
+        mTokenizer.push();
+        while(mTokenizer.current().getSubstr() != "@" && mTokenizer.peek(1).getSubstr() != "end_hx") {
+            eat();
+        }
+        var substr = mTokenizer.acceptAndGetSubstring();
+        eatSubstr("@");
+        eatSubstr("end_hx");
+        mTokenizer.skipNewlines();
+        return substr;
+    }
+
+    public function parse() : ParsingResult {
+        final generatedClasses : Map<String, GeneratedClass> = new Map();
+        generatedClasses.set("ASTNode", {
+            fields: [{
+                access: Read, 
+                name: "sourceCodeRef", 
+                datatype: "SourceCodeRef", 
+                datatypeTokens: ["SourceCodeRef"]}], 
+            parent: null,
+            customCodeSnippets: []});
+        final customCodeSnippets : Array<String> = [];
         while(mTokenizer.current().getType() != Invalid) {
             mTokenizer.skipNewlines();
+            if(current().getType() == At) {
+                customCodeSnippets.push(parseCodeSnippet());
+                continue;
+            }
             eatSubstr("class");
             final className = current().getSubstr();
             eat();
@@ -75,29 +102,40 @@ class Generator {
             }
             eatSubstr("{");
             var fields : Array<Field> = [];
+            var classCustomCodeSnippets : Array<String> = [];
             mTokenizer.skipNewlines();
             while(current().getSubstr() != "}") {
-                fields.push(parseField());
+                if(current().getSubstr() == "@") {
+                    classCustomCodeSnippets.push(parseCodeSnippet());
+                } else {
+                    fields.push(parseField());
+                }
                 mTokenizer.skipNewlines();
             }
             eatSubstr("}");
 
-            mGeneratedClasses.set(className, {fields: fields, parent: parent});
+            generatedClasses.set(className, {fields: fields, parent: parent, customCodeSnippets: classCustomCodeSnippets});
             mTokenizer.skipNewlines();
         }    
-        return mGeneratedClasses;
+        return {generatedClasses: generatedClasses, customCode: customCodeSnippets};
     }
 }
 
 class Translator {
     private final mGeneratedClasses : Map<String, GeneratedClass>;
-    public function new(generatedClasses : Map<String, GeneratedClass>) {
-        mGeneratedClasses = generatedClasses;
+    private final mCustomCodeSnippets : Array<String>;
+    public function new(parsingResult : ParsingResult) {
+        mGeneratedClasses = parsingResult.generatedClasses;
+        mCustomCodeSnippets = parsingResult.customCode;
     }
-    public function translate(generatedClasses : Map<String, GeneratedClass>) : String {
-        var ret = "import samal.AST;\nimport samal.Tokenizer.SourceCodeRef;\nimport haxe.Int32;\n\n";
+    public function translate() : String {
+        var ret = "import samal.AST;\nimport samal.Tokenizer.SourceCodeRef;\n\n";
 
-        for(className => classInfo in generatedClasses.keyValueIterator()) {
+        for(snippet in mCustomCodeSnippets) {
+            ret += snippet += "\n";
+        }
+
+        for(className => classInfo in mGeneratedClasses.keyValueIterator()) {
             if(className == "ASTNode") {
                 continue;
             }
@@ -192,6 +230,27 @@ class Translator {
             }).join(",\n") + "\n";
             ret += "  );\n";
             ret += " }\n";
+
+            // now dumpSelf
+            ret += " public " + (isAST ? "override " : "") + "function dumpSelf() : String {\n";
+            ret += "  return ";
+            if(isAST)
+                ret += "super.dumpSelf() + \"-\" + ";
+            allParams.map(function(f) {
+                if(f.datatype == "String" || f.datatype == "Datatype") {
+                    ret += "m" + toCamelCase(f.name) + " + \", \" + ";
+                }
+            });
+            ret += '""';
+            ret += ";\n";
+            ret += " }\n";
+
+
+            // now custom snippets
+            for(snippet in classInfo.customCodeSnippets) {
+                ret += snippet + "\n";
+            }
+
             ret += "}\n\n";
         }
         return ret;
@@ -252,7 +311,7 @@ class GenerateAstClasses {
         final result = new Generator("assets/SamalAST.hx.template");
         final classes = result.parse();
         final translator = new Translator(classes);
-        final res = translator.translate(classes);
+        final res = translator.translate();
         trace(res);
     }
 }
