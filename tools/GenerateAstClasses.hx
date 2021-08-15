@@ -11,7 +11,7 @@ enum Access {
 }
 
 typedef Field = {access : Access, name : String, datatype : String, datatypeTokens : Array<String>};
-typedef GeneratedClass = {fields : Array<Field>, parent : Null<String>, customCodeSnippets : Array<String>};
+typedef GeneratedClass = {fields : Array<Field>, parent : Null<String>, customCodeSnippets : Array<String>, constructorCodeSnippet : String, constructorParamsSnippet : String};
 typedef ParsingResult = {generatedClasses : Map<String, GeneratedClass>, customCode : Array<String>}
 
 class Generator {
@@ -61,8 +61,6 @@ class Generator {
     }
 
     private function parseCodeSnippet() : String {
-        eat();
-        eatSubstr("start_hx");
         mTokenizer.push();
         while(mTokenizer.current().getSubstr() != "@" && mTokenizer.peek(1).getSubstr() != "end_hx") {
             eat();
@@ -70,7 +68,6 @@ class Generator {
         var substr = mTokenizer.acceptAndGetSubstring();
         eatSubstr("@");
         eatSubstr("end_hx");
-        mTokenizer.skipNewlines();
         return substr;
     }
 
@@ -83,11 +80,15 @@ class Generator {
                 datatype: "SourceCodeRef", 
                 datatypeTokens: ["SourceCodeRef"]}], 
             parent: null,
-            customCodeSnippets: []});
+            customCodeSnippets: [],
+            constructorCodeSnippet: "",
+            constructorParamsSnippet: ""});
         final customCodeSnippets : Array<String> = [];
         while(mTokenizer.current().getType() != Invalid) {
             mTokenizer.skipNewlines();
             if(current().getType() == At) {
+                eatSubstr("@");
+                eatSubstr("start_hx");
                 customCodeSnippets.push(parseCodeSnippet());
                 continue;
             }
@@ -103,10 +104,29 @@ class Generator {
             eatSubstr("{");
             var fields : Array<Field> = [];
             var classCustomCodeSnippets : Array<String> = [];
+            var constructorCodeSnippet = "";
+            var constructorParamsSnippet = "";
             mTokenizer.skipNewlines();
             while(current().getSubstr() != "}") {
                 if(current().getSubstr() == "@") {
-                    classCustomCodeSnippets.push(parseCodeSnippet());
+                    if(mTokenizer.peek().getSubstr() == "start_hx") {
+                        eatSubstr("@");
+                        eatSubstr("start_hx");
+                        classCustomCodeSnippets.push(parseCodeSnippet());
+                    } else if(mTokenizer.peek().getSubstr() == "start_hx_ctor") {
+                        eatSubstr("@");
+                        eatSubstr("start_hx_ctor");
+                        eatSubstr("(");
+                        mTokenizer.push();
+                        while(current().getSubstr() != ")") {
+                            mTokenizer.next();
+                        }
+                        constructorParamsSnippet = mTokenizer.acceptAndGetSubstring();
+                        eatSubstr(")");
+                        constructorCodeSnippet = parseCodeSnippet();
+                    } else {
+                        throw new Exception("Unknown line statement " + mTokenizer.peek());
+                    }
                 } else {
                     fields.push(parseField());
                 }
@@ -114,7 +134,13 @@ class Generator {
             }
             eatSubstr("}");
 
-            generatedClasses.set(className, {fields: fields, parent: parent, customCodeSnippets: classCustomCodeSnippets});
+            generatedClasses.set(className, {
+                fields: fields, 
+                parent: parent, 
+                customCodeSnippets: classCustomCodeSnippets, 
+                constructorCodeSnippet: constructorCodeSnippet, 
+                constructorParamsSnippet: constructorParamsSnippet
+            });
             mTokenizer.skipNewlines();
         }    
         return {generatedClasses: generatedClasses, customCode: customCodeSnippets};
@@ -163,10 +189,10 @@ class Translator {
             // next, the constructor
             final parentParams = getAllParentConstructorFields(parent);
             final allParams = parentParams.concat(fields);
-            ret += " public function new(" 
+            ret += " function new(" 
                 + allParams.map(function(f) { 
                     return "p" + toCamelCase(f.name) + " : " + getFieldDatatype(f);
-                }).join(", ") 
+                }).join(", ")
                 + ") {\n";
             if(parent != null) {
                 ret += "  super(" + parentParams.map(function(f) return "p" + toCamelCase(f.name)).join(", ") + ");\n";
@@ -182,14 +208,32 @@ class Translator {
                 + allFilteredParams.map(function(f) { 
                     return "p" + toCamelCase(f.name) + " : " + getFieldDatatype(f);
                 }).join(", ") 
+                + (classInfo.constructorParamsSnippet == "" ? "" : ", " + classInfo.constructorParamsSnippet)
                 + ") {\n";
-            ret += "  return new " + className + "(";
+            ret += "  final ret = new " + className + "(";
             ret += allParams.map(function(f) {
                 if(f.access == ReadWriteNullable)
                     return "null";
                 return "p" + toCamelCase(f.name);
             }).join(", ");
             ret += ");\n";
+            ret += classInfo.constructorCodeSnippet;
+            ret += "\nreturn ret;\n";
+            ret += " }\n";
+            // now the second constructor
+            ret += " public static function createFull(" 
+                + allParams.map(function(f) { 
+                    return "p" + toCamelCase(f.name) + " : " + getFieldDatatype(f);
+                }).join(", ") 
+                + (classInfo.constructorParamsSnippet == "" ? "" : ", " + classInfo.constructorParamsSnippet)
+                + ") {\n";
+            ret += "  final ret = new " + className + "(";
+            ret += allParams.map(function(f) {
+                return "p" + toCamelCase(f.name);
+            }).join(", ");
+            ret += ");\n";
+            ret += classInfo.constructorCodeSnippet;
+            ret += "\n  return ret;\n";
             ret += " }\n";
 
             // now getters and setters
@@ -231,6 +275,9 @@ class Translator {
                 if(isGeneratedClass(f.datatype)) {
                     return "   m" + toCamelCase(f.name) + ".clone()";
                 }
+                else if(f.datatypeTokens[0] == "Array") {
+                    return "   " + getFieldAttributeName(f) + ".map(function(e) return e" + (isGeneratedClass(f.datatypeTokens[2]) ? ".clone()" : "") + ")";
+                }
                 return "   m" + toCamelCase(f.name);
             }).join(",\n") + "\n";
             ret += "  );\n";
@@ -250,6 +297,7 @@ class Translator {
                     }
                     ret += " + \", \" + ";
                 }
+                return false;
             });
             ret += '""';
             ret += ";\n";
@@ -305,6 +353,9 @@ class Translator {
     }
     private function isASTNode(datatype : String) : Bool {
         while(true) {
+            if(datatype == null) {
+                return false;
+            }
             if(datatype == "ASTNode") {
                 return true;
             }

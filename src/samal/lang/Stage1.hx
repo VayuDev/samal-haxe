@@ -120,6 +120,9 @@ class Stage1 {
             final newDecl = decl.cloneWithTemplateParams(
                 new StringToDatatypeMapperUsingTypeMap(Util.buildTemplateReplacementMap(decl.getTemplateParams(), entry.passedTemplateParams)), 
                 entry.passedTemplateParams);
+            for(f in cast(newDecl, SamalStructDeclaration).getFields()) {
+                trace(f.getDatatype());
+            }
             mProgram.getModule(entry.module).sure().getDeclarations().push(newDecl);
         }
         return mProgram;

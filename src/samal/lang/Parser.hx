@@ -153,7 +153,7 @@ class Parser {
             eat(TokenType.Identifier);
             eat(TokenType.Colons);
             var value = parseExpression();
-            ret.push(new SamalCreateStructParam(name, value));
+            ret.push(SamalCreateStructParam.create(name, value));
             if(current().getType() == TokenType.Comma) {
                 eat(TokenType.Comma);
             } else {
@@ -283,18 +283,18 @@ class Parser {
             case Identifier:
                 var varName = current().getSubstr();
                 eat(Identifier);
-                return new SamalShapeVariable(makeSourceRef(), varName);
+                return SamalShapeVariable.create(makeSourceRef(), varName);
             case LSquare:
                 eat(LSquare);
                 if (current().getType() == RSquare) {
                     eat(RSquare);
-                    return new SamalShapeEmptyList(makeSourceRef());
+                    return SamalShapeEmptyList.create(makeSourceRef());
                 }
                 var head = parseMatchShape();
                 eat(Plus);
                 var tail = parseMatchShape();
                 eat(RSquare);
-                return new SamalShapeSplitList(makeSourceRef(), head, tail);
+                return SamalShapeSplitList.create(makeSourceRef(), head, tail);
             case _:
                 throw new Exception(current().info() + " Expected match shape");
         }
@@ -361,10 +361,10 @@ class Parser {
                     eat(Colons);
                     var type = parseDatatype();
                     eat(RSquare);
-                    return new SamalCreateListExpression(makeSourceRef(), type, []);
+                    return SamalCreateListExpression.create(makeSourceRef(), [], type);
                 }
                 var expressions = parseExpressionList(LSquare, RSquare);
-                return SamalCreateListExpression.create(makeSourceRef(), expressions);
+                return SamalCreateListExpression.create(makeSourceRef(), expressions, null);
 
             case Match:
                 startNode();

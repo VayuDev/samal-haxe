@@ -313,7 +313,7 @@ class Stage2 {
             // track all used variables, used in the C++-target for GC
             mOnStackedIdentifierLoadCallback = function(depth, name, datatype) {
                 if(depth <= startStackLength) {
-                    node.getCapturedVariables().push(new SamalFuncDeclParam(name, datatype));
+                    node.getCapturedVariables().push(SamalFuncDeclParam.create(name, datatype));
                 }
             };
             traverse(node.getBody());
@@ -413,28 +413,27 @@ class Stage2 {
         } else if(Std.downcast(astNode, SamalIfExpression) != null) {
             var node = Std.downcast(astNode, SamalIfExpression);
             if(node.getElseIfs().length == 0) {
-                return new SamalSimpleIfExpression(node.getSourceRef(), node.getDatatype().sure(), node.getCondition(), node.getMainBody(), node.getElse());
+                return SamalSimpleIfExpression.createFull(node.getSourceRef(), node.getDatatype().sure(), node.getCondition(), node.getMainBody(), node.getElse());
             }
             var currentElseIf = node.getElseIfs().shift().sure();
             var reducedIfExpr = withDatatype(
                 node.getDatatype().sure(), 
                 SamalIfExpression.create(node.getSourceRef(), currentElseIf.getCondition(), currentElseIf.getBody(), node.getElseIfs(), node.getElse()));
             var newElseScope = SamalScope.create(node.getSourceRef(), [reducedIfExpr]);
-            return new SamalSimpleIfExpression(node.getSourceRef(), node.getDatatype().sure(), node.getCondition(), node.getMainBody(), newElseScope);
+            return SamalSimpleIfExpression.createFull(node.getSourceRef(), node.getDatatype().sure(), node.getCondition(), node.getMainBody(), newElseScope);
 
         } else if(Std.downcast(astNode, SamalCreateListExpression) != null) {
             var node = Std.downcast(astNode, SamalCreateListExpression);
             if(node.getChildren().length == 0) {
-                return new SamalSimpleListCreateEmpty(node.getSourceRef(), node.getDatatype().sure());
+                return SamalSimpleListCreateEmpty.createFull(node.getSourceRef(), node.getDatatype().sure());
             }
             var currentChild = node.getChildren().shift().sure();
-            return withDatatype(
-                node.getDatatype().sure(),
-                new SamalSimpleListPrepend(
-                    node.getSourceRef(), 
-                    node.getDatatype().sure(), 
+            return
+                SamalSimpleListPrepend.createFull(
+                    node.getSourceRef(),
+                    node.getDatatype().sure(),
                     currentChild, 
-                    new SamalCreateListExpression(node.getSourceRef(), node.getDatatype().sure().getBaseType(), node.getChildren())));
+                    SamalCreateListExpression.create(node.getSourceRef(), node.getChildren(), node.getDatatype().sure().getBaseType()));
 
         }  else if(Std.downcast(astNode, SamalBinaryExpression) != null) {
             var node = Std.downcast(astNode, SamalBinaryExpression);
@@ -443,7 +442,7 @@ class Stage2 {
 
             if(rhsType.match(List(_)) && lhsType.deepEquals(rhsType.getBaseType()) && node.getOp() == Add) {
                 // list prepend
-                return new SamalSimpleListPrepend(node.getSourceRef(), rhsType, node.getLhs(), node.getRhs());
+                return SamalSimpleListPrepend.createFull(node.getSourceRef(), rhsType, node.getLhs(), node.getRhs());
             }
         } else if(Std.downcast(astNode, SamalMatchExpression) != null) {
             var node = Std.downcast(astNode, SamalMatchExpression);
@@ -453,11 +452,11 @@ class Stage2 {
             var toMatchDatatype = node.getToMatch().getDatatype().sure();
 
             var toMatchVarName = genTempVarName("toMatch");
-            rootScope.getStatements().push(new SamalAssignmentExpression(node.getSourceRef(), toMatchDatatype, toMatchVarName, node.getToMatch()));
+            rootScope.getStatements().push(SamalAssignmentExpression.createFull(node.getSourceRef(), toMatchDatatype, toMatchVarName, node.getToMatch()));
 
             // use separate scope so that it only contains the logic for matching each row
             final matchRootScope = SamalScope.create(node.getSourceRef(), []);
-            rootScope.getStatements().push(new SamalScopeExpression(node.getSourceRef(), returnType, matchRootScope));
+            rootScope.getStatements().push(SamalScopeExpression.createFull(node.getSourceRef(), returnType, matchRootScope));
 
             var ctx = new MatchShapeReplacementContext(matchRootScope);
             ctx.addElseAlongTheWay(matchRootScope); // just used for bootstrapping the first row
@@ -485,10 +484,10 @@ class Stage2 {
                 hangingElse.getStatements().push(SamalSimpleUnreachable.create(node.getSourceRef()));
             }
 
-            return new SamalScopeExpression(node.getSourceRef(), returnType, rootScope);
+            return SamalScopeExpression.createFull(node.getSourceRef(), returnType, rootScope);
         } else if(Std.downcast(astNode, SamalTailCallSelf) != null) {
             var node = Std.downcast(astNode, SamalTailCallSelf);
-            return new SamalSimpleTailCallSelf(
+            return SamalSimpleTailCallSelf.createFull(
                 node.getSourceRef(), 
                 node.getDatatype().sure(), 
                 createTailCallSelfParamArray(
@@ -507,7 +506,7 @@ class Stage2 {
         }
         var ret : Array<SamalSimpleTailCallSelfParam> = [];
         for(i in 0...names.length) {
-            ret.push(new SamalSimpleTailCallSelfParam(names[i], values[i]));
+            ret.push(SamalSimpleTailCallSelfParam.createFull(names[i], values[i]));
         }
         return ret;
     }
@@ -515,7 +514,7 @@ class Stage2 {
     function replaceMatchShape(ctx : MatchShapeReplacementContext, matchShape : SamalShape, currentVarName : String, currentVarDatatype : Datatype, returnType : Datatype) {
 
         var loadCurrentVar = function() {
-            return new SamalLoadIdentifierExpression(matchShape.getSourceRef(), currentVarDatatype, new IdentifierWithTemplate(currentVarName, []));
+            return SamalLoadIdentifierExpression.createFull(matchShape.getSourceRef(), currentVarDatatype, new IdentifierWithTemplate(currentVarName, []));
         }
 
         var generateIfElse = function(check) {
@@ -525,7 +524,7 @@ class Stage2 {
             checkElseBody.setDatatype(returnType);
             ctx.addElseAlongTheWay(checkElseBody);
 
-            var ifExpr = new SamalSimpleIfExpression(matchShape.getSourceRef(), returnType, check, checkSuccessBody, checkElseBody);
+            var ifExpr = SamalSimpleIfExpression.createFull(matchShape.getSourceRef(), returnType, check, checkSuccessBody, checkElseBody);
             ctx.getCurrentBody().getStatements().push(ifExpr);
             ctx.setCurrentBody(checkSuccessBody);
 
@@ -535,7 +534,7 @@ class Stage2 {
         if(Std.downcast(matchShape, SamalShapeVariable) != null) {
             var node = Std.downcast(matchShape, SamalShapeVariable);
             var assignment = 
-                    new SamalAssignmentExpression(
+                    SamalAssignmentExpression.createFull(
                         node.getSourceRef(),
                         currentVarDatatype,
                         node.getVariableName(), 
@@ -550,7 +549,7 @@ class Stage2 {
         } else if(Std.downcast(matchShape, SamalShapeSplitList) != null) {
             var node = Std.downcast(matchShape, SamalShapeSplitList);
             var checkSuccessBody = generateIfElse(
-                new SamalUnaryExpression(
+                SamalUnaryExpression.createFull(
                     node.getSourceRef(), 
                     Bool,
                     Not, 
@@ -558,19 +557,19 @@ class Stage2 {
             
             final headVarName = genTempVarName("listHead");
             checkSuccessBody.getStatements().push(
-                new SamalAssignmentExpression(
+                SamalAssignmentExpression.createFull(
                     node.getSourceRef(), 
                     currentVarDatatype.getBaseType(), 
                     headVarName, 
-                    new SamalSimpleListGetHead(node.getSourceRef(), currentVarDatatype, loadCurrentVar())));
+                    SamalSimpleListGetHead.createFull(node.getSourceRef(), currentVarDatatype, loadCurrentVar())));
             
             final tailVarName = genTempVarName("listTail");
             checkSuccessBody.getStatements().push(
-                new SamalAssignmentExpression(
+                SamalAssignmentExpression.createFull(
                     node.getSourceRef(), 
                     currentVarDatatype,
                     tailVarName, 
-                    new SamalSimpleListGetTail(node.getSourceRef(), currentVarDatatype, loadCurrentVar())));
+                    SamalSimpleListGetTail.createFull(node.getSourceRef(), currentVarDatatype, loadCurrentVar())));
 
             replaceMatchShape(ctx, node.getHead(), headVarName, currentVarDatatype.getBaseType(), returnType);
             replaceMatchShape(ctx, node.getTail(), tailVarName, currentVarDatatype, returnType);
