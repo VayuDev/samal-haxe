@@ -2,7 +2,7 @@ package tools;
 
 import haxe.Exception;
 import sys.io.File;
-import samal.Tokenizer;
+import samal.bootstrap.Tokenizer;
 
 enum Access {
     ReadWrite;
@@ -129,7 +129,7 @@ class Translator {
         mCustomCodeSnippets = parsingResult.customCode;
     }
     public function translate() : String {
-        var ret = "import samal.AST;\nimport samal.Tokenizer.SourceCodeRef;\n\n";
+        var ret = "package samal.generated;\nimport samal.AST;\nimport samal.Tokenizer.SourceCodeRef;\n\n";
 
         for(snippet in mCustomCodeSnippets) {
             ret += snippet += "\n";
@@ -312,6 +312,8 @@ class GenerateAstClasses {
         final classes = result.parse();
         final translator = new Translator(classes);
         final res = translator.translate();
-        trace(res);
+        final outHandle = File.write("src/samal/lang/generated/SamalAST.hx");
+        outHandle.writeString(res);
+        outHandle.close();
     }
 }

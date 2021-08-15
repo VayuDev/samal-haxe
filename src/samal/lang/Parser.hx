@@ -1,6 +1,6 @@
 package samal;
 import haxe.Int32;
-import samal.SamalAST;
+import samal.generated.SamalAST;
 import haxe.Exception;
 import samal.Tokenizer;
 import haxe.macro.Expr;

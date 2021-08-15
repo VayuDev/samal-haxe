@@ -1,6 +1,6 @@
-package samal;
+package samal.bootstrap;
 
-import samal.Util;
+import samal.bootstrap.BootstrapUtils;
 import haxe.Exception;
 import haxe.ds.GenericStack;
 
@@ -22,7 +22,7 @@ class SourceCodeRef {
         this.substr = substr;
     }
     public function info() : String {
-        return "[" + lineStart + ":" + columnStart + "] '" + Util.escapeString(substr) + "'";
+        return "[" + lineStart + ":" + columnStart + "] '" + BootstrapUtils.escapeString(substr) + "'";
     }
     public function errorInfo() : String {
         return "At [" + lineStart + ":" + columnStart + "]:\n" + substr;

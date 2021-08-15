@@ -1,4 +1,4 @@
-package samal;
+package samal.bootstrap;
 
 class CompileConfig {
     private static var mInstance = new CompileConfig();

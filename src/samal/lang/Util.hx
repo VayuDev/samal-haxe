@@ -1,25 +1,12 @@
 package samal;
 
-import samal.SamalAST.SamalExpression;
 import samal.Datatype.DatatypeHelpers;
 using samal.Datatype.DatatypeHelpers;
 import haxe.Exception;
 import samal.AST;
+import samal.generated.SamalAST;
 
 class Util {
-    public static function escapeString(str : String) {
-        var ret = "";
-        for(i in 0...str.length) {
-            var ch = str.charAt(i);
-            switch(ch) {
-                case "\n":
-                    ret += "\\n";
-                case _:
-                    ret += ch;
-            }
-        }
-        return ret;
-    }
 
     @:generic
     public static function replaceNodes<T>(nodes : Array<T>, preorder : (ASTNode) -> (ASTNode), postorder : (ASTNode) -> (ASTNode)) : Array<T> {
