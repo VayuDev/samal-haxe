@@ -1,6 +1,6 @@
 package samal.lang;
 
-import samal.lang.AST.IdentifierWithTemplate;
+import samal.lang.generated.SamalAST.IdentifierWithTemplate;
 import haxe.Exception;
 
 using samal.lang.Util.NullTools;
@@ -69,7 +69,7 @@ class DatatypeHelpers {
     static public function getUserTypeData(type : Datatype) : IdentifierWithTemplate {
         switch(type) {
             case Usertype(name, params):
-                return new IdentifierWithTemplate(name, params);
+                return IdentifierWithTemplate.create(name, params);
             case _:
                 throw new Exception(type + " is not a user type!");
         }

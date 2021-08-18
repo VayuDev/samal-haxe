@@ -26,6 +26,24 @@ class SamalStructDeclField {
 }
 
 
+
+class IdentifierWithTemplate {
+    -Name : String
+    -TemplateParams : Array<Datatype>
+    @start_hx
+    public function mangled() {
+        return Util.mangle(mName, mTemplateParams);
+    }
+    public function dump() : String {
+        if(mTemplateParams.length == 0) {
+            return mName;
+        }
+        return mName + "<" + mTemplateParams.map(function(type) {return type.getName();}).join(", ") + ">";
+    }
+    @end_hx
+}
+
+
 class SamalASTNode extends ASTNode {
     
 }

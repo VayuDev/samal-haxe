@@ -168,6 +168,7 @@ class Translator {
             ret += "class " + className;
             final fields = classInfo.fields;
             final parent = classInfo.parent;
+            final isAST = isASTNode(className);
             if(parent != null) {
                 ret += " extends " + parent;
             }
@@ -189,6 +190,9 @@ class Translator {
             // next, the constructor
             final parentParams = getAllParentConstructorFields(parent);
             final allParams = parentParams.concat(fields);
+            if(!isAST && classInfo.constructorCodeSnippet == "" && classInfo.constructorParamsSnippet == "") {
+                ret += " public";
+            }
             ret += " function new(" 
                 + allParams.map(function(f) { 
                     return "p" + toCamelCase(f.name) + " : " + getFieldDatatype(f);
@@ -254,7 +258,6 @@ class Translator {
             }
             ret += " }\n";
             // now replace
-            final isAST = isASTNode(className);
             ret += " public " + (isAST ? "override " : "") 
                 +  "function replace(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) : ";
             if(isAST) {
@@ -276,7 +279,7 @@ class Translator {
                     return "   cast(m" + toCamelCase(f.name) + ".clone(), " + f.datatype + ")";
                 }
                 else if(f.datatypeTokens[0] == "Array") {
-                    return "   " + getFieldAttributeName(f) + ".map(function(e) return " + (isGeneratedClass(f.datatypeTokens[2]) ? "cast(e.clone(), " + f.datatypeTokens[2] + ")" : "") + ")";
+                    return "   " + getFieldAttributeName(f) + ".map(function(e) return " + (isGeneratedClass(f.datatypeTokens[2]) ? "cast(e.clone(), " + f.datatypeTokens[2] + ")" : "e") + ")";
                 }
                 return "   m" + toCamelCase(f.name);
             }).join(",\n") + "\n";
@@ -338,7 +341,9 @@ class Translator {
             final subType = field.datatypeTokens[2];
             return "  this.m" + toCamelCase(field.name) + " = m" + toCamelCase(field.name) 
                 + ".map(function(node :  " + subType +  ") : " + subType + " {\n"
-                + "   return cast(node.replace(preorder, postorder), " + subType + ");\n"
+                + (isASTNode(subType) 
+                    ? "   return cast(node.replace(preorder, postorder), " + subType + ");\n"
+                    : "   return node;\n")
                 + "  });\n";
         }
         
