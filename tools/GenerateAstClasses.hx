@@ -256,27 +256,27 @@ class Translator {
             // now replace
             final isAST = isASTNode(className);
             ret += " public " + (isAST ? "override " : "") 
-                +  "function replace(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) : " 
-                +  className + " {\n";
+                +  "function replace(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) : ";
             if(isAST) {
+                ret += "ASTNode {\n";
                 ret += "  final self = preorder(this);\n";
                 ret += "  self.replaceChildren(preorder, postorder);\n";
-                ret += "  return cast(postorder(self), " + className + ");\n";
+                ret += "  return postorder(self);\n";
             } else {
+                ret += className + " {\n";
                 ret += "  replaceChildren(preorder, postorder);\n";
                 ret += "  return this;\n";
             }
             ret += " }\n";
-
             // now clone
             ret += " public " + (isAST ? "override " : "") + "function clone() : " + className + " {\n";
             ret += "  return new " + className + "(\n";
             ret += allParams.map(function(f) {
                 if(isGeneratedClass(f.datatype)) {
-                    return "   m" + toCamelCase(f.name) + ".clone()";
+                    return "   cast(m" + toCamelCase(f.name) + ".clone(), " + f.datatype + ")";
                 }
                 else if(f.datatypeTokens[0] == "Array") {
-                    return "   " + getFieldAttributeName(f) + ".map(function(e) return e" + (isGeneratedClass(f.datatypeTokens[2]) ? ".clone()" : "") + ")";
+                    return "   " + getFieldAttributeName(f) + ".map(function(e) return " + (isGeneratedClass(f.datatypeTokens[2]) ? "cast(e.clone(), " + f.datatypeTokens[2] + ")" : "") + ")";
                 }
                 return "   m" + toCamelCase(f.name);
             }).join(",\n") + "\n";
@@ -287,18 +287,26 @@ class Translator {
             ret += " public " + (isAST ? "override " : "") + "function dumpSelf() : String {\n";
             ret += "  return ";
             if(isAST)
-                ret += "super.dumpSelf() + \"-\" + ";
-            allParams.map(function(f) {
-                if(f.datatype == "String" || f.datatype == "Datatype") {
-                    if(f.access == ReadWriteNullable) {
-                        ret += "(" + getFieldAttributeName(f) + " == null ? \"()\" : '' + " + getFieldAttributeName(f) + ".sure())"; 
-                    } else {
-                        ret += getFieldAttributeName(f);
-                    }
-                    ret += " + \", \" + ";
+                ret += 'super.dumpSelf() + " " + ';
+            for(f in fields) {
+                if(isASTNode(f.datatype) || f.datatype == "SourceCodeRef") {
+                    continue;
                 }
-                return false;
-            });
+                if(f.datatypeTokens[0] == "Array") {
+                    continue;
+                }
+                ret += '"${f.name}=" + ';
+                if(f.access == ReadWriteNullable) {
+                    ret += "(" + getFieldAttributeName(f) + " == null ? \"()\" : '' + " + getFieldAttributeName(f) + ".sure())"; 
+                } else if(isGeneratedClass(f.datatype)) {
+                    ret += getFieldAttributeName(f) + ".dumpSelf()";
+                } else if(f.datatype == "IdentifierWithTemplate") {
+                    ret += getFieldAttributeName(f) + ".dump()";  
+                } else  {
+                    ret += getFieldAttributeName(f);
+                }
+                ret += " + \", \" + ";
+            }
             ret += '""';
             ret += ";\n";
             ret += " }\n";
@@ -324,13 +332,13 @@ class Translator {
     }
     private function generateFieldReplaceString(field : Field) : String {
         if(isASTNode(field.datatype)) {
-            return "  m" + toCamelCase(field.name) + " = m" + toCamelCase(field.name) + ".replace(preorder, postorder);\n";
+            return "  m" + toCamelCase(field.name) + " = cast(m" + toCamelCase(field.name) + ".replace(preorder, postorder), " + field.datatype + ");\n";
         }
         if(field.datatypeTokens[0] == "Array") {
             final subType = field.datatypeTokens[2];
             return "  this.m" + toCamelCase(field.name) + " = m" + toCamelCase(field.name) 
                 + ".map(function(node :  " + subType +  ") : " + subType + " {\n"
-                + "   return node.replace(preorder, postorder);\n"
+                + "   return cast(node.replace(preorder, postorder), " + subType + ");\n"
                 + "  });\n";
         }
         

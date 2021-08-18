@@ -125,6 +125,17 @@ class Stage1 {
             }
             mProgram.getModule(entry.module).sure().getDeclarations().push(newDecl);
         }
+
+        // step 4: delete pure template structs
+        mProgram.forEachModule(function(moduleName, moduleAST) {
+            var newDecls = [];
+            for(decl in moduleAST.getDeclarations()) {
+                if(Std.downcast(decl, SamalDatatypeDeclaration) == null || decl.getDatatype().isComplete()) {
+                    newDecls.push(decl);
+                }
+            }
+            moduleAST.setDeclarations(newDecls);
+        });
         return mProgram;
     }
 }

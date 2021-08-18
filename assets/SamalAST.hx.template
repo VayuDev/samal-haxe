@@ -209,6 +209,12 @@ class SamalMatchRow extends SamalASTNode {
 
 class SamalScopeExpression extends SamalExpression {
     -scope : SamalScope
+    @start_hx_ctor()
+        // in case the user passed in a datatype, we need to forward it
+        if(ret.mDatatype != null) {
+            ret.mScope.setDatatype(ret.mDatatype.sure());
+        }
+    @end_hx
     @start_hx
     public override function getDatatype() {
         return mScope.getDatatype();
@@ -233,6 +239,9 @@ class SamalSimpleListGetTail extends SamalExpression {
 
 class SamalSimpleListIsEmpty extends SamalExpression {
     -list : SamalExpression
+    @start_hx_ctor()
+        ret.mDatatype = Datatype.Bool;
+    @end_hx
 }
 
 class SamalSimpleListPrepend extends SamalExpression {

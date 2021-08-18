@@ -125,8 +125,8 @@ class DatatypeHelpers {
                 return true;
             case Bool:
                 return true;
-            case Struct(name, fields):
-                return !fields.any(function(p) {
+            case Struct(name, templateParams):
+                return !templateParams.any(function(p) {
                     return !isComplete(p);
                 });
         }

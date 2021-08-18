@@ -494,7 +494,7 @@ class Stage2 {
                     mCurrentFunction.sure().getParams().map(
                         function(p) return p.getName()), 
                     node.getParameters().map(
-                        function(p) return p.replace(preorderReplace, postorderReplace)
+                        function(p) return cast(p.replace(preorderReplace, postorderReplace), SamalExpression)
                     )));
         }
         return astNode;
@@ -561,7 +561,7 @@ class Stage2 {
                     node.getSourceRef(), 
                     currentVarDatatype.getBaseType(), 
                     headVarName, 
-                    SamalSimpleListGetHead.createFull(node.getSourceRef(), currentVarDatatype, loadCurrentVar())));
+                    SamalSimpleListGetHead.createFull(node.getSourceRef(), currentVarDatatype.getBaseType(), loadCurrentVar())));
             
             final tailVarName = genTempVarName("listTail");
             checkSuccessBody.getStatements().push(
@@ -599,10 +599,12 @@ class Stage2 {
             // traverse all normal functions
             final pureTemplateDeclarations = new List<SamalDeclaration>();
             for(decl in ast.getDeclarations()) {
+                if(Std.downcast(decl, SamalFunctionDeclaration) == null)
+                    continue;
                 if(decl.getTemplateParams().length == 0) {
                     traverse(decl);
-                } else if((Std.downcast(decl, SamalDatatypeDeclaration) != null && !Std.downcast(decl, SamalDatatypeDeclaration).getDatatype().isComplete()) 
-                || Std.downcast(decl, SamalDeclaration) != null) {
+                } else {
+                    // it's a pure template function
                     pureTemplateDeclarations.add(decl);
                 }
             }
@@ -627,7 +629,7 @@ class Stage2 {
             for(pureDecl in pureTemplateDeclarations) {
                 ast.getDeclarations().remove(pureDecl);
             }
-
+            // simplify AST
             ast.replace(preorderReplace, postorderReplace);
         });
         return mProgram;
