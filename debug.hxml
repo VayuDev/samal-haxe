@@ -2,7 +2,6 @@
 -main samal.lang.Main
 -lib hxcpp-debugger
 -lib hxcpp-debug-server
--lib cloner
 --macro nullSafety("samal", Strict)
 -debug
 -cpp bin/cpp

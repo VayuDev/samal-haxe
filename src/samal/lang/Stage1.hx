@@ -8,7 +8,6 @@ using samal.lang.Util.NullTools;
 using samal.lang.Datatype.DatatypeHelpers;
 import haxe.Exception;
 import samal.bootstrap.Tokenizer.SourceCodeRef;
-import cloner.Cloner;
 
 typedef InstantiatedUserType = {originalTemplatedType : Datatype, passedTemplateParams : Array<Datatype>, module : String}
 
@@ -44,7 +43,6 @@ class Stage1 {
     var mCurrentModule : String = "";
     // maps mangled type name to instantiation info
     var mInstantiatedUserTypes : Map<String, InstantiatedUserType> = new Map<String, InstantiatedUserType>();
-    var mCloner = new Cloner();
 
     public function new(prog : SamalProgram) {
         mProgram = prog;

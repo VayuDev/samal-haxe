@@ -1,7 +1,6 @@
 package samal.lang;
 
 import samal.bootstrap.Tokenizer.SourceCodeRef;
-import cloner.Cloner;
 import haxe.EnumTools;
 import haxe.ds.GenericStack;
 import haxe.Exception;
@@ -82,7 +81,6 @@ class Stage2 {
     var mCurrentModule : String = "";
     var mTempVarNameCounter : Int = 0;
     var mTemplateFunctionsToCompile : Map<String, TemplateFunctionToCompile> = new Map();
-    var mCloner = new Cloner();
     var mCurrentTemplateReplacementMap = new Map<String, Datatype>();
     final mCompiledTemplateFunctions = new List<String>();
     var mCurrentFunction : Null<SamalFunctionDeclaration>;

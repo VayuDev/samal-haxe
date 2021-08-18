@@ -1,5 +1,4 @@
 tools/GenerateAstClasses.hx 
 -p src
--lib cloner
 -main tools.GenerateAstClasses
 --interp
