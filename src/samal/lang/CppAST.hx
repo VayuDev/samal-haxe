@@ -1,7 +1,7 @@
 package samal.lang;
 
-import samal.lang.generated.SamalAST.SamalStructDeclField;
-import samal.lang.generated.SamalAST.SamalFuncDeclParam;
+import samal.lang.generated.SamalAST.StructDeclField;
+import samal.lang.generated.SamalAST.NameAndTypeParam;
 import samal.lang.AST;
 import samal.bootstrap.Tokenizer.SourceCodeRef;
 
@@ -78,9 +78,9 @@ class CppDeclaration extends CppASTNode {
 class CppFunctionDeclaration extends CppDeclaration {
     var mDatatype : Datatype;
     var mMangledName : String;
-    var mParams : Array<SamalFuncDeclParam>;
+    var mParams : Array<NameAndTypeParam>;
     var mBody : CppScopeNode;
-    public function new(sourceRef : SourceCodeRef, datatype : Datatype, mangledName : String, params : Array<SamalFuncDeclParam>, body : CppScopeNode) {
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, mangledName : String, params : Array<NameAndTypeParam>, body : CppScopeNode) {
         super(sourceRef);
         mDatatype = datatype;
         mMangledName = mangledName;
@@ -109,8 +109,8 @@ class CppFunctionDeclaration extends CppDeclaration {
 
 class CppStructDeclaration extends CppDeclaration {
     var mDatatype : Datatype;
-    var mFields : Array<SamalStructDeclField>;
-    public function new(sourceRef : SourceCodeRef, datatype : Datatype, fields : Array<SamalStructDeclField>) {
+    var mFields : Array<StructDeclField>;
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, fields : Array<StructDeclField>) {
         super(sourceRef);
         mDatatype = datatype;
         mFields = fields;
@@ -371,12 +371,12 @@ class CppListPrependStatement extends CppStatement {
 }
 
 class CppCreateLambdaStatement extends CppStatement {
-    final mParams : Array<SamalFuncDeclParam>;
-    final mCapturedVariables : Array<SamalFuncDeclParam>;
+    final mParams : Array<NameAndTypeParam>;
+    final mCapturedVariables : Array<NameAndTypeParam>;
     final mBody : CppScopeNode;
 
     public function new(sourceRef : SourceCodeRef, datatype : Datatype, varName : String, 
-                        params : Array<SamalFuncDeclParam>, capturedVariables : Array<SamalFuncDeclParam>, body : CppScopeNode) {
+                        params : Array<NameAndTypeParam>, capturedVariables : Array<NameAndTypeParam>, body : CppScopeNode) {
         super(sourceRef, datatype, varName);
         mParams = params;
         mCapturedVariables = capturedVariables;

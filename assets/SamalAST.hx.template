@@ -6,7 +6,7 @@ using samal.lang.Util.NullTools;
 using samal.lang.Datatype.DatatypeHelpers;
 @end_hx
 
-class SamalFuncDeclParam {
+class NameAndTypeParam {
     -name : String
     -datatype : Datatype
 }
@@ -20,7 +20,7 @@ class SamalSimpleTailCallSelfParam {
     -value : SamalExpression
 }
 
-class SamalStructDeclField {
+class StructDeclField {
     -fieldName : String
     -datatype : Datatype
 }
@@ -72,14 +72,14 @@ class SamalDeclaration extends SamalASTNode {
 }
 
 class SamalFunctionDeclaration extends SamalDeclaration {
-    -params : Array<SamalFuncDeclParam>
+    -params : Array<NameAndTypeParam>
     -returnType : Datatype
     -body : SamalScope
     @start_hx
     public override function completeWithUserTypeMap(mapper : StringToDatatypeMapper) {
         mReturnType = mReturnType.complete(mapper);
         mParams = mParams.map(function(p) {
-            return SamalFuncDeclParam.create(p.getName(), p.getDatatype().complete(mapper));
+            return NameAndTypeParam.create(p.getName(), p.getDatatype().complete(mapper));
         });
     }
     public override function getDatatype() : Datatype {
@@ -87,7 +87,7 @@ class SamalFunctionDeclaration extends SamalDeclaration {
     }
     public override function cloneWithTemplateParams(mapper : StringToDatatypeMapper, templateParams : Array<Datatype>) : SamalFunctionDeclaration {
         final params = mParams.map(function(p) {
-            return SamalFuncDeclParam.create(p.getName(), p.getDatatype().complete(mapper));
+            return NameAndTypeParam.create(p.getName(), p.getDatatype().complete(mapper));
         });
         final body = mBody.clone();
         return SamalFunctionDeclaration.create(getSourceRef(), new IdentifierWithTemplate(mName.getName(), templateParams), params, mReturnType.complete(mapper), body);
@@ -98,11 +98,11 @@ class SamalDatatypeDeclaration extends SamalDeclaration {
 }
 
 class SamalStructDeclaration extends SamalDatatypeDeclaration {
-    -fields : Array<SamalStructDeclField>
+    -fields : Array<StructDeclField>
     @start_hx
     public override function completeWithUserTypeMap(mapper : StringToDatatypeMapper) : Void {
         mFields = mFields.map(function(p) {
-            return SamalStructDeclField.create(p.getFieldName(), p.getDatatype().complete(mapper));
+            return StructDeclField.create(p.getFieldName(), p.getDatatype().complete(mapper));
         });
     }
     public override function getDatatype() : Datatype {
@@ -110,7 +110,7 @@ class SamalStructDeclaration extends SamalDatatypeDeclaration {
     }
     public override function cloneWithTemplateParams(mapper : StringToDatatypeMapper, templateParams : Array<Datatype>) : SamalStructDeclaration {
         final fields = mFields.map(function(p) {
-            return SamalStructDeclField.create(p.getFieldName(), p.getDatatype().complete(mapper));
+            return StructDeclField.create(p.getFieldName(), p.getDatatype().complete(mapper));
         });
         return SamalStructDeclaration.create(getSourceRef(), new IdentifierWithTemplate(getName().getName(), templateParams), fields);
     }
@@ -151,10 +151,10 @@ class SamalBinaryExpression extends SamalExpression {
 }
 
 class SamalCreateLambdaExpression extends SamalExpression {
-    -parameters : Array<SamalFuncDeclParam>
+    -parameters : Array<NameAndTypeParam>
     -returnType : Datatype
     -body : SamalScope
-    -capturedVariables : Array<SamalFuncDeclParam>
+    -capturedVariables : Array<NameAndTypeParam>
     @start_hx_ctor()
         ret.mDatatype = Datatype.Function(ret.mReturnType, ret.mParameters.map(function(p) return p.getDatatype()));
     @end_hx

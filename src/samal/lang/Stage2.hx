@@ -311,7 +311,7 @@ class Stage2 {
             // track all used variables, used in the C++-target for GC
             mOnStackedIdentifierLoadCallback = function(depth, name, datatype) {
                 if(depth <= startStackLength) {
-                    node.getCapturedVariables().push(SamalFuncDeclParam.create(name, datatype));
+                    node.getCapturedVariables().push(NameAndTypeParam.create(name, datatype));
                 }
             };
             traverse(node.getBody());

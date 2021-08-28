@@ -109,7 +109,7 @@ class Parser {
         return ret;
     }
 
-    function parseFunctionParameterList() : Array<SamalFuncDeclParam> {
+    function parseFunctionParameterList() : Array<NameAndTypeParam> {
         var ret = [];
         eat(TokenType.LParen);
         while(current().getType() != TokenType.RParen) {
@@ -117,7 +117,7 @@ class Parser {
             eat(TokenType.Identifier);
             eat(TokenType.Colons);
             var type = parseDatatype();
-            ret.push(SamalFuncDeclParam.create(name, type));
+            ret.push(NameAndTypeParam.create(name, type));
             if(current().getType() == TokenType.Comma) {
                 eat(TokenType.Comma);
             } else {
@@ -129,7 +129,7 @@ class Parser {
         return ret;
     }
 
-    function parseStructFieldList() : Array<SamalStructDeclField> {
+    function parseStructFieldList() : Array<StructDeclField> {
         var ret = [];
         eat(TokenType.LCurly);
         while(current().getType() != TokenType.RCurly) {
@@ -138,7 +138,7 @@ class Parser {
             eat(TokenType.Identifier);
             eat(TokenType.Colons);
             var type = parseDatatype();
-            ret.push(SamalStructDeclField.create(name, type));
+            ret.push(StructDeclField.create(name, type));
             skipNewlines();
         }
         eat(TokenType.RCurly);
