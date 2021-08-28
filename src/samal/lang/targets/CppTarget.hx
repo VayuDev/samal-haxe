@@ -1,4 +1,5 @@
 package samal.lang.targets;
+import haxe.Exception;
 import samal.lang.Program.CppProgram;
 import samal.lang.CppAST;
 import samal.lang.targets.LanguageTarget;
@@ -77,7 +78,9 @@ class CppTarget extends LanguageTarget {
             ret += "\n";
             var placerCounter = 0;
             for(declaredType in alreadyDeclared) {
-                if(declaredType.match(Struct(_, _))) {
+                if(declaredType.match(Usertype(_, _, Enum)))
+                    throw new Exception("TODO");
+                if(declaredType.match(Usertype(_, _, Struct))) {
                     for(i => field in cppCtx.getProgram().findStructDeclaration(declaredType).getFields()) {
                         ret += 'static samalrt::DatatypeStructPlacer placer$placerCounter{${declaredType.toCppGCTypeStr()}, $i, ${field.getDatatype().toCppGCTypeStr()}};\n';
                         placerCounter += 1;
@@ -233,7 +236,7 @@ class CppTarget extends LanguageTarget {
     }
     public function makeCreateStructStatement(ctx : SourceCreationContext, node : CppCreateStructStatement) : String {
         final paramsStr = node.getParams().map(function(p) return "." + p.name + " = " + p.value).join(", ");
-        return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = " + node.getDatatype().getStructMangledName() + "{" + paramsStr + "}" + getTrackerString(node);
+        return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = " + node.getDatatype().getUsertypeMangledName() + "{" + paramsStr + "}" + getTrackerString(node);
     }
     public function makeTailCallSelf(ctx : SourceCreationContext, node : CppTailCallSelf) : String {
         var ret = "";

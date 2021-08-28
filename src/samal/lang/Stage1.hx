@@ -25,9 +25,9 @@ class StringToDatatypeMapperUsingSamalProgram extends StringToDatatypeMapper {
         final value = decl.getDatatype();
         final module = decl.getName().getName().substr(0, decl.getName().getName().lastIndexOf("."));
         switch(value.sure()) {
-            case Struct(structName, _):
-                final retType = Datatype.Struct(structName, templateParams);
-                mInstantiatedUserTypesOut.set(retType.getStructMangledName(), {originalTemplatedType: value, passedTemplateParams: templateParams, module: module});
+            case Usertype(structName, _, subtype):
+                final retType = Datatype.Usertype(structName, templateParams, subtype);
+                mInstantiatedUserTypesOut.set(retType.getUsertypeMangledName(), {originalTemplatedType: value, passedTemplateParams: templateParams, module: module});
                 return retType;
             default:
                 return value.sure();

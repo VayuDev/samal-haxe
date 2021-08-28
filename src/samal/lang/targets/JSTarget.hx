@@ -68,7 +68,7 @@ class JSTarget extends LanguageTarget {
     public function makeStructDeclaration(ctx : SourceCreationContext, node : CppStructDeclaration) : String {
         if(Std.downcast(ctx, JSContext).getDof() == Functions)
             return "";
-        return "class " + node.getDatatype().getStructMangledName() + " {\n" 
+        return "class " + node.getDatatype().getUsertypeMangledName() + " {\n" 
             + " constructor(" + node.getFields().map(function(f) return f.getFieldName()).join(",") + ") {\n"
             + node.getFields().map(function(f) {
                 return "  this." + f.getFieldName() + " = " + f.getFieldName() + ";\n";
@@ -127,7 +127,7 @@ class JSTarget extends LanguageTarget {
     }
     public function makeCreateStructStatement(ctx : SourceCreationContext, node : CppCreateStructStatement) : String {
         final paramsStr = node.getParams().map(function(p) return p.value).join(", ");
-        return indent(ctx) + "let " + node.getVarName() + " = new " + node.getDatatype().getStructMangledName() + "(" + paramsStr + ")";
+        return indent(ctx) + "let " + node.getVarName() + " = new " + node.getDatatype().getUsertypeMangledName() + "(" + paramsStr + ")";
     }
     public function makeTailCallSelf(ctx : SourceCreationContext, node : CppTailCallSelf) : String {
         var ret = "";

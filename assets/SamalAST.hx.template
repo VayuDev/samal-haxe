@@ -111,7 +111,7 @@ class SamalStructDeclaration extends SamalDatatypeDeclaration {
         });
     }
     public override function getDatatype() : Datatype {
-        return Datatype.Struct(mName.getName(), mName.getTemplateParams());
+        return Datatype.Usertype(mName.getName(), mName.getTemplateParams(), Struct);
     }
     public override function cloneWithTemplateParams(mapper : StringToDatatypeMapper, templateParams : Array<Datatype>) : SamalStructDeclaration {
         final fields = mFields.map(function(p) {

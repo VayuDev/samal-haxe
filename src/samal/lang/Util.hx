@@ -42,7 +42,7 @@ class Util {
         }
         final ret = new Map<String, Datatype>();
         for(i in 0...expectedParams.length) {
-            ret.set(expectedParams[i].getUserTypeData().getName(), passedParams[i]);
+            ret.set(expectedParams[i].getUnknownTypeData().getName(), passedParams[i]);
         }
 
         return ret;
