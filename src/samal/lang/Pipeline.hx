@@ -104,8 +104,8 @@ class Pipeline {
                             + ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.HeaderEnd, cprogram)));
                         File.saveContent('${outPath}/${mod}.cpp', ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.Source, cprogram)));
                     });
-                    File.saveContent('${outPath}/samal_runtime.hpp', Resource.getString("samal_runtime.cpp"));
-                    File.saveContent('${outPath}/samal_runtime.cpp', Resource.getString("samal_runtime.hpp"));
+                    File.saveContent('${outPath}/samal_runtime.cpp', Resource.getString("samal_runtime.cpp"));
+                    File.saveContent('${outPath}/samal_runtime.hpp', Resource.getString("samal_runtime.hpp"));
                 #else
                     throw new Exception("Can't write to FS in non-sys targets!");                
                 #end
