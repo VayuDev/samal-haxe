@@ -11,7 +11,7 @@ enum Datatype {
     Int;
     Bool;
     List(baseType : Datatype);
-    Usertype(name : String, templateParams : Array<Datatype>);
+    Unknown(name : String, templateParams : Array<Datatype>);
     Function(returnType : Datatype, params : Array<Datatype>);
     Tuple(elements : Array<Datatype>);
     Struct(name : String, templateParams : Array<Datatype>);
@@ -68,7 +68,7 @@ class DatatypeHelpers {
     }
     static public function getUserTypeData(type : Datatype) : IdentifierWithTemplate {
         switch(type) {
-            case Usertype(name, params):
+            case Unknown(name, params):
                 return IdentifierWithTemplate.create(name, params);
             case _:
                 throw new Exception(type + " is not a user type!");
@@ -84,7 +84,7 @@ class DatatypeHelpers {
     }
     static public function complete(type : Datatype, map : StringToDatatypeMapper) : Datatype {
         switch(type) {
-            case Usertype(name, params):
+            case Unknown(name, params):
                 return map.getDatatype(name, params);
             case List(base):
                 return Datatype.List(complete(base, map));
@@ -106,7 +106,7 @@ class DatatypeHelpers {
     }
     static public function isComplete(type : Datatype) : Bool {
         switch(type) {
-            case Usertype(name, params):
+            case Unknown(name, params):
                 return false;
             case List(base):
                 return isComplete(base);

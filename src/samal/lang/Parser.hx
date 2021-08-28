@@ -89,7 +89,7 @@ class Parser {
                 return Datatype.List(baseType);
             case Identifier:
                 final ident = parseIdentifierWithTemplate();
-                return Datatype.Usertype(ident.getName(), ident.getTemplateParams());
+                return Datatype.Unknown(ident.getName(), ident.getTemplateParams());
             case Fn:
                 eat(Fn);
                 final params = parseDatatypeList();

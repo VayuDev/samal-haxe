@@ -184,7 +184,7 @@ class SamalCreateStructExpression extends SamalExpression {
     -structName : IdentifierWithTemplate
     -params : Array<SamalCreateUsertypeParam>
     @start_hx_ctor()
-        ret.mDatatype = Datatype.Usertype(ret.mStructName.getName(), ret.mStructName.getTemplateParams());
+        ret.mDatatype = Datatype.Unknown(ret.mStructName.getName(), ret.mStructName.getTemplateParams());
     @end_hx
 }
 
