@@ -390,13 +390,17 @@ class Translator {
 }
 
 class GenerateAstClasses {
-    static function main() {
-        final result = new Generator("assets/SamalAST.hx.template");
+    static function compile(inputPath : String, outputPath : String) {
+        final result = new Generator(inputPath);
         final classes = result.parse();
         final translator = new Translator(classes);
         final res = translator.translate();
-        final outHandle = File.write("src/samal/lang/generated/SamalAST.hx");
+        final outHandle = File.write(outputPath);
         outHandle.writeString(res);
         outHandle.close();
+    }
+    static function main() {
+        compile("assets/SamalAST.hx.template", "src/samal/lang/generated/SamalAST.hx");
+        //compile("assets/TargetAST.hx.template", "src/samal/lang/generated/TargetAST.hx");
     }
 }
