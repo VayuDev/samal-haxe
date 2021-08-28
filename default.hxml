@@ -2,3 +2,6 @@
 -main samal.lang.Main
 --macro nullSafety("samal", Strict)
 -hl bin/hashlink
+--resource assets/samal_runtime.cpp@samal_runtime.cpp
+--resource assets/samal_runtime.hpp@samal_runtime.hpp
+--resource assets/samal_runtime.js@samal_runtime.js

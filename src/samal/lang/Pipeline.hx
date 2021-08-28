@@ -1,5 +1,6 @@
 package samal.lang;
 
+import haxe.Resource;
 import haxe.Exception;
 import samal.lang.targets.JSTarget;
 import samal.lang.targets.CppTarget;
@@ -12,8 +13,6 @@ import sys.io.File;
 #if js
 import js.Lib;
 #end
-
-import samal.lang.generated.Runtimes;
 
 // If any string parameter is empty, the resulting files are returned from generate
 enum TargetType {
@@ -70,7 +69,7 @@ class Pipeline {
 
         final genJs = function() {
             var res = "// samal runtime (always the same):\n";
-            res += Embedded_samal_runtime_js.getContent();
+            res += Resource.getString("samal_runtime.js");
             res += "\n";
             cprogram.forEachModule(function(mod, ast) {
                 res += '// $mod: \n';
@@ -91,8 +90,8 @@ class Pipeline {
                             + ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.HeaderEnd, cprogram))));
                         ret.push(new GeneratedFile(mod + ".cpp", ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.Source, cprogram))));
                     });
-                    ret.push(new GeneratedFile("samal_runtime.cpp", Embedded_samal_runtime_cpp.getContent()));
-                    ret.push(new GeneratedFile("samal_runtime.hpp", Embedded_samal_runtime_hpp.getContent()));
+                    ret.push(new GeneratedFile("samal_runtime.cpp", Resource.getString("samal_runtime.cpp")));
+                    ret.push(new GeneratedFile("samal_runtime.hpp", Resource.getString("samal_runtime.hpp")));
                     return ret;
                 } else {
                 #if sys
@@ -105,8 +104,8 @@ class Pipeline {
                             + ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.HeaderEnd, cprogram)));
                         File.saveContent('${outPath}/${mod}.cpp', ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.Source, cprogram)));
                     });
-                    File.saveContent('${outPath}/samal_runtime.hpp', Embedded_samal_runtime_hpp.getContent());
-                    File.saveContent('${outPath}/samal_runtime.cpp', Embedded_samal_runtime_cpp.getContent());
+                    File.saveContent('${outPath}/samal_runtime.hpp', Resource.getString("samal_runtime.cpp"));
+                    File.saveContent('${outPath}/samal_runtime.cpp', Resource.getString("samal_runtime.hpp"));
                 #else
                     throw new Exception("Can't write to FS in non-sys targets!");                
                 #end
