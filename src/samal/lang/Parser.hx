@@ -46,7 +46,7 @@ class Parser {
     function parseDeclaration() : Null<SamalDeclaration> {
         startNode();
         switch (current().getType()) {
-            case TokenType.Fn:
+            case Fn:
                 eat(TokenType.Fn);
                 var identifier = parseIdentifierWithTemplate();
                 var params = parseFunctionParameterList();
@@ -56,11 +56,18 @@ class Parser {
                 var body = parseScope();
                 return SamalFunctionDeclaration.create(makeSourceRef(), identifier, params, returnType, body);
             
-            case TokenType.Struct:
+            case Struct:
                 eat(Struct);
                 final identifier = parseIdentifierWithTemplate();
-                final fields = parseStructFieldList();
+                final fields = parseUsertypeDeclFieldList(NewLine);
                 return SamalStructDeclaration.create(makeSourceRef(), identifier, fields);
+
+            case Enum:
+                eat(Enum);
+                final identifier = parseIdentifierWithTemplate();
+                final variants = parseEnumVariantList();
+                return SamalEnumDeclaration.create(makeSourceRef(), identifier, variants);
+
             case _:
                 throw new Exception(current().info() + ": Expected declaration");
         }
@@ -129,23 +136,44 @@ class Parser {
         return ret;
     }
 
-    function parseStructFieldList() : Array<StructDeclField> {
+    function parseEnumVariantList() : Array<EnumDeclVariant> {
         var ret = [];
         eat(TokenType.LCurly);
         while(current().getType() != TokenType.RCurly) {
             skipNewlines();
-            var name = current().getSubstr();
-            eat(TokenType.Identifier);
-            eat(TokenType.Colons);
-            var type = parseDatatype();
-            ret.push(StructDeclField.create(name, type));
+            final variantName = eat(Identifier).getSubstr();
+            final fields = parseUsertypeDeclFieldList(Comma);
+            ret.push(EnumDeclVariant.create(variantName, fields));
             skipNewlines();
         }
         eat(TokenType.RCurly);
         return ret;
     }
 
-    function parseStructParamList() : Array<SamalCreateStructParam> {
+    function parseUsertypeField() : UsertypeField {
+        final name = current().getSubstr();
+        eat(TokenType.Identifier);
+        eat(TokenType.Colons);
+        final type = parseDatatype();
+        return UsertypeField.create(name, type);
+    }
+
+    function parseUsertypeDeclFieldList(delimiter : TokenType) : Array<UsertypeField> {
+        var ret = [];
+        eat(TokenType.LCurly);
+        skipNewlines();
+        while(current().getType() != TokenType.RCurly) {
+            ret.push(parseUsertypeField());
+            if(current().getType() == delimiter)
+                eat(delimiter);
+            else
+                break;
+        }
+        eat(TokenType.RCurly);
+        return ret;
+    }
+
+    function parseStructParamList() : Array<SamalCreateUsertypeParam> {
         var ret = [];
         eat(TokenType.LCurly);
         while(current().getType() != TokenType.RCurly) {
@@ -153,7 +181,7 @@ class Parser {
             eat(TokenType.Identifier);
             eat(TokenType.Colons);
             var value = parseExpression();
-            ret.push(SamalCreateStructParam.create(name, value));
+            ret.push(SamalCreateUsertypeParam.create(name, value));
             if(current().getType() == TokenType.Comma) {
                 eat(TokenType.Comma);
             } else {
@@ -399,8 +427,10 @@ class Parser {
     }
 
 
-    function eat(type : TokenType) {
+    function eat(type : TokenType) : Token {
+        final c = current();
         mTokenizer.eat(type);
+        return c;
     }
 
     function current() : Token {

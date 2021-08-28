@@ -84,6 +84,7 @@ enum TokenType {
     Module;
     Struct;
     Hashtag;
+    Enum;
 }
 
 
@@ -244,7 +245,8 @@ class TokenGenerator {
         "&&" => TokenType.DoubleAnd,
         "||" => TokenType.DoublePipe,
         "module" => TokenType.Module,
-        "struct" => TokenType.Struct
+        "struct" => TokenType.Struct,
+        "enum" => TokenType.Enum
     ];
     
 

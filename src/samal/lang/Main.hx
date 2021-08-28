@@ -105,6 +105,10 @@ class Main {
       x : T
       y : T
     }
+    enum Maybe<T> {
+      Some{v: T}
+      None{}
+    }
     fn main() -> Point<int> {
       Point<int>{y : 5, x : 10}
     }";

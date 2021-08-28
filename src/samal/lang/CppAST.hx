@@ -1,6 +1,6 @@
 package samal.lang;
 
-import samal.lang.generated.SamalAST.StructDeclField;
+import samal.lang.generated.SamalAST.UsertypeField;
 import samal.lang.generated.SamalAST.NameAndTypeParam;
 import samal.lang.AST;
 import samal.bootstrap.Tokenizer.SourceCodeRef;
@@ -109,8 +109,8 @@ class CppFunctionDeclaration extends CppDeclaration {
 
 class CppStructDeclaration extends CppDeclaration {
     var mDatatype : Datatype;
-    var mFields : Array<StructDeclField>;
-    public function new(sourceRef : SourceCodeRef, datatype : Datatype, fields : Array<StructDeclField>) {
+    var mFields : Array<UsertypeField>;
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, fields : Array<UsertypeField>) {
         super(sourceRef);
         mDatatype = datatype;
         mFields = fields;

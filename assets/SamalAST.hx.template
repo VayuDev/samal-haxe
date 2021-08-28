@@ -10,7 +10,7 @@ class NameAndTypeParam {
     -name : String
     -datatype : Datatype
 }
-class SamalCreateStructParam {
+class SamalCreateUsertypeParam {
     -fieldName : String
     -value : SamalExpression
 }
@@ -20,9 +20,14 @@ class SamalSimpleTailCallSelfParam {
     -value : SamalExpression
 }
 
-class StructDeclField {
+class UsertypeField {
     -fieldName : String
     -datatype : Datatype
+}
+
+class EnumDeclVariant {
+    -name : String
+    -fields : Array<UsertypeField>
 }
 
 
@@ -98,11 +103,11 @@ class SamalDatatypeDeclaration extends SamalDeclaration {
 }
 
 class SamalStructDeclaration extends SamalDatatypeDeclaration {
-    -fields : Array<StructDeclField>
+    -fields : Array<UsertypeField>
     @start_hx
     public override function completeWithUserTypeMap(mapper : StringToDatatypeMapper) : Void {
         mFields = mFields.map(function(p) {
-            return StructDeclField.create(p.getFieldName(), p.getDatatype().complete(mapper));
+            return UsertypeField.create(p.getFieldName(), p.getDatatype().complete(mapper));
         });
     }
     public override function getDatatype() : Datatype {
@@ -110,10 +115,16 @@ class SamalStructDeclaration extends SamalDatatypeDeclaration {
     }
     public override function cloneWithTemplateParams(mapper : StringToDatatypeMapper, templateParams : Array<Datatype>) : SamalStructDeclaration {
         final fields = mFields.map(function(p) {
-            return StructDeclField.create(p.getFieldName(), p.getDatatype().complete(mapper));
+            return UsertypeField.create(p.getFieldName(), p.getDatatype().complete(mapper));
         });
         return SamalStructDeclaration.create(getSourceRef(), new IdentifierWithTemplate(getName().getName(), templateParams), fields);
     }
+    @end_hx
+}
+
+class SamalEnumDeclaration extends SamalDatatypeDeclaration {
+    -variants : Array<EnumDeclVariant>
+    @start_hx
     @end_hx
 }
 
@@ -171,7 +182,7 @@ class SamalCreateListExpression extends SamalExpression {
 
 class SamalCreateStructExpression extends SamalExpression {
     -structName : IdentifierWithTemplate
-    -params : Array<SamalCreateStructParam>
+    -params : Array<SamalCreateUsertypeParam>
     @start_hx_ctor()
         ret.mDatatype = Datatype.Usertype(ret.mStructName.getName(), ret.mStructName.getTemplateParams());
     @end_hx
