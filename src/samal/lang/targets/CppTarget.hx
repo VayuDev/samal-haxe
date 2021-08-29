@@ -78,8 +78,10 @@ class CppTarget extends LanguageTarget {
             ret += "\n";
             var placerCounter = 0;
             for(declaredType in alreadyDeclared) {
-                if(declaredType.match(Usertype(_, _, Enum)))
-                    throw new Exception("TODO");
+                if(declaredType.match(Usertype(_, _, Enum))) {
+                    
+                }
+                    //throw new Exception("TODO");
                 if(declaredType.match(Usertype(_, _, Struct))) {
                     for(i => field in cast(cppCtx.getProgram().findUsertypeDeclaration(declaredType), CppStructDeclaration).getFields()) {
                         ret += 'static samalrt::DatatypeStructPlacer placer$placerCounter{${declaredType.toCppGCTypeStr()}, $i, ${field.getDatatype().toCppGCTypeStr()}};\n';
@@ -157,6 +159,11 @@ class CppTarget extends LanguageTarget {
             + "}\n";
     }
     public function makeEnumDeclaration(ctx : SourceCreationContext, node : CppEnumDeclaration) : String {
+        final cppCtx = cast(ctx, CppContext);
+        final cppCtx = Std.downcast(ctx, CppContext);
+        if(cppCtx.getHos() != HeaderStart) {
+            return "";
+        }
         return
             "#pragma pack(1)\n"
             + "struct " + node.getDatatype().toCppType() + " {\n"
@@ -164,10 +171,10 @@ class CppTarget extends LanguageTarget {
             + " union {\n"
             + node.getVariants().map(function(v) {
                 return 
-                    " struct {" + v.getFields().map(function(f) {
-                        return "  " + f.getDatatype().toCppType() + " " + f.getFieldName() + ";\n";
+                    "  struct {\n" + v.getFields().map(function(f) {
+                        return "   " + f.getDatatype().toCppType() + " " + f.getFieldName() + ";\n";
                     }).join("")
-                    + " } " + v.getName();
+                    + "  } " + v.getName() + ";\n";
             }).join("")
             + " };\n"
             + "};\n";
@@ -222,8 +229,13 @@ class CppTarget extends LanguageTarget {
         final program = cppCtx.getProgram();
         final decl = cast(program.findUsertypeDeclaration(node.getDatatype()), CppEnumDeclaration);
         final variantInfo = Util.findEnumVariant(decl.getVariants(), node.getVariantName());
-        
-        return "";
+        return 
+            indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = " + node.getDatatype().toCppType() + "{"
+            + ".variant = " + variantInfo.index + ", "
+            + "." + variantInfo.variant.getName() + " = {"
+            + node.getParams().map(function(p) {
+                return "." + p.name + " = " + p.value;
+            }).join(", ") + "}}" + getTrackerString(node);
     }
     
     public function makeCreateLambdaStatement(ctx : SourceCreationContext, node : CppCreateLambdaStatement) : String {

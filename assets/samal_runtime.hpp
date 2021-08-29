@@ -25,7 +25,8 @@ enum class DatatypeCategory {
     Int,
     Bool,
     Function,
-    Struct
+    Struct,
+    Enum
 };
 
 static inline size_t alignSize(size_t size) {

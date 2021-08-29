@@ -179,7 +179,7 @@ class DatatypeHelpers {
             case Function(returnType, params):
                 return "fn_s" + toMangledName(returnType) + "_" + params.map(function(p) return toMangledName(p)).join("_") + "e";
             case Usertype(name, params, subtype):
-                return "struct_s" + Util.mangle(name, params) + "e";
+                return Std.string(subtype).toLowerCase() + "_s" + Util.mangle(name, params) + "e";
             case _:
                 throw new Exception("TODO " + type);
         }
@@ -198,6 +198,7 @@ class DatatypeHelpers {
             case Function(_, _):
                 return true;
             case Usertype(_, _, _):
+                // TODO check if type actually needs GC
                 return true;
             case _:
                 throw new Exception("TODO requiresGC" + type);
@@ -240,8 +241,10 @@ class DatatypeHelpers {
                     }).join("")
                     + "static const samalrt::Datatype " + typeStr +  "{samalrt::DatatypeCategory::Function, &" 
                     + toCppGCTypeStr(returnType) + ", {" + params.map(function(p) return "&" + toCppGCTypeStr(p)).join(", ") + "}};\n";
-            case Usertype(name, params, subtype):
+            case Usertype(name, params, Struct):
                 return "static samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Struct};\n";
+            case Usertype(name, params, Enum):
+                return "static samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Enum};\n";
             case _:
                 throw new Exception("TODO requiresGC " + type);
         }
