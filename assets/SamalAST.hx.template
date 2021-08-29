@@ -125,6 +125,21 @@ class SamalStructDeclaration extends SamalDatatypeDeclaration {
 class SamalEnumDeclaration extends SamalDatatypeDeclaration {
     -variants : Array<EnumDeclVariant>
     @start_hx
+    public override function completeWithUserTypeMap(mapper : StringToDatatypeMapper) : Void {
+        mVariants = mVariants.map(function(v) {
+            return EnumDeclVariant.create(v.getName(), v.getFields().map(function(f) {
+                return UsertypeField.create(f.getFieldName(), f.getDatatype().complete(mapper));
+            }));
+        });
+    }
+    public override function getDatatype() : Datatype {
+        return Datatype.Usertype(mName.getName(), mName.getTemplateParams(), Enum);
+    }
+    public override function cloneWithTemplateParams(mapper : StringToDatatypeMapper, templateParams : Array<Datatype>) : SamalEnumDeclaration {
+        final cpy = SamalEnumDeclaration.create(getSourceRef(), new IdentifierWithTemplate(mName.getName(), templateParams), mVariants);
+        cpy.completeWithUserTypeMap(mapper);
+        return cpy;
+    }
     @end_hx
 }
 

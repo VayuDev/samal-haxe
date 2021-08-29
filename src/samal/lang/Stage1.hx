@@ -61,14 +61,9 @@ class Stage1 {
         mProgram.forEachModule(function (moduleName, moduleAST) {
             mCurrentModule = moduleName;
             moduleAST.traverse(function(astNode) {}, function(astNode) {
-                if(Std.downcast(astNode, SamalFunctionDeclaration) != null) {
-                    var node = Std.downcast(astNode, SamalFunctionDeclaration);
+                if(Std.downcast(astNode, SamalDeclaration) != null) {
+                    var node = Std.downcast(astNode, SamalDeclaration);
                     node.setName(new IdentifierWithTemplate(mCurrentModule + "." + node.getName().getName(), node.getName().getTemplateParams()));
-
-                } else if(Std.downcast(astNode, SamalStructDeclaration) != null) {
-                    var node = Std.downcast(astNode, SamalStructDeclaration);
-                    node.setName(new IdentifierWithTemplate(mCurrentModule + "." + node.getName().getName(), node.getName().getTemplateParams()));
-                
                 }
             });
         });
@@ -80,6 +75,7 @@ class Stage1 {
                 try {
                     if(Std.downcast(astNode, SamalDeclaration) != null) {
                         var node = Std.downcast(astNode, SamalDeclaration);
+                        // this is for completing usertype parameters like structs or enums
                         node.completeWithUserTypeMap(makeStringToDatatypeMapper(mCurrentModule));
     
                     } else if(Std.downcast(astNode, SamalCreateListExpression) != null) {
