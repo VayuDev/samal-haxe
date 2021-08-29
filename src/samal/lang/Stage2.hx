@@ -256,6 +256,16 @@ class Stage2 {
             }
             node.setDatatype(returnType);
 
+        } else if(Std.downcast(astNode, SamalCreateEnumExpression) != null) {
+            final node = Std.downcast(astNode, SamalCreateEnumExpression);
+            final enumDecl = cast(mProgram.findDatatypeDeclaration(node.getDatatype().sure()), SamalEnumDeclaration);
+            final variants = enumDecl.getVariants().filter(function(v) return v.getName() == node.getVariantName());
+            if(variants.length != 1) {
+                throw new Exception('${node.errorInfo()} Enum variant ${node.getVariantName()} not found!');
+            }
+            final variant = variants[0].sure();
+            traverseAndVerifyCorrectUsertypeParams(node, node.getParams(), variant.getFields());
+
         } else if(Std.downcast(astNode, SamalCreateListExpression) != null) {
             var node = Std.downcast(astNode, SamalCreateListExpression);
             for(child in node.getChildren()) {
@@ -328,22 +338,7 @@ class Stage2 {
             if(decl.getFields().length != node.getParams().length) {
                 throw new Exception('${node.errorInfo()} Invalid number of parameters; struct expects ${decl.getFields().length} parameters, but you passed ${node.getParams().length}');
             }
-            for(param in node.getParams()) {
-                traverse(param.getValue());
-                final actualType = param.getValue().getDatatype().sure();
-                var found = false;
-                for(field in decl.getFields()) {
-                    if(field.getFieldName() == param.getFieldName()) {
-                        if(!actualType.deepEquals(field.getDatatype())) {
-                            throw new Exception('${node.errorInfo()} Struct param ${field.getFieldName()} has the wrong datatype; expected ${field.getDatatype()}, got ${actualType}');
-                        }
-                        found = true;
-                    }
-                }
-                if(!found) {
-                    throw new Exception('${node.errorInfo()} Struct param ${param.getFieldName()} doesn\'t appear in the struct\'s declaration');
-                }
-            }
+            traverseAndVerifyCorrectUsertypeParams(node, node.getParams(), decl.getFields());
 
         } else if(Std.downcast(astNode, SamalTailCallSelf) != null) {
             var node = Std.downcast(astNode, SamalTailCallSelf);
@@ -360,6 +355,25 @@ class Stage2 {
                 }
             }
             node.setDatatype(mCurrentFunction.sure().getDatatype().sure().getReturnType());
+        }
+    }
+
+    function traverseAndVerifyCorrectUsertypeParams(node : ASTNode, params : Array<SamalCreateUsertypeParam>, expectedFields : Array<UsertypeField>) {
+        for(param in params) {
+            traverse(param.getValue());
+            final actualType = param.getValue().getDatatype().sure();
+            var found = false;
+            for(field in expectedFields) {
+                if(field.getFieldName() == param.getFieldName()) {
+                    if(!actualType.deepEquals(field.getDatatype())) {
+                        throw new Exception('${node.errorInfo()} Usertype param ${field.getFieldName()} has the wrong datatype; expected ${field.getDatatype()}, got ${actualType}');
+                    }
+                    found = true;
+                }
+            }
+            if(!found) {
+                throw new Exception('${node.errorInfo()} Usertype param ${param.getFieldName()} doesn\'t appear in the struct\'s declaration');
+            }
         }
     }
 

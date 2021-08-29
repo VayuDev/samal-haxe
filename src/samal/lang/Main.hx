@@ -109,6 +109,9 @@ class Main {
       Some{v: T}
       None{}
     }
+    fn decide() -> Maybe<int> {
+      Maybe<int>::Some{v : 10}
+    }
     fn main() -> Point<int> {
       m = Maybe<int>::Some{v : 10}
       Point<int>{y : 5, x : 10}
