@@ -208,6 +208,9 @@ public:
     const std::vector<const Datatype*>& getParams() const {
         return mFurtherInfo.fields;
     }
+    const std::vector<std::vector<const Datatype*>>& getVariants() const {
+        return mFurtherInfo.variants;
+    }
 private:
     friend class DatatypeStructPlacer;
     friend class DatatypeEnumPlacer;

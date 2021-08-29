@@ -134,6 +134,18 @@ void SamalContext::visitObj(void *toVisit, const Datatype& type) {
         }
         break;
     }
+    case DatatypeCategory::Enum: {
+        int32_t variantIndex = -1;
+        memcpy(&variantIndex, toVisit, sizeof(int32_t));
+        auto current = (uint8_t*)toVisit + sizeof(int32_t);
+        for(const auto* field: type.getVariants().at(variantIndex)) {
+            visitObj(current, *field);
+            current = (uint8_t*)current + field->getSizeOnStack();
+        }
+        break;
+    }
+    default:
+        assert(false);
     }
 }
 
