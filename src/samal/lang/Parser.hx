@@ -173,7 +173,7 @@ class Parser {
         return ret;
     }
 
-    function parseStructParamList() : Array<SamalCreateUsertypeParam> {
+    function parseCreateUsertypeParamList() : Array<SamalCreateUsertypeParam> {
         var ret = [];
         eat(TokenType.LCurly);
         while(current().getType() != TokenType.RCurly) {
@@ -351,13 +351,22 @@ class Parser {
                     var rhs = parseExpression();
                     return SamalAssignmentExpression.create(makeSourceRef(), identifierName, rhs);
                 } else if((peek().getType() == LCurly || peek().getType() == Less) && peek().getSkippedWhitespaces() == 0) {
+                    // struct or enum creation or a function call
                     final identifier = parseIdentifierWithTemplate();
-                    if(current().getType() != LCurly) {
-                        // probably just a function call like fib<int>(5), not a struct creation Point<int>{...}
-                        return SamalLoadIdentifierExpression.create(makeSourceRef(), identifier);
+                    if(current().getType() == LCurly) {
+                        // struct creation
+                        final params = parseCreateUsertypeParamList();
+                        return SamalCreateStructExpression.create(makeSourceRef(), identifier, params);
+                    } else if(current().getType() == Colons) {
+                        // enum creation
+                        eat(Colons);
+                        eat(Colons);
+                        final variantName = eat(Identifier).getSubstr();
+                        final params = parseCreateUsertypeParamList();
+                        return SamalCreateEnumExpression.create(makeSourceRef(), identifier, variantName, params);
                     }
-                    final params = parseStructParamList();
-                    return SamalCreateStructExpression.create(makeSourceRef(), identifier, params);
+                    // probably just a function call like fib<int>(5), not a struct or enum creation Point<int>{...}
+                    return SamalLoadIdentifierExpression.create(makeSourceRef(), identifier);
                 }
                 return SamalLoadIdentifierExpression.create(makeSourceRef(), parseIdentifierWithTemplate());
             case TokenType.If:

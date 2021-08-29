@@ -176,6 +176,15 @@ class SamalBinaryExpression extends SamalExpression {
     -rhs : SamalExpression
 }
 
+class SamalCreateEnumExpression extends SamalExpression {
+    -enumName : IdentifierWithTemplate
+    -variantName : String
+    -params : Array<SamalCreateUsertypeParam>
+    @start_hx_ctor()
+        ret.mDatatype = Datatype.Unknown(ret.mEnumName.getName(), ret.mEnumName.getTemplateParams());
+    @end_hx
+}
+
 class SamalCreateLambdaExpression extends SamalExpression {
     -parameters : Array<NameAndTypeParam>
     -returnType : Datatype

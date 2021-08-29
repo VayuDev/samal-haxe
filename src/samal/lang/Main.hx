@@ -110,6 +110,7 @@ class Main {
       None{}
     }
     fn main() -> Point<int> {
+      m = Maybe<int>::Some{v : 10}
       Point<int>{y : 5, x : 10}
     }";
     var pipeline = new Pipeline(TargetType.CppFiles("out", "gcc"));

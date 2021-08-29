@@ -78,6 +78,14 @@ class Stage1 {
                         // this is for completing usertype parameters like structs or enums
                         node.completeWithUserTypeMap(makeStringToDatatypeMapper(mCurrentModule));
     
+                    } else if(Std.downcast(astNode, SamalCreateEnumExpression) != null) {
+                        var node = Std.downcast(astNode, SamalCreateEnumExpression);
+                        final newType = complete(node.getDatatype().sure());
+                        if(!newType.match(Usertype(_, _, Enum))) {
+                            throw new Exception(node.errorInfo() + " The datatype declaration for this type is not an enum: " + newType);
+                        }
+                        node.setDatatype(newType);
+                        
                     } else if(Std.downcast(astNode, SamalCreateListExpression) != null) {
                         var node = Std.downcast(astNode, SamalCreateListExpression);
                         if(node.getDatatype() != null) {
@@ -90,7 +98,11 @@ class Stage1 {
                         
                     } else if(Std.downcast(astNode, SamalCreateStructExpression) != null) {
                         var node = Std.downcast(astNode, SamalCreateStructExpression);
-                        node.setDatatype(complete(node.getDatatype().sure()));
+                        final newType = complete(node.getDatatype().sure());
+                        if(!newType.match(Usertype(_, _, Struct))) {
+                            throw new Exception(node.errorInfo() + " The datatype declaration for this type is not a struct: " + newType);
+                        }
+                        node.setDatatype(newType);
                         
                     } else if(Std.downcast(astNode, SamalLoadIdentifierExpression) != null) {
                         var node = Std.downcast(astNode, SamalLoadIdentifierExpression);
@@ -114,9 +126,6 @@ class Stage1 {
             final newDecl = decl.cloneWithTemplateParams(
                 new StringToDatatypeMapperUsingTypeMap(Util.buildTemplateReplacementMap(decl.getTemplateParams(), entry.passedTemplateParams)), 
                 entry.passedTemplateParams);
-            for(f in cast(newDecl, SamalStructDeclaration).getFields()) {
-                trace(f.getDatatype());
-            }
             mProgram.getModule(entry.module).sure().getDeclarations().push(newDecl);
         }
 
