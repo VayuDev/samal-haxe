@@ -1,5 +1,7 @@
 package samal.lang;
 
+import samal.lang.generated.SamalAST.EnumDeclVariant;
+import haxe.Exception;
 import samal.lang.generated.SamalAST.UsertypeField;
 import samal.lang.generated.SamalAST.NameAndTypeParam;
 import samal.lang.AST;
@@ -107,7 +109,32 @@ class CppFunctionDeclaration extends CppDeclaration {
     }
 }
 
-class CppStructDeclaration extends CppDeclaration {
+class CppUsertypeDeclaration extends CppDeclaration {
+    public function getDatatype() : Datatype {
+        throw new Exception("Not implemented!");
+    }
+}
+
+class CppEnumDeclaration extends CppUsertypeDeclaration {
+    final mDatatype : Datatype;
+    final mVariants : Array<EnumDeclVariant>;
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, variants : Array<EnumDeclVariant>) {
+        super(sourceRef);
+        mDatatype = datatype;
+        mVariants = variants;
+    }
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeEnumDeclaration(ctx, this);
+    }
+    public function getVariants() {
+        return mVariants;
+    }
+    public override function getDatatype() {
+        return mDatatype;
+    }
+}
+
+class CppStructDeclaration extends CppUsertypeDeclaration {
     var mDatatype : Datatype;
     var mFields : Array<UsertypeField>;
     public function new(sourceRef : SourceCodeRef, datatype : Datatype, fields : Array<UsertypeField>) {
@@ -121,7 +148,7 @@ class CppStructDeclaration extends CppDeclaration {
     public function getFields() {
         return mFields;
     }
-    public function getDatatype() {
+    public override function getDatatype() {
         return mDatatype;
     }
 }
@@ -367,6 +394,28 @@ class CppListPrependStatement extends CppStatement {
     }
     public function getList() {
         return mList;
+    }
+}
+
+class CppCreateEnumStatement extends CppStatement {
+    final mVariantName : String;
+    final mParams : Array<NamedAndValueStringedParameter>;
+
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, varName : String,
+                        variant : String, params : Array<NamedAndValueStringedParameter>) {
+        super(sourceRef, datatype, varName);
+        mVariantName = variant;
+        mParams = params;
+    }
+
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeCreateEnumStatement(ctx, this);
+    }
+    public function getParams() {
+        return mParams;
+    }
+    public function getVariantName() {
+        return mVariantName;
     }
 }
 

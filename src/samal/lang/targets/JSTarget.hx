@@ -76,6 +76,9 @@ class JSTarget extends LanguageTarget {
             + " }\n"
             + "}";
     }
+    public function makeEnumDeclaration(ctx : SourceCreationContext, node : CppEnumDeclaration) : String {
+        return "";
+    }
     public function makeScopeStatement(ctx : SourceCreationContext, node : CppScopeStatement) : String {
         return indent(ctx) + node.getScope().toSrc(this, ctx.next());
     }    
@@ -120,6 +123,9 @@ class JSTarget extends LanguageTarget {
     }
     public function makeListPrependStatement(ctx : SourceCreationContext, node : CppListPrependStatement) : String {
         return indent(ctx) + "let " + node.getVarName() + " = new samalrt.List(" + node.getValue() + ", " + node.getList() + ")";
+    }
+    public function makeCreateEnumStatement(ctx : SourceCreationContext, node : CppCreateEnumStatement) : String {
+        return "";
     }
     public function makeCreateLambdaStatement(ctx : SourceCreationContext, node : CppCreateLambdaStatement) : String {
         final paramsStr = ["$ctx"].concat(node.getParams().map(function(p) return p.getName())).join(", ");

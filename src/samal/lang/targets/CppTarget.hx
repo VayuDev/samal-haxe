@@ -81,7 +81,7 @@ class CppTarget extends LanguageTarget {
                 if(declaredType.match(Usertype(_, _, Enum)))
                     throw new Exception("TODO");
                 if(declaredType.match(Usertype(_, _, Struct))) {
-                    for(i => field in cppCtx.getProgram().findStructDeclaration(declaredType).getFields()) {
+                    for(i => field in cast(cppCtx.getProgram().findUsertypeDeclaration(declaredType), CppStructDeclaration).getFields()) {
                         ret += 'static samalrt::DatatypeStructPlacer placer$placerCounter{${declaredType.toCppGCTypeStr()}, $i, ${field.getDatatype().toCppGCTypeStr()}};\n';
                         placerCounter += 1;
                     }
@@ -156,6 +156,22 @@ class CppTarget extends LanguageTarget {
             + "}\n"
             + "}\n";
     }
+    public function makeEnumDeclaration(ctx : SourceCreationContext, node : CppEnumDeclaration) : String {
+        return
+            "#pragma pack(1)\n"
+            + "struct " + node.getDatatype().toCppType() + " {\n"
+            + " int variant = -1;\n"
+            + " union {\n"
+            + node.getVariants().map(function(v) {
+                return 
+                    " struct {" + v.getFields().map(function(f) {
+                        return "  " + f.getDatatype().toCppType() + " " + f.getFieldName() + ";\n";
+                    }).join("")
+                    + " } " + v.getName();
+            }).join("")
+            + " };\n"
+            + "};\n";
+    }
     public function makeScopeStatement(ctx : SourceCreationContext, node : CppScopeStatement) : String {
         return indent(ctx) + node.getScope().toSrc(this, ctx.next());
     }    
@@ -200,6 +216,14 @@ class CppTarget extends LanguageTarget {
     }
     public function makeListPrependStatement(ctx : SourceCreationContext, node : CppListPrependStatement) : String {
         return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = samalrt::listPrepend<" + node.getDatatype().getBaseType().toCppType() + ">($ctx, " + node.getValue() + ", " + node.getList() + ")" + getTrackerString(node);
+    }
+    public function makeCreateEnumStatement(ctx : SourceCreationContext, node : CppCreateEnumStatement) : String {
+        final cppCtx = cast(ctx, CppContext);
+        final program = cppCtx.getProgram();
+        final decl = cast(program.findUsertypeDeclaration(node.getDatatype()), CppEnumDeclaration);
+        final variantInfo = Util.findEnumVariant(decl.getVariants(), node.getVariantName());
+        
+        return "";
     }
     
     public function makeCreateLambdaStatement(ctx : SourceCreationContext, node : CppCreateLambdaStatement) : String {

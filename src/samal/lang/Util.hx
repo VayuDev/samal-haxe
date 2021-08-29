@@ -48,6 +48,16 @@ class Util {
         return ret;
     }
 
+    public static function findEnumVariant(haystack : Array<EnumDeclVariant>, needle : String) : {index : Int, variant : EnumDeclVariant} {
+        
+        for(i => variant in haystack) {
+            if(variant.getName() == needle) {
+                return {index : i, variant: variant};
+            }
+        }
+        throw new Exception("Enum variant " + needle + " not found");
+    }
+
     private static var uniqueIdCounter = 0;
     public static function getUniqueId() : Int {
         return uniqueIdCounter++;

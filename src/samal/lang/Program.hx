@@ -1,6 +1,6 @@
 package samal.lang;
 
-import samal.lang.CppAST.CppStructDeclaration;
+import samal.lang.CppAST;
 import samal.lang.Datatype;
 import haxe.Exception;
 import samal.lang.generated.SamalAST;
@@ -88,15 +88,15 @@ class CppProgram {
         return ret;
     }
 
-    public function forEachModule(callback : (String, CppASTNode) -> Void) {
+    public function forEachModule(callback : (String, CppFile) -> Void) {
         for(mod in mModules.keyValueIterator()) {
             callback(mod.key, mod.value);
         }
     }
-    public function findStructDeclaration(datatype : Datatype) : CppStructDeclaration {
+    public function findUsertypeDeclaration(datatype : Datatype) : CppUsertypeDeclaration {
         for(mod in mModules) {
             for(decl in mod.getDeclarations()) {
-                final typeDecl = Std.downcast(decl, CppStructDeclaration);
+                final typeDecl = Std.downcast(decl, CppUsertypeDeclaration);
                 if(typeDecl != null && typeDecl.getDatatype().deepEquals(datatype)) {
                     return typeDecl;
                 }

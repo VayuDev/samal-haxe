@@ -11,6 +11,7 @@ import samal.lang.generated.SamalAST;
 import samal.lang.Program;
 import samal.lang.Util.NullTools;
 using samal.lang.Util.NullTools;
+using samal.lang.Datatype.DatatypeHelpers;
 
 class Stage3 {
     var mSProgram : SamalProgram;
@@ -65,6 +66,11 @@ class Stage3 {
             
             mCurrentFileDeclarations.push(new CppFunctionDeclaration(node.getSourceRef(), functionDatatype, node.getName().mangled(), node.getParams(), scope));
             mScopeStack.pop();
+
+        } else if(Std.downcast(astNode, SamalEnumDeclaration) != null) {
+            var node = Std.downcast(astNode, SamalEnumDeclaration);
+            mCurrentFileDeclarations.push(new CppEnumDeclaration(node.getSourceRef(), node.getDatatype(), node.getVariants()));
+
         } else if(Std.downcast(astNode, SamalStructDeclaration) != null) {
             var node = Std.downcast(astNode, SamalStructDeclaration);
             mCurrentFileDeclarations.push(new CppStructDeclaration(node.getSourceRef(), node.getDatatype(), node.getFields()));
@@ -246,6 +252,17 @@ class Stage3 {
             addStatement(new CppUnreachable(astNode.getSourceRef()));
             return "";
 
+        } else if(Std.downcast(astNode, SamalCreateEnumExpression) != null) {
+            var node = Std.downcast(astNode, SamalCreateEnumExpression);
+            final srcDecl = cast(mSProgram.findDatatypeDeclaration(node.getDatatype().sure()), SamalEnumDeclaration);
+            final variant = Util.findEnumVariant(srcDecl.getVariants(), node.getVariantName()).variant;
+
+            final params = samalUsertypeParamsToCppParams(variant.getFields(), node.getParams());
+            
+            final varName = genTempVarName("enum");
+            addStatement(new CppCreateEnumStatement(node.getSourceRef(), srcDecl.getDatatype(), varName, node.getVariantName(), params));
+            return varName;
+
         } else if(Std.downcast(astNode, SamalCreateLambdaExpression) != null) {
             var node = Std.downcast(astNode, SamalCreateLambdaExpression);
             final varName = genTempVarName("lambda");
@@ -271,17 +288,10 @@ class Stage3 {
             var node = Std.downcast(astNode, SamalCreateStructExpression);
             final varName = genTempVarName("struct");
 
-            final decl = Std.downcast(mSProgram.findDatatypeDeclaration(node.getDatatype().sure()), SamalStructDeclaration).sure();
-            final params : Array<NamedAndValueStringedParameter> = [];
-            for(expectedField in decl.getFields()) {
-                // find passed param for field
-                for(p in node.getParams()) {
-                    if(p.getFieldName() != expectedField.getFieldName())
-                        continue;
-                    params.push({name : p.getFieldName(), value : traverse(p.getValue())});
-                }
-            }
-            addStatement(new CppCreateStructStatement(node.getSourceRef(), node.getDatatype().sure(), varName, params));
+            final decl = cast(mSProgram.findDatatypeDeclaration(node.getDatatype().sure()), SamalStructDeclaration);
+            final params = samalUsertypeParamsToCppParams(decl.getFields(), node.getParams());
+
+            addStatement(new CppCreateStructStatement(node.getSourceRef(), decl.getDatatype(), varName, params));
             return varName;
 
         } else if(Std.downcast(astNode, SamalSimpleTailCallSelf) != null) {
@@ -299,13 +309,22 @@ class Stage3 {
         return "";
     }
 
-    function samalToCppBody() {
-
+    private function samalUsertypeParamsToCppParams(fields : Array<UsertypeField>, passedParams : Array<SamalCreateUsertypeParam>) : Array<NamedAndValueStringedParameter> {
+        final params : Array<NamedAndValueStringedParameter> = [];
+        for(expectedField in fields) {
+            // find passed param for field
+            for(p in passedParams) {
+                if(p.getFieldName() != expectedField.getFieldName())
+                    continue;
+                params.push({name : p.getFieldName(), value : traverse(p.getValue())});
+            }
+        }
+        return params;
     }
 
     public function convertToCppAST() : CppProgram {
         mCProgram = new CppProgram();
-        
+
         mSProgram.forEachModule(function(moduleName : String, ast : SamalModule) {
             moduleName = Util.mangle(moduleName, []);
             mCurrentModuleName = moduleName;

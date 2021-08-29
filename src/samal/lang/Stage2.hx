@@ -259,11 +259,7 @@ class Stage2 {
         } else if(Std.downcast(astNode, SamalCreateEnumExpression) != null) {
             final node = Std.downcast(astNode, SamalCreateEnumExpression);
             final enumDecl = cast(mProgram.findDatatypeDeclaration(node.getDatatype().sure()), SamalEnumDeclaration);
-            final variants = enumDecl.getVariants().filter(function(v) return v.getName() == node.getVariantName());
-            if(variants.length != 1) {
-                throw new Exception('${node.errorInfo()} Enum variant ${node.getVariantName()} not found!');
-            }
-            final variant = variants[0].sure();
+            final variant = Util.findEnumVariant(enumDecl.getVariants(), node.getVariantName()).variant;
             traverseAndVerifyCorrectUsertypeParams(node, node.getParams(), variant.getFields());
 
         } else if(Std.downcast(astNode, SamalCreateListExpression) != null) {
