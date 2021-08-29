@@ -79,10 +79,14 @@ class CppTarget extends LanguageTarget {
             var placerCounter = 0;
             for(declaredType in alreadyDeclared) {
                 if(declaredType.match(Usertype(_, _, Enum))) {
-                    
+                    for(variantIndex => variant in cast(cppCtx.getProgram().findUsertypeDeclaration(declaredType), CppEnumDeclaration).getVariants()) {
+                        for(fieldIndex => field in variant.getFields()) {
+                            ret += 'static samalrt::DatatypeEnumPlacer placer$placerCounter{${declaredType.toCppGCTypeStr()}, $variantIndex, $fieldIndex, ${field.getDatatype().toCppGCTypeStr()}};\n';
+                            placerCounter += 1;
+                        }
+                    }
                 }
-                    //throw new Exception("TODO");
-                if(declaredType.match(Usertype(_, _, Struct))) {
+                else if(declaredType.match(Usertype(_, _, Struct))) {
                     for(i => field in cast(cppCtx.getProgram().findUsertypeDeclaration(declaredType), CppStructDeclaration).getFields()) {
                         ret += 'static samalrt::DatatypeStructPlacer placer$placerCounter{${declaredType.toCppGCTypeStr()}, $i, ${field.getDatatype().toCppGCTypeStr()}};\n';
                         placerCounter += 1;
@@ -167,7 +171,7 @@ class CppTarget extends LanguageTarget {
         return
             "#pragma pack(1)\n"
             + "struct " + node.getDatatype().toCppType() + " {\n"
-            + " int variant = -1;\n"
+            + " int32_t variant = -1;\n"
             + " union {\n"
             + node.getVariants().map(function(v) {
                 return 

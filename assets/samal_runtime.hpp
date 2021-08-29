@@ -136,7 +136,8 @@ public:
     struct FurtherInfoUnion {
         const Datatype* baseType;
         const Datatype* returnType;
-        std::vector<const Datatype*> params;
+        std::vector<const Datatype*> fields;
+        std::vector<std::vector<const Datatype*>> variants;
     };
     Datatype(DatatypeCategory category) {
         mCategory = category;
@@ -148,7 +149,7 @@ public:
     Datatype(DatatypeCategory category, const Datatype* returnType, std::vector<const Datatype*> params) {
         mCategory = category;
         mFurtherInfo.returnType = returnType;
-        mFurtherInfo.params = std::move(params);
+        mFurtherInfo.fields = std::move(params);
     }
     DatatypeCategory getCategory() const {
         return mCategory;
@@ -179,12 +180,24 @@ public:
             return sizeof(void*);
         case DatatypeCategory::Function:
             return sizeof(Function<int(int)>);
-        case DatatypeCategory::Struct:
+        case DatatypeCategory::Struct: {
             size_t size = 0;
-            for(const auto* field: mFurtherInfo.params) {
+            for(const auto* field: mFurtherInfo.fields) {
                 size += field->getSizeOnStack();
             }
             return size;
+        }
+        case DatatypeCategory::Enum: {
+            size_t largestSize = 0;
+            for(const auto& variant: mFurtherInfo.variants) {
+                size_t size = 0;
+                for(const auto* field: variant) {
+                    size += field->getSizeOnStack();
+                }
+                largestSize = std::max(largestSize, size);
+            }
+            return largestSize + sizeof(int32_t);
+        }
         }
         std::cout << static_cast<int>(mCategory) << std::endl;
         assert(false);
@@ -193,10 +206,11 @@ public:
         return *mFurtherInfo.baseType;
     }
     const std::vector<const Datatype*>& getParams() const {
-        return mFurtherInfo.params;
+        return mFurtherInfo.fields;
     }
 private:
     friend class DatatypeStructPlacer;
+    friend class DatatypeEnumPlacer;
     DatatypeCategory mCategory;
     FurtherInfoUnion mFurtherInfo;
 };
@@ -204,10 +218,22 @@ private:
 class DatatypeStructPlacer {
 public:
     DatatypeStructPlacer(Datatype& structType, size_t index, const Datatype& fieldType) {
-        if(structType.mFurtherInfo.params.size() <= index) {
-            structType.mFurtherInfo.params.resize(index + 1);
+        if(structType.mFurtherInfo.fields.size() <= index) {
+            structType.mFurtherInfo.fields.resize(index + 1);
         }
-        structType.mFurtherInfo.params.at(index) = &fieldType;
+        structType.mFurtherInfo.fields.at(index) = &fieldType;
+    }
+};
+class DatatypeEnumPlacer {
+public:
+    DatatypeEnumPlacer(Datatype& enumType, size_t variant, size_t index, const Datatype& fieldType) {
+        if(enumType.mFurtherInfo.variants.size() <= variant) {
+            enumType.mFurtherInfo.variants.resize(variant + 1);
+        }
+        if(enumType.mFurtherInfo.variants.at(variant).size() <= index) {
+            enumType.mFurtherInfo.variants.at(variant).resize(index + 1);
+        }
+        enumType.mFurtherInfo.variants.at(variant).at(index) = &fieldType;
     }
 };
 
