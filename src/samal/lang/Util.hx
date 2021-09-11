@@ -57,6 +57,13 @@ class Util {
         }
         throw new Exception("Enum variant " + needle + " not found");
     }
+    public static function seq(excludedLimit : Int) : Array<Int> {
+        final ret : Array<Int> = [];
+        for(i in 0...excludedLimit) {
+            ret.push(i);
+        }
+        return ret;
+    }
 
     private static var uniqueIdCounter = 0;
     public static function getUniqueId() : Int {

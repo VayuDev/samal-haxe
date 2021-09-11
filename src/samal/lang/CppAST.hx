@@ -132,6 +132,15 @@ class CppEnumDeclaration extends CppUsertypeDeclaration {
     public override function getDatatype() {
         return mDatatype;
     }
+    public function getLargestVariantSize() : Int {
+        var largest = 0;
+        for(v in mVariants) {
+            if(v.getFields().length > largest) {
+                largest = v.getFields().length;
+            }
+        }
+        return largest;
+    }
 }
 
 class CppStructDeclaration extends CppUsertypeDeclaration {

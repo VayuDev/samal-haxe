@@ -1,4 +1,5 @@
 package samal.lang.targets;
+import samal.lang.Program.CppProgram;
 import samal.lang.Pipeline.TargetType;
 import samal.lang.CppAST;
 import samal.lang.targets.LanguageTarget;
@@ -12,19 +13,24 @@ enum DeclareDatatypesOrFunctions {
 
 class JSContext extends SourceCreationContext {
     final mDof : DeclareDatatypesOrFunctions;
+    final mProgram : CppProgram;
 
-    public function new(indent : Int, mainFunction : String, dof : DeclareDatatypesOrFunctions) {
+    public function new(indent : Int, mainFunction : String, dof : DeclareDatatypesOrFunctions, program : CppProgram) {
         super(indent, mainFunction);
         mDof = dof;
+        mProgram = program;
     }
     public override function next() : JSContext {
-        return new JSContext(mIndent + 1, mMainFunction, mDof);
+        return new JSContext(mIndent + 1, mMainFunction, mDof, mProgram);
     }
     public override function prev() : JSContext {
-        return new JSContext(mIndent - 1, mMainFunction, mDof);
+        return new JSContext(mIndent - 1, mMainFunction, mDof, mProgram);
     }
     public function getDof() {
         return mDof;
+    }
+    public function getProgram() {
+        return mProgram;
     }
 }
 
@@ -66,7 +72,7 @@ class JSTarget extends LanguageTarget {
         return ret;
     }
     public function makeStructDeclaration(ctx : SourceCreationContext, node : CppStructDeclaration) : String {
-        if(Std.downcast(ctx, JSContext).getDof() == Functions)
+        if(cast(ctx, JSContext).getDof() != Datatypes)
             return "";
         return "class " + node.getDatatype().getUsertypeMangledName() + " {\n" 
             + " constructor(" + node.getFields().map(function(f) return f.getFieldName()).join(",") + ") {\n"
@@ -77,7 +83,17 @@ class JSTarget extends LanguageTarget {
             + "}";
     }
     public function makeEnumDeclaration(ctx : SourceCreationContext, node : CppEnumDeclaration) : String {
-        return "";
+        if(cast(ctx, JSContext).getDof() != Datatypes)
+            return "";
+        final memberIndexList = Util.seq(node.getLargestVariantSize());
+        return "class " + node.getDatatype().getUsertypeMangledName() + " {\n"
+            + " constructor(variant, " + memberIndexList.map(function(i) {return "p" + i;}).join(", ") + ") {\n"
+            + "  this.variant = variant;\n"
+            + memberIndexList.map(function(i) {
+                return "  this.m" + i + " = p" + i + ";\n";
+            }).join("")
+            + "}\n"
+            + "}";
     }
     public function makeScopeStatement(ctx : SourceCreationContext, node : CppScopeStatement) : String {
         return indent(ctx) + node.getScope().toSrc(this, ctx.next());
@@ -125,7 +141,11 @@ class JSTarget extends LanguageTarget {
         return indent(ctx) + "let " + node.getVarName() + " = new samalrt.List(" + node.getValue() + ", " + node.getList() + ")";
     }
     public function makeCreateEnumStatement(ctx : SourceCreationContext, node : CppCreateEnumStatement) : String {
-        return "";
+        final jsCtx = cast(ctx, JSContext);
+        final decl = cast(jsCtx.getProgram().findUsertypeDeclaration(node.getDatatype()), CppEnumDeclaration);
+        final choseenVariant = Util.findEnumVariant(decl.getVariants(), node.getVariantName());
+        return indent(ctx) + "let " + node.getVarName() + " = new " + node.getDatatype().getUsertypeMangledName() + "(" 
+            + choseenVariant.index + ", " + node.getParams().map(function(p) return p.value).join(", ") + ")";
     }
     public function makeCreateLambdaStatement(ctx : SourceCreationContext, node : CppCreateLambdaStatement) : String {
         final paramsStr = ["$ctx"].concat(node.getParams().map(function(p) return p.getName())).join(", ");

@@ -116,7 +116,7 @@ class Main {
       m = decide()
       Point<int>{y : 5, x : 10}
     }";
-    var pipeline = new Pipeline(TargetType.CppFiles("out", "gcc"));
+    var pipeline = new Pipeline(TargetType.JSSingleFile("out/out.js"));
     pipeline.add("Main", code);
     var files = pipeline.generate("A.B.Main.main");
     #if js

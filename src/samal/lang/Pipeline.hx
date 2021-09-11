@@ -73,8 +73,8 @@ class Pipeline {
             res += "\n";
             cprogram.forEachModule(function(mod, ast) {
                 res += '// $mod: \n';
-                res += ast.toSrc(target, new JSContext(0, mainFunction, Datatypes));
-                res += ast.toSrc(target, new JSContext(0, mainFunction, Functions));
+                res += ast.toSrc(target, new JSContext(0, mainFunction, Datatypes, cprogram));
+                res += ast.toSrc(target, new JSContext(0, mainFunction, Functions, cprogram));
                 res += "\n\n";
             });
             return res;
