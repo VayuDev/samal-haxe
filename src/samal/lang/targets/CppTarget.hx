@@ -243,17 +243,22 @@ class CppTarget extends LanguageTarget {
     
     public function makeCreateLambdaStatement(ctx : SourceCreationContext, node : CppCreateLambdaStatement) : String {
         final bufferVarName = "buffer$$$" + Util.getUniqueId();
-        // first the lambda itself
-        var ret = 
-            indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = *[](samalrt::SamalContext& $ctx, "
-            + node.getParams().map(function(p) return p.getDatatype().toCppType() + " " + p.getName()).join(", ") + ") -> " + node.getDatatype().getReturnType().toCppType() + " {\n"
-            + indent(ctx.next()) + "uint8_t* " + bufferVarName + " = (uint8_t*)$ctx.getLambdaCapturedVarPtr() + sizeof(void*);\n"
+        final extractCapturedVarsString = if(node.getCapturedVariables().length > 0) {
+            indent(ctx.next()) + "uint8_t* " + bufferVarName + " = (uint8_t*)$ctx.getLambdaCapturedVarPtr() + sizeof(void*);\n"
             + node.getCapturedVariables().map(function(p) {
                 return 
                     indent(ctx.next()) + p.getDatatype().toCppType() + " " + p.getName() + ";\n"
                     + indent(ctx.next()) + "memcpy(&" + p.getName() + ", " + bufferVarName + ", " + p.getDatatype().toCppGCTypeStr() + ".getSizeOnStack());\n"
                     + indent(ctx.next()) + bufferVarName + " += " + p.getDatatype().toCppGCTypeStr() + ".getSizeOnStack();\n";
-            }).join("")
+            }).join("");
+        } else {
+            "";
+        }
+        // first the lambda itself
+        var ret = 
+            indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = *[](samalrt::SamalContext& $ctx, "
+            + node.getParams().map(function(p) return p.getDatatype().toCppType() + " " + p.getName()).join(", ") + ") -> " + node.getDatatype().getReturnType().toCppType() + " {\n"
+            + extractCapturedVarsString
             + node.getBody().getStatements().map(function(stmt) return stmt.toSrc(this, ctx.next()) + ";").join("\n")
             + "\n" + indent(ctx) + "};\n";
         // then the buffer creation
