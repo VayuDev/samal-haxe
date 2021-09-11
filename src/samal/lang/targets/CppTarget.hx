@@ -136,7 +136,7 @@ class CppTarget extends LanguageTarget {
         return ret;
     }
     public function makeStructDeclaration(ctx : SourceCreationContext, node : CppStructDeclaration) : String {
-        final cppCtx = Std.downcast(ctx, CppContext);
+        final cppCtx = cast(ctx, CppContext);
         if(cppCtx.getHos() != HeaderStart) {
             return "";
         }
@@ -164,14 +164,13 @@ class CppTarget extends LanguageTarget {
     }
     public function makeEnumDeclaration(ctx : SourceCreationContext, node : CppEnumDeclaration) : String {
         final cppCtx = cast(ctx, CppContext);
-        final cppCtx = Std.downcast(ctx, CppContext);
         if(cppCtx.getHos() != HeaderStart) {
             return "";
         }
         return
             "#pragma pack(1)\n"
             + "struct " + node.getDatatype().toCppType() + " {\n"
-            + " int32_t variant = -1;\n"
+            + " int32_t variant;\n"
             + " union {\n"
             + node.getVariants().map(function(v) {
                 return 
