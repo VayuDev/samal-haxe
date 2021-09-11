@@ -79,7 +79,7 @@ private:
     size_t mOtherPageOffset = 0;
     size_t mPageSize = 1024 * 1024 * 1024;
     size_t mCollectionRequestsCounter = 0;
-    const size_t mCollectionRequestsPerCollection = 1000000;
+    const size_t mCollectionRequestsPerCollection = 0;
     void *mLambdaCapturedVarPtr = nullptr;
 
     void* allocOnOtherPage(size_t len);
@@ -156,15 +156,9 @@ public:
     }
     size_t getSize() const {
         switch(mCategory) {
-        case DatatypeCategory::Int:
-            return sizeof(int32_t);
-        case DatatypeCategory::Bool:
-            return sizeof(bool);
         case DatatypeCategory::List:
             return alignSize(sizeof(void*) + mFurtherInfo.baseType->getSize());
-        case DatatypeCategory::Function:
-            return sizeof(Function<int(int)>);
-        case DatatypeCategory::Struct:
+        default:
             return getSizeOnStack();
         }
         std::cout << static_cast<int>(mCategory) << std::endl;
