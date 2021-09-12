@@ -17,9 +17,9 @@ import js.Lib;
 // If any string parameter is empty, the resulting files are returned from generate
 enum TargetType {
     // Generate a single JS file
-    JSSingleFile(outFile : String);
-    // Generates a list of C++ files that will be compiled with compiler (clang or gcc recommended)
-    CppFiles(outPath : String, compiler : String);
+    JSSingleFile();
+    // Generates a list of C++ files
+    CppFiles();
 }
 
 class GeneratedFile {
@@ -56,7 +56,7 @@ class Pipeline {
         Log.trace(mProgram.dump(), null);
     
         Log.trace("@@@@ Stage 3 @@@@", null);
-        final target = if(mTarget.match(CppFiles(_, _))) {
+        final target = if(mTarget.match(CppFiles)) {
             new CppTarget();
         } else {
             new JSTarget();
@@ -81,44 +81,19 @@ class Pipeline {
         }
 
         switch(mTarget) {
-            case CppFiles(outPath, compiler):
-                if(outPath == "" || compiler == "") {
-                    var ret = [];
-                    cprogram.forEachModule(function(mod, ast) {
-                        ret.push(new GeneratedFile(mod + ".hpp", 
-                            ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.HeaderStart, cprogram))
-                            + ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.HeaderEnd, cprogram))));
-                        ret.push(new GeneratedFile(mod + ".cpp", ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.Source, cprogram))));
-                    });
-                    ret.push(new GeneratedFile("samal_runtime.cpp", Resource.getString("samal_runtime.cpp")));
-                    ret.push(new GeneratedFile("samal_runtime.hpp", Resource.getString("samal_runtime.hpp")));
-                    return ret;
-                } else {
-                #if sys
-                    cprogram.forEachModule(function(mod, ast) {
-                        try {
-                            FileSystem.createDirectory(outPath);
-                        } catch(_) {}
-                        File.saveContent('${outPath}/${mod}.hpp', 
-                            ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.HeaderStart, cprogram))
-                            + ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.HeaderEnd, cprogram)));
-                        File.saveContent('${outPath}/${mod}.cpp', ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.Source, cprogram)));
-                    });
-                    File.saveContent('${outPath}/samal_runtime.cpp', Resource.getString("samal_runtime.cpp"));
-                    File.saveContent('${outPath}/samal_runtime.hpp', Resource.getString("samal_runtime.hpp"));
-                #else
-                    throw new Exception("Can't write to FS in non-sys targets!");                
-                #end
-                }
-            case JSSingleFile(""):
+            case CppFiles:
+                var ret = [];
+                cprogram.forEachModule(function(mod, ast) {
+                    ret.push(new GeneratedFile(mod + ".hpp", 
+                        ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.HeaderStart, cprogram))
+                        + ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.HeaderEnd, cprogram))));
+                    ret.push(new GeneratedFile(mod + ".cpp", ast.toSrc(target, new CppContext(0, mainFunction, HeaderOrSource.Source, cprogram))));
+                });
+                ret.push(new GeneratedFile("samal_runtime.cpp", Resource.getString("samal_runtime.cpp")));
+                ret.push(new GeneratedFile("samal_runtime.hpp", Resource.getString("samal_runtime.hpp")));
+                return ret;
+            case JSSingleFile:
                 return [new GeneratedFile("out.js", genJs())];
-
-            case JSSingleFile(outFile):
-            #if sys
-                File.saveContent(outFile, genJs());
-            #else
-                throw new Exception("Can't write to disk on non-sys targets!");
-            #end
         }
         return [];
         /*cprogram.forEachModule(function(mod, ast) {
