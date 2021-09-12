@@ -79,6 +79,9 @@ class Util {
         }
         return false;
     }
+    public static function println(str : Dynamic) : Void {
+        haxe.Log.trace(str, null);
+    }
 }
 
 interface Cloneable {
