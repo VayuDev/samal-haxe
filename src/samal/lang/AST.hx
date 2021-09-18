@@ -28,7 +28,8 @@ class ASTNode implements Cloneable {
         return ret;
     }
     public function dumpSelf() {
-        return Type.getClassName(Type.getClass(this));
+        final fullClassName = Type.getClassName(Type.getClass(this));
+        return fullClassName.substr(fullClassName.lastIndexOf(".") + 1);
     }
     public function travserePostorder(postorder : (ASTNode) -> Void) {
         traverse(function(childNode) {
