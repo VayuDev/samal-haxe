@@ -101,112 +101,79 @@ class Parser {
         }
     }
 
-    function parseDatatypeList() : Array<Datatype> {
-        var ret = [];
-        eat(LParen);
-        while(current().getType() != RParen) {
-            ret.push(parseDatatype());
-            if(current().getType() == Comma) {
-                eat(Comma);
+    @:generic
+    function parseList<T>(start : TokenType, separator : TokenType, end : TokenType, parser : () -> T) : Array<T> {
+        final ret = [];
+        eat(start);
+        skipNewlines();
+        while(current().getType() != end) {
+            ret.push(parser());
+            if(current().getType() == separator) {
+                eat(separator);
             } else {
                 break;
             }
+            skipNewlines();
         }
-        eat(RParen);
+        skipNewlines();
+        eat(end);
+
         return ret;
+    }
+
+    function parseDatatypeList() : Array<Datatype> {
+        return parseList(LParen, Comma, RParen, function() {
+            return parseDatatype();
+        });
     }
 
     function parseFunctionParameterList() : Array<NameAndTypeParam> {
-        var ret = [];
-        eat(TokenType.LParen);
-        while(current().getType() != TokenType.RParen) {
-            var name = current().getSubstr();
+        return parseList(LParen, Comma, RParen, function() {
+            final name = current().getSubstr();
             eat(TokenType.Identifier);
             eat(TokenType.Colons);
-            var type = parseDatatype();
-            ret.push(NameAndTypeParam.create(name, type));
-            if(current().getType() == TokenType.Comma) {
-                eat(TokenType.Comma);
-            } else {
-                break;
-            }
-        }
-        eat(TokenType.RParen);
-        
-        return ret;
+            final type = parseDatatype();
+            return NameAndTypeParam.create(name, type);
+        });
     }
 
     function parseEnumVariantList() : Array<EnumDeclVariant> {
-        var ret = [];
-        eat(TokenType.LCurly);
-        while(current().getType() != TokenType.RCurly) {
-            skipNewlines();
+        return parseList(LCurly, NewLine, RCurly, function() {
             final variantName = eat(Identifier).getSubstr();
             final fields = parseUsertypeDeclFieldList(Comma);
-            ret.push(EnumDeclVariant.create(variantName, fields));
-            skipNewlines();
-        }
-        eat(TokenType.RCurly);
-        return ret;
+            return EnumDeclVariant.create(variantName, fields);
+        });
     }
 
     function parseUsertypeField() : UsertypeField {
-        final name = current().getSubstr();
-        eat(TokenType.Identifier);
+        final name = eat(TokenType.Identifier).getSubstr();
         eat(TokenType.Colons);
         final type = parseDatatype();
         return UsertypeField.create(name, type);
     }
 
     function parseUsertypeDeclFieldList(delimiter : TokenType) : Array<UsertypeField> {
-        var ret = [];
-        eat(TokenType.LCurly);
-        skipNewlines();
-        while(current().getType() != TokenType.RCurly) {
-            ret.push(parseUsertypeField());
-            if(current().getType() == delimiter)
-                eat(delimiter);
-            else
-                break;
-        }
-        eat(TokenType.RCurly);
-        return ret;
+        return parseList(LCurly, delimiter, RCurly, function() {
+            return parseUsertypeField();
+        });
     }
 
     function parseCreateUsertypeParamList() : Array<SamalCreateUsertypeParam> {
-        var ret = [];
-        eat(TokenType.LCurly);
-        while(current().getType() != TokenType.RCurly) {
-            var name = current().getSubstr();
-            eat(TokenType.Identifier);
+        return parseList(LCurly, Comma, RCurly, function() {
+            final name = eat(TokenType.Identifier).getSubstr();
             eat(TokenType.Colons);
-            var value = parseExpression();
-            ret.push(SamalCreateUsertypeParam.create(name, value));
-            if(current().getType() == TokenType.Comma) {
-                eat(TokenType.Comma);
-            } else {
-                break;
-            }
-        }
-        eat(TokenType.RCurly);
-        return ret;
+            final value = parseExpression();
+            return SamalCreateUsertypeParam.create(name, value);
+        });
     }
 
     function parseTemplateParams() : Array<Datatype> {
-        var templateParams = [];
-        if(current().getType() == Less && current().getSkippedWhitespaces() == 0) {
-            eat(Less);
-            while(current().getType() != More) {
-                templateParams.push(parseDatatype());
-                if(current().getType() == Comma) {
-                    eat(Comma);
-                } else {
-                    break;
-                }
-            }
-            eat(More);
+        if(current().getType() != Less || current().getSkippedWhitespaces() != 0) {
+            return [];
         }
-        return templateParams;
+        return parseList(Less, Comma, More, function() {
+            return parseDatatype();
+        });
     }
 
     function parseIdentifierWithTemplate() : IdentifierWithTemplate {
@@ -279,18 +246,9 @@ class Parser {
     }
 
     function parseExpressionList(lterm : TokenType, rterm : TokenType) : Array<SamalExpression> {
-        eat(lterm);
-        var ret = [];
-        while(current().getType() != rterm) {
-            ret.push(parseExpression());
-            if(current().getType() == Comma) {
-                eat(Comma);
-            } else {
-                break;
-            }
-        }
-        eat(rterm);
-        return ret;
+        return parseList(lterm, Comma, rterm, function() {
+            return parseExpression();
+        });
     }
 
     function parsePostfixExpression() : SamalExpression {
