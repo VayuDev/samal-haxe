@@ -167,6 +167,10 @@ class Stage3 {
             var node = Std.downcast(astNode, SamalLiteralIntExpression);
             return mTarget.getLiteralInt(node.getVal());
 
+        } else if(Std.downcast(astNode, SamalLiteralCharExpression) != null) {
+            var node = Std.downcast(astNode, SamalLiteralCharExpression);
+            return mTarget.getLiteralChar(node.getVal());
+
         } else if(Std.downcast(astNode, SamalAssignmentExpression) != null) {
             var node = Std.downcast(astNode, SamalAssignmentExpression);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());

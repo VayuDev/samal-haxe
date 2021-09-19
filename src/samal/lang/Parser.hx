@@ -82,6 +82,9 @@ class Parser {
             case Bool:
                 eat(TokenType.Bool);
                 return Datatype.Bool;
+            case Char:
+                eat(TokenType.Char);
+                return Datatype.Char;
             case LSquare:
                 eat(LSquare);
                 var baseType = parseDatatype();
@@ -301,7 +304,7 @@ class Parser {
     function parseLiteralExpression() : SamalExpression {
         startNode();
         switch(current().getType()) {
-            case TokenType.Integer:
+            case Integer:
                 var val = current().getSubstr();
                 eat(TokenType.Integer);
                 var valAsInt = Std.parseInt(val);
@@ -309,10 +312,10 @@ class Parser {
                     throw new Exception(current().info() + " Couldn't convert " + val + " to int");
                 }
                 return SamalLiteralIntExpression.create(makeSourceRef(), valAsInt);
-            case TokenType.LCurly:
+            case LCurly:
                 startNode();
                 return SamalScopeExpression.create(makeSourceRef(), parseScope());
-            case TokenType.Identifier:
+            case Identifier:
                 startNode();
                 if (peek().getType() == TokenType.Equals) {
                     final identifierName = current().getSubstr();
@@ -339,7 +342,7 @@ class Parser {
                     return SamalLoadIdentifierExpression.create(makeSourceRef(), identifier);
                 }
                 return SamalLoadIdentifierExpression.create(makeSourceRef(), parseIdentifierWithTemplate());
-            case TokenType.If:
+            case If:
                 startNode();
                 eat(If);
                 var mainCondition = parseExpression();
@@ -400,6 +403,12 @@ class Parser {
                 final returnType = parseDatatype();
                 final body = parseScope();
                 return SamalCreateLambdaExpression.create(makeSourceRef(), params, returnType, body, []);
+
+            case CharLiteral:
+                startNode();
+                final ch = eat(CharLiteral).getSubstr();
+                return SamalLiteralCharExpression.create(makeSourceRef(), ch);
+
             case _:
                 throw new Exception(current().info() + " Expected expression");
         }

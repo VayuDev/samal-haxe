@@ -180,6 +180,12 @@ SamalString inspect(SamalContext& ctx, bool val) {
     auto str = std::to_string(val);
     return toSamalString(ctx, str);
 }
+SamalString inspect(SamalContext& ctx, char32_t ch) {
+    SamalString ret = (SamalString)ctx.alloc(sizeof(List<char32_t>));
+    ret->value = ch;
+    ret->next = nullptr;
+    return ret;
+}
 
 std::ostream& operator<<(std::ostream& stream, SamalString str) {
     std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> converter;

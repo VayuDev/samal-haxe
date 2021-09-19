@@ -240,6 +240,12 @@ class SamalElseIfBranch {
 class SamalLineExpression extends SamalExpression {
 
 }
+class SamalLiteralCharExpression extends SamalExpression {
+    -val : String
+    @start_hx_ctor()
+        ret.mDatatype = Datatype.Char;
+    @end_hx
+}
 
 class SamalLiteralIntExpression extends SamalExpression {
     -val : Int32

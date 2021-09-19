@@ -15,6 +15,7 @@ enum UsertypeSubtype {
 enum Datatype {
     Int;
     Bool;
+    Char;
     List(baseType : Datatype);
     Unknown(name : String, templateParams : Array<Datatype>);
     Function(returnType : Datatype, params : Array<Datatype>);
@@ -101,9 +102,7 @@ class DatatypeHelpers {
                 return Datatype.Tuple(params.map(function(paramType) {
                     return complete(paramType, map);
                 }));
-            case Int:
-                return type;
-            case Bool:
+            case Int, Bool, Char:
                 return type;
             case Usertype(name, templateParams, subtype):
                 return Datatype.Usertype(name, templateParams.map(function(f) return complete(f, map)), subtype);
@@ -126,9 +125,7 @@ class DatatypeHelpers {
                 return !params.any(function(p) {
                     return !isComplete(p);
                 });
-            case Int:
-                return true;
-            case Bool:
+            case Int, Bool, Char:
                 return true;
             case Usertype(name, templateParams, subtype):
                 return !templateParams.any(function(p) {
@@ -142,6 +139,8 @@ class DatatypeHelpers {
                 return "int32_t";
             case Bool:
                 return "bool";
+            case Char:
+                return "char32_t";
             case List(base):
                 return "samalrt::List<" + toCppType(base) + ">*";
             case Function(returnType, params):
@@ -158,6 +157,8 @@ class DatatypeHelpers {
                 return "int";
             case Bool:
                 return "bool";
+            case Char:
+                return "char";
             case List(base):
                 return "[" + toCppType(base) + "]";
             case Usertype(name, [], subtype):
@@ -174,6 +175,8 @@ class DatatypeHelpers {
                 return "int_";
             case Bool:
                 return "bool_";
+            case Char:
+                return "char_";
             case List(base):
                 return "list_s" + toMangledName(base) + "e";
             case Function(returnType, params):
@@ -189,9 +192,7 @@ class DatatypeHelpers {
     }
     static public function requiresGC(type : Datatype) : Bool {
         switch(type) {
-            case Int:
-                return false;
-            case Bool:
+            case Int, Bool, Char:
                 return false;
             case List(_):
                 return true;
@@ -201,7 +202,7 @@ class DatatypeHelpers {
                 // TODO check if type actually needs GC
                 return true;
             case _:
-                throw new Exception("TODO requiresGC" + type);
+                throw new Exception("TODO requiresGC " + type);
         }
     }
     static public function toCppDefaultInitializationString(type : Datatype) : String {
@@ -210,6 +211,8 @@ class DatatypeHelpers {
                 return "0";
             case Bool:
                 return "false";
+            case Char:
+                return "0";
             case List(_):
                 return "{ 0 }";
             case Function(_, _):
@@ -231,6 +234,8 @@ class DatatypeHelpers {
                 return "static const samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Int};\n";
             case Bool:
                 return "static const samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Bool};\n";
+            case Char:
+                return "static const samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Char};\n";
             case List(base):
                 return toCppGCTypeDeclaration(base, alreadyDone) 
                     + "static const samalrt::Datatype " + typeStr +  "{samalrt::DatatypeCategory::List, &" + toCppGCTypeStr(base) + "};\n";
@@ -246,7 +251,7 @@ class DatatypeHelpers {
             case Usertype(name, params, Enum):
                 return "static samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Enum};\n";
             case _:
-                throw new Exception("TODO requiresGC " + type);
+                throw new Exception("TODO  " + type);
         }
         throw new Exception("TODO toCppGCTypeDeclaration" + type);
     }

@@ -105,7 +105,7 @@ enum Maybe<T> {
 fn decide() -> Maybe<int> {
     Maybe<int>::Some{v : 10}
 }
-fn main() -> int {
+fn mainFour() -> int {
     m = decide()
     match m {
         Some{v: v} -> {
@@ -113,4 +113,8 @@ fn main() -> int {
         }
         None{} -> 0
     }
+}
+
+fn main() -> char {
+    'ö'
 }

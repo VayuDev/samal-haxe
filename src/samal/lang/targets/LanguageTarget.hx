@@ -28,6 +28,7 @@ class SourceCreationContext {
 abstract class LanguageTarget {
 
     abstract public function getLiteralInt(value : Int) : String;
+    abstract public function getLiteralChar(value : String) : String;
     abstract public function getLiteralEmptyList() : String;
     function indent(ctx : SourceCreationContext) : String {
         return Util.createIndentStr(ctx.getIndent());

@@ -51,6 +51,9 @@ class CppTarget extends LanguageTarget {
     public function getLiteralInt(value : Int) : String {
         return "(int32_t) (" + Std.string(value) + "ll)";
     }
+    public function getLiteralChar(value : String) : String {
+        return Std.string(value.charCodeAt(0).sure());
+    }
     public function getLiteralEmptyList() : String {
         return "nullptr";
     }

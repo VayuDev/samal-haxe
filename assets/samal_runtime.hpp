@@ -8,6 +8,7 @@
 #include <cassert>
 #include <type_traits>
 #include <iostream>
+#include <uchar.h>
 
 namespace samalrt {
 
@@ -24,6 +25,7 @@ enum class DatatypeCategory {
     List,
     Int,
     Bool,
+    Char,
     Function,
     Struct,
     Enum
@@ -303,6 +305,7 @@ SamalString toSamalString(SamalContext& ctx, const std::string& str);
 SamalString toSamalString(SamalContext& ctx, const std::u32string& str);
 SamalString inspect(SamalContext& ctx, int32_t);
 SamalString inspect(SamalContext& ctx, bool);
+SamalString inspect(SamalContext& ctx, char32_t);
 
 template<typename T>
 SamalString inspect(SamalContext& ctx, List<T>* current) {

@@ -41,50 +41,51 @@ class SourceCodeRef {
 enum TokenType {
     Invalid;
     Unknown;
-    Plus;
-    Minus;
-    LCurly;
-    RCurly;
-    LParen;
-    RParen;
-    Identifier;
-    Equals;
-    Less;
-    More;
-    LessEqual;
-    MoreEqual;
-    LSquare;
-    RSquare;
-    NewLine;
+    At;
+    Bool;
+    Char;
+    CharLiteral;
     Colons;
     Comma;
-    At;
     Dollar;
-    Underscore;
-    ExclamationMark;
     Dot;
-    Star;
-    Slash;
-    RightArrow;
-    DoubleEquals;
-    NotEquals;
-    Integer;
-    Pipe;
-    FunctionChain;
-    StringLiteral;
-    CharLiteral;
-    If;
-    Fn;
-    Match;
-    Else;
-    Bool;
-    Int;
     DoubleAnd;
+    DoubleEquals;
     DoublePipe;
-    Module;
-    Struct;
-    Hashtag;
+    Else;
     Enum;
+    Equals;
+    ExclamationMark;
+    Fn;
+    FunctionChain;
+    Hashtag;
+    Identifier;
+    If;
+    Int;
+    Integer;
+    LCurly;
+    Less;
+    LessEqual;
+    LParen;
+    LSquare;
+    Match;
+    Minus;
+    Module;
+    More;
+    MoreEqual;
+    NewLine;
+    NotEquals;
+    Pipe;
+    Plus;
+    RCurly;
+    RightArrow;
+    RParen;
+    RSquare;
+    Slash;
+    Star;
+    StringLiteral;
+    Struct;
+    Underscore;
 }
 
 
@@ -242,6 +243,7 @@ class TokenGenerator {
         "else" => TokenType.Else,
         "bool" => TokenType.Bool,
         "int" => TokenType.Int,
+        "char" => TokenType.Char,
         "&&" => TokenType.DoubleAnd,
         "||" => TokenType.DoublePipe,
         "module" => TokenType.Module,
