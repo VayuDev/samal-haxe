@@ -350,6 +350,7 @@ class TokenGenerator {
                 }
                 advance();
                 tokens.push(new Token(new SourceCodeRef(lineStart, line, columnStart, column, indexStart, index, ch), TokenType.CharLiteral, skippedSpaces));
+                continue;
             }
             advance();
             tokens.push(new Token(makeSourceRef(), TokenType.Unknown, skippedSpaces));
