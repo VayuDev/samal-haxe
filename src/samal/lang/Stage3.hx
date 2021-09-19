@@ -109,6 +109,10 @@ class Stage3 {
                     op = CppBinaryExprOp.Add;
                 case Sub:
                     op = CppBinaryExprOp.Sub;
+                case Mul:
+                    op = CppBinaryExprOp.Mul;
+                case Div:
+                    op = CppBinaryExprOp.Div;
                 case Less:
                     op = CppBinaryExprOp.Less;
                 case More:

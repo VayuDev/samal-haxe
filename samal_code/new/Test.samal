@@ -108,7 +108,9 @@ fn decide() -> Maybe<int> {
 fn main() -> int {
     m = decide()
     match m {
-        Some{v: v} -> v
+        Some{v: v} -> {
+            v * 2
+        }
         None{} -> 0
     }
 }

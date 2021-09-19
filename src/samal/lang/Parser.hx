@@ -223,6 +223,9 @@ class Parser {
         ], [
             TokenType.Plus => SamalBinaryExpressionOp.Add,
             TokenType.Minus => SamalBinaryExpressionOp.Sub
+        ], [
+            TokenType.Star => SamalBinaryExpressionOp.Mul,
+            TokenType.Slash => SamalBinaryExpressionOp.Div
         ]]);
     }
 
