@@ -241,28 +241,24 @@ Options:');
           transpileAndWriteToDisk(NormalJustTranspile);
         case "build":
           final result = transpileAndWriteToDisk(DisallowStdoutForCpp);
-          switch(result.transpileResult.target) {
-            case CppFiles:
-              final compiler = if(flags.exists("c++-compiler")) {
-                flags.get("c++-compiler").sure();
-              } else {
-                "g++";
+          if(result.transpileResult.target.match(CppFiles)) {
+            final compiler = if(flags.exists("c++-compiler")) {
+              flags.get("c++-compiler").sure();
+            } else {
+              "g++";
+            }
+            if(!flags.exists("output")) {
+              printHelpAndExit(11, "You must specify an output file path to store the executable!");
+            }
+            Sys.command(compiler, 
+              ["-O0", "-g", "-std=c++11", "-o", flags.get("output").sure()]
+              .concat(result.transpileResult.generatedFiles.filter(function(f) return f.name.substr(-4) == ".cpp").map(function(f) return result.cppResultDir + "/" + f.name)));
+            if(result.cppResultDirIsGenerated) {
+              for(f in FileSystem.readDirectory(result.cppResultDir)) {
+                FileSystem.deleteFile(result.cppResultDir + "/" + f);
               }
-              if(!flags.exists("output")) {
-                printHelpAndExit(11, "You must specify an output file path to store the executable!");
-              }
-              Sys.command(compiler, 
-                ["-O0", "-g", "-std=c++11", "-o", flags.get("output").sure()]
-                .concat(result.transpileResult.generatedFiles.filter(function(f) return f.name.substr(-4) == ".cpp").map(function(f) return result.cppResultDir + "/" + f.name)));
-              if(result.cppResultDirIsGenerated) {
-                for(f in FileSystem.readDirectory(result.cppResultDir)) {
-                  FileSystem.deleteFile(result.cppResultDir + "/" + f);
-                }
-                FileSystem.deleteDirectory(result.cppResultDir);
-              }
-            case JSSingleFile:
-              throw new Exception("TODO");
-            default:
+              FileSystem.deleteDirectory(result.cppResultDir);
+            }
           }
         case "run":
 
