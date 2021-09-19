@@ -278,6 +278,25 @@ class SamalScopeExpression extends SamalExpression {
     }
     @end_hx
 }
+class SamalSimpleEnumIsVariant extends SamalExpression {
+    -enumExpr : SamalExpression
+    -variantName : String
+    -variantIndex : Int
+}
+
+class SamalSimpleFetchEnumField extends SamalExpression {
+    -enumExpr : SamalExpression
+    -variantName : String
+    -variantIndex : Int
+    -fieldName : String
+    -fieldIndex : Int
+}
+
+class SamalSimpleIfExpression extends SamalExpression {
+    -condition : SamalExpression
+    -mainBody : SamalScope
+    -elseBody : SamalScope
+}
 
 class SamalSimpleListCreateEmpty extends SamalExpression {
 }
@@ -302,12 +321,6 @@ class SamalSimpleListPrepend extends SamalExpression {
     -list : SamalExpression
 }
 
-class SamalSimpleIfExpression extends SamalExpression {
-    -condition : SamalExpression
-    -mainBody : SamalScope
-    -elseBody : SamalScope
-}
-
 class SamalSimpleTailCallSelf extends SamalLineExpression {
     -parameters : Array<SamalSimpleTailCallSelfParam>
 }
@@ -318,6 +331,16 @@ class SamalShape extends ASTNode {
 
 class SamalShapeEmptyList extends SamalShape {
 
+}
+
+class SamalShapeEnumVariantField {
+    -fieldName : String
+    -value : SamalShape
+}
+
+class SamalShapeEnumVariant extends SamalShape {
+    -variant : String
+    -fields : Array<SamalShapeEnumVariantField>
 }
 
 class SamalShapeSplitList extends SamalShape {

@@ -93,14 +93,31 @@ class Stage2 {
         mProgram = prog;
     }
 
-    function traverseMatchShape(astNode : SamalShape, toMatchDatatype : Datatype) {
-        // TODO check if match is exhaustive
-        if(Std.downcast(astNode, SamalShapeVariable) != null) {
-            var node = Std.downcast(astNode, SamalShapeVariable);
-            if (mScopeStack.first().sure().exists(node.getVariableName())) {
-                throw new Exception(node.errorInfo() + " Variable " + node.getVariableName() + " assigned twice.");
+    static function findDatatypeAndIndexOfEnumFieldFromEnumVariant(errorNode : ASTNode, fieldName : String, enumVariant : EnumDeclVariant) : {datatype: Datatype, index: Int} {
+        for(index => declaredField in enumVariant.getFields()) {
+            if(fieldName == declaredField.getFieldName()) {
+                return {datatype: declaredField.getDatatype(), index: index};
             }
-            mScopeStack.first().sure().set(node.getVariableName(), new VarDeclaration(node.getVariableName(), toMatchDatatype));
+        }
+        throw new Exception(errorNode.errorInfo() + " Can't find enum field " + fieldName + " in " + enumVariant.getFields());
+        
+    }
+
+    function traverseMatchShape(astNode : SamalShape, toMatchDatatype : Datatype) : Void {
+        // TODO check if match is exhaustive
+        if(Std.downcast(astNode, SamalShapeEnumVariant) != null) {
+            final node = Std.downcast(astNode, SamalShapeEnumVariant);
+            if(!toMatchDatatype.match(Usertype(_, _, Enum))) {
+                throw new Exception(node.errorInfo() + " Unable to match non-enum type as an enum variant: " + toMatchDatatype);
+            }
+            final typeDeclaration = mProgram.findDatatypeDeclaration(toMatchDatatype);
+            final typeDeclAsEnumDecl = cast(typeDeclaration, SamalEnumDeclaration);
+            final variant = Util.findEnumVariant(typeDeclAsEnumDecl.getVariants(), node.getVariant()).variant;
+            
+            for(usedField in node.getFields()) {
+                traverseMatchShape(usedField.getValue(), findDatatypeAndIndexOfEnumFieldFromEnumVariant(node, usedField.getFieldName(), variant).datatype);
+            }
+
         } else if(Std.downcast(astNode, SamalShapeSplitList) != null) {
             var node = Std.downcast(astNode, SamalShapeSplitList);
             if(!toMatchDatatype.match(List(_))) {
@@ -108,6 +125,13 @@ class Stage2 {
             }
             traverseMatchShape(node.getHead(), toMatchDatatype.getBaseType());
             traverseMatchShape(node.getTail(), toMatchDatatype);
+        } else if(Std.downcast(astNode, SamalShapeVariable) != null) {
+            var node = Std.downcast(astNode, SamalShapeVariable);
+            if (mScopeStack.first().sure().exists(node.getVariableName())) {
+                throw new Exception(node.errorInfo() + " Variable " + node.getVariableName() + " assigned twice.");
+            }
+            mScopeStack.first().sure().set(node.getVariableName(), new VarDeclaration(node.getVariableName(), toMatchDatatype));
+
         }
     }
 
@@ -519,7 +543,7 @@ class Stage2 {
         return ret;
     }
 
-    function replaceMatchShape(ctx : MatchShapeReplacementContext, matchShape : SamalShape, currentVarName : String, currentVarDatatype : Datatype, returnType : Datatype) {
+    function replaceMatchShape(ctx : MatchShapeReplacementContext, matchShape : SamalShape, currentVarName : String, currentVarDatatype : Datatype, returnType : Datatype) : Void {
 
         var loadCurrentVar = function() {
             return SamalLoadIdentifierExpression.createFull(matchShape.getSourceRef(), currentVarDatatype, new IdentifierWithTemplate(currentVarName, []));
@@ -549,10 +573,43 @@ class Stage2 {
                         loadCurrentVar());
             
             ctx.getCurrentBody().getStatements().push(assignment);
+
         } else if(Std.downcast(matchShape, SamalShapeEmptyList) != null) {
-            var node = Std.downcast(matchShape, SamalShapeEmptyList);
+            var node = cast(matchShape, SamalShapeEmptyList);
             generateIfElse(SamalSimpleListIsEmpty.create(node.getSourceRef(), loadCurrentVar()));
-            
+
+        } else if(Std.downcast(matchShape, SamalShapeEnumVariant) != null) {
+            final node = cast(matchShape, SamalShapeEnumVariant);
+            final enumDecl = cast(mProgram.findDatatypeDeclaration(currentVarDatatype), SamalEnumDeclaration);
+            final variantDecl = Util.findEnumVariant(enumDecl.getVariants(), node.getVariant());
+            generateIfElse(SamalSimpleEnumIsVariant.createFull(
+                node.getSourceRef(),
+                Bool,
+                loadCurrentVar(),
+                node.getVariant(),
+                variantDecl.index
+            ));
+            for(field in node.getFields()) {
+                final declaredFieldInfo = findDatatypeAndIndexOfEnumFieldFromEnumVariant(node, field.getFieldName(), variantDecl.variant);
+                final currentBody = ctx.getCurrentBody();
+                final assignedFieldName = genTempVarName("enum_field");
+                currentBody.getStatements().push(SamalAssignmentExpression.createFull(
+                    node.getSourceRef(),
+                    declaredFieldInfo.datatype,
+                    assignedFieldName,
+                    SamalSimpleFetchEnumField.createFull(
+                        field.getValue().getSourceRef(), 
+                        declaredFieldInfo.datatype, 
+                        loadCurrentVar(), 
+                        node.getVariant(), 
+                        variantDecl.index,
+                        field.getFieldName(),
+                        declaredFieldInfo.index
+                    )
+                ));
+
+                replaceMatchShape(ctx, field.getValue(), assignedFieldName, declaredFieldInfo.datatype, returnType);
+            }
 
         } else if(Std.downcast(matchShape, SamalShapeSplitList) != null) {
             var node = Std.downcast(matchShape, SamalShapeSplitList);
@@ -591,7 +648,7 @@ class Stage2 {
         return astNode;
     }
 
-    function genTempVarName(baseName : String) {
+    function genTempVarName(baseName : String) : String {
         mTempVarNameCounter += 1;
         return baseName + "$$" + mTempVarNameCounter;
     }

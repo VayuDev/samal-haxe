@@ -282,6 +282,12 @@ class CppTarget extends LanguageTarget {
         final paramsStr = node.getParams().map(function(p) return "." + p.name + " = " + p.value).join(", ");
         return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = " + node.getDatatype().getUsertypeMangledName() + "{" + paramsStr + "}" + getTrackerString(node);
     }
+    public function makeEnumIsVariantStatement(ctx : SourceCreationContext, node : CppEnumIsVariantStatement) : String {
+        return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = " + node.getEnumExpr() + ".variant == " + node.getVariantIndex() + getTrackerString(node);
+    }
+    public function makeFetchEnumFieldStatement(ctx : SourceCreationContext, node : CppFetchEnumFieldStatement) : String {
+        return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = " + node.getEnumExpr() + "." + node.getVariantName() + "." + node.getFieldName();
+    }
     public function makeTailCallSelf(ctx : SourceCreationContext, node : CppTailCallSelf) : String {
         var ret = "";
         for(param in node.getParams()) {

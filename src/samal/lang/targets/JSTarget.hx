@@ -155,6 +155,12 @@ class JSTarget extends LanguageTarget {
         final paramsStr = node.getParams().map(function(p) return p.value).join(", ");
         return indent(ctx) + "let " + node.getVarName() + " = new " + node.getDatatype().getUsertypeMangledName() + "(" + paramsStr + ")";
     }
+    public function makeEnumIsVariantStatement(ctx : SourceCreationContext, node : CppEnumIsVariantStatement) : String {
+        return indent(ctx);
+    }
+    public function makeFetchEnumFieldStatement(ctx : SourceCreationContext, node : CppFetchEnumFieldStatement) : String {
+        return indent(ctx);
+    }
     public function makeTailCallSelf(ctx : SourceCreationContext, node : CppTailCallSelf) : String {
         var ret = "";
         for(param in node.getParams()) {

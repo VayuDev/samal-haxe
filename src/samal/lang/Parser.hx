@@ -267,8 +267,17 @@ class Parser {
         startNode();
         switch(current().getType()) {
             case Identifier:
-                var varName = current().getSubstr();
-                eat(Identifier);
+                final varName = eat(Identifier).getSubstr();
+                if(current().getType() == LCurly) {
+                    // enum variant match
+                    final fields = parseList(LCurly, Comma, RCurly, function() {
+                        final fieldName = eat(Identifier).getSubstr();
+                        eat(Colons);
+                        final value = parseMatchShape();
+                        return SamalShapeEnumVariantField.create(fieldName, value);
+                    });
+                    return SamalShapeEnumVariant.create(makeSourceRef(), varName, fields);
+                }
                 return SamalShapeVariable.create(makeSourceRef(), varName);
             case LSquare:
                 eat(LSquare);

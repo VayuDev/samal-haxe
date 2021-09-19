@@ -40,19 +40,21 @@ abstract class LanguageTarget {
     abstract public function makeFunctionDeclaration(ctx : SourceCreationContext, node : CppFunctionDeclaration) : String;
     abstract public function makeEnumDeclaration(ctx : SourceCreationContext, node : CppEnumDeclaration) : String;
     abstract public function makeStructDeclaration(ctx : SourceCreationContext, node : CppStructDeclaration) : String;
-    abstract public function makeScopeStatement(ctx : SourceCreationContext, node : CppScopeStatement) : String;
-    abstract public function makeBinaryExprStatement(ctx : SourceCreationContext, node : CppBinaryExprStatement) : String;
-    abstract public function makeUnaryExprStatement(ctx : SourceCreationContext, node : CppUnaryExprStatement) : String;
-    abstract public function makeUnreachable(ctx : SourceCreationContext, node : CppUnreachable) : String;
     abstract public function makeAssignmentStatement(ctx : SourceCreationContext, node : CppAssignmentStatement) : String;
-    abstract public function makeReturnStatement(ctx : SourceCreationContext, node : CppReturnStatement) : String;
-    abstract public function makeFunctionCallStatement(ctx : SourceCreationContext, node : CppFunctionCallStatement) : String;
-    abstract public function makeIfStatement(ctx : SourceCreationContext, node : CppIfStatement) : String;
-    abstract public function makeListPrependStatement(ctx : SourceCreationContext, node : CppListPrependStatement) : String;
+    abstract public function makeBinaryExprStatement(ctx : SourceCreationContext, node : CppBinaryExprStatement) : String;
     abstract public function makeCreateEnumStatement(ctx : SourceCreationContext, node : CppCreateEnumStatement) : String;
     abstract public function makeCreateLambdaStatement(ctx : SourceCreationContext, node : CppCreateLambdaStatement) : String;
     abstract public function makeCreateStructStatement(ctx : SourceCreationContext, node : CppCreateStructStatement) : String;
+    abstract public function makeEnumIsVariantStatement(ctx : SourceCreationContext, node : CppEnumIsVariantStatement) : String;
+    abstract public function makeFetchEnumFieldStatement(ctx : SourceCreationContext, node : CppFetchEnumFieldStatement) : String;
+    abstract public function makeFunctionCallStatement(ctx : SourceCreationContext, node : CppFunctionCallStatement) : String;
+    abstract public function makeIfStatement(ctx : SourceCreationContext, node : CppIfStatement) : String;
+    abstract public function makeListPrependStatement(ctx : SourceCreationContext, node : CppListPrependStatement) : String;
+    abstract public function makeReturnStatement(ctx : SourceCreationContext, node : CppReturnStatement) : String;
+    abstract public function makeScopeStatement(ctx : SourceCreationContext, node : CppScopeStatement) : String;
     abstract public function makeTailCallSelf(ctx : SourceCreationContext, node : CppTailCallSelf) : String;
+    abstract public function makeUnaryExprStatement(ctx : SourceCreationContext, node : CppUnaryExprStatement) : String;
+    abstract public function makeUnreachable(ctx : SourceCreationContext, node : CppUnreachable) : String;
 }
 
 

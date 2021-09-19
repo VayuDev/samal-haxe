@@ -232,6 +232,31 @@ class Stage3 {
             
             return resultDeclaration.getVarName();
 
+        } else if(Std.downcast(astNode, SamalSimpleEnumIsVariant) != null) {
+            final node = cast(astNode, SamalSimpleEnumIsVariant);
+            final varName = genTempVarName("enum_is_variant");
+            final enumVarName = traverse(node.getEnumExpr());
+            addStatement(new CppEnumIsVariantStatement(node.getSourceRef(), Bool, varName, enumVarName, node.getVariantName(), node.getVariantIndex()));
+
+            return varName;
+            
+        } else if(Std.downcast(astNode, SamalSimpleFetchEnumField) != null) {
+            final node = cast(astNode, SamalSimpleFetchEnumField);
+            final varName = genTempVarName("enum_fetched_field");
+            final enumVarName = traverse(node.getEnumExpr());
+            addStatement(new CppFetchEnumFieldStatement(
+                node.getSourceRef(), 
+                node.getDatatype().sure(), 
+                varName, 
+                enumVarName, 
+                node.getVariantName(), 
+                node.getVariantIndex(), 
+                node.getFieldName(), 
+                node.getFieldIndex()
+            ));
+
+            return varName;
+            
         } else if(Std.downcast(astNode, SamalSimpleListCreateEmpty) != null) {
             var node = Std.downcast(astNode, SamalSimpleListCreateEmpty);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());

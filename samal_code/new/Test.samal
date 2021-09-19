@@ -107,5 +107,9 @@ fn decide() -> Maybe<int> {
 }
 fn main() -> Point<int> {
     m = decide()
+    match m {
+        Some{v: v} -> v
+        None{} -> 0
+    }
     Point<int>{y : 5, x : 10}
 }

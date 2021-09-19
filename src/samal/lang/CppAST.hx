@@ -283,6 +283,64 @@ class CppUnaryExprStatement extends CppStatement {
     }
 }
 
+class CppEnumIsVariantStatement extends CppStatement {
+    final mEnumExpr : String;
+    final mVariantName : String;
+    final mVariantIndex : Int;
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, resultVarName : String, enumExpr : String, variantName : String, variantIndex : Int) {
+        super(sourceRef, datatype, resultVarName);
+        mEnumExpr = enumExpr;
+        mVariantName = variantName;
+        mVariantIndex = variantIndex;
+    }
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeEnumIsVariantStatement(ctx, this);
+    }
+    public function getEnumExpr() {
+        return mEnumExpr;
+    }
+    public function getVariantName() {
+        return mVariantName;
+    }
+    public function getVariantIndex() {
+        return mVariantIndex;
+    }
+}
+
+class CppFetchEnumFieldStatement extends CppStatement {
+    final mEnumExpr : String;
+    final mVariantName : String;
+    final mVariantIndex : Int;
+    final mFieldName : String;
+    final mFieldIndex : Int;
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, resultVarName : String, enumExpr : String, variantName : String, variantIndex : Int, fieldName : String, fieldIndex : Int) {
+        super(sourceRef, datatype, resultVarName);
+        mEnumExpr = enumExpr;
+        mVariantName = variantName;
+        mVariantIndex = variantIndex;
+        mFieldName = fieldName;
+        mFieldIndex = fieldIndex;
+    }
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeFetchEnumFieldStatement(ctx, this);
+    }
+    public function getEnumExpr() {
+        return mEnumExpr;
+    }
+    public function getVariantName() {
+        return mVariantName;
+    }
+    public function getVariantIndex() {
+        return mVariantIndex;
+    }
+    public function getFieldName() {
+        return mFieldName;
+    }
+    public function getFieldIndex() {
+        return mFieldIndex;
+    }
+}
+
 class CppUnreachable extends CppStatement {
     public function new(sourceRef : SourceCodeRef) {
         super(sourceRef, Datatype.Bool, "");
