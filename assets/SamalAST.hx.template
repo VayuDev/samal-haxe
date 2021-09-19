@@ -162,6 +162,8 @@ class SamalAssignmentExpression extends SamalExpression {
 enum SamalBinaryExpressionOp {
     Add;
     Sub;
+    Mul;
+    Div;
     FunctionChain;
     Less;
     More;
