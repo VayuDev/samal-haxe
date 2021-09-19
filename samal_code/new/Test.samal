@@ -105,11 +105,10 @@ enum Maybe<T> {
 fn decide() -> Maybe<int> {
     Maybe<int>::Some{v : 10}
 }
-fn main() -> Point<int> {
+fn main() -> int {
     m = decide()
     match m {
         Some{v: v} -> v
         None{} -> 0
     }
-    Point<int>{y : 5, x : 10}
 }

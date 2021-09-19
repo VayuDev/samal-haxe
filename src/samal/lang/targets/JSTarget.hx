@@ -156,10 +156,10 @@ class JSTarget extends LanguageTarget {
         return indent(ctx) + "let " + node.getVarName() + " = new " + node.getDatatype().getUsertypeMangledName() + "(" + paramsStr + ")";
     }
     public function makeEnumIsVariantStatement(ctx : SourceCreationContext, node : CppEnumIsVariantStatement) : String {
-        return indent(ctx);
+        return indent(ctx) + "let " + node.getVarName() + " = " + node.getEnumExpr() + ".variant == " + node.getVariantIndex();
     }
     public function makeFetchEnumFieldStatement(ctx : SourceCreationContext, node : CppFetchEnumFieldStatement) : String {
-        return indent(ctx);
+        return indent(ctx) + "let " + node.getVarName() + " = " + node.getEnumExpr() + ".m" + node.getFieldIndex();
     }
     public function makeTailCallSelf(ctx : SourceCreationContext, node : CppTailCallSelf) : String {
         var ret = "";
