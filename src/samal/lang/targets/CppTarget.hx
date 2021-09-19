@@ -144,7 +144,7 @@ class CppTarget extends LanguageTarget {
         reversedFields.reverse();
 
         return 
-            "#pragma pack(1)\n"
+            "#pragma pack(push, 1)\n"
             + "struct " + node.getDatatype().toCppType() + " {\n"
             + node.getFields().map(function(f) {
                 return " " + f.getDatatype().toCppType() + " " + f.getFieldName() + ";\n";
@@ -160,7 +160,8 @@ class CppTarget extends LanguageTarget {
             + ' ret = samalrt::listConcat(ctx, samalrt::toSamalString(ctx, "${node.getDatatype().toSamalType()}{"), ret);\n'
             + " return ret;\n"
             + "}\n"
-            + "}\n";
+            + "}\n"
+            + "#pragma pack(pop)\n";
     }
     public function makeEnumDeclaration(ctx : SourceCreationContext, node : CppEnumDeclaration) : String {
         final cppCtx = cast(ctx, CppContext);
