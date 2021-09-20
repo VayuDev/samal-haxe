@@ -465,7 +465,7 @@ class Stage2 {
                     node.getSourceRef(),
                     node.getDatatype().sure(),
                     currentChild, 
-                    SamalCreateListExpression.create(node.getSourceRef(), node.getChildren(), node.getDatatype().sure().getBaseType()));
+                    SamalCreateListExpression.createFull(node.getSourceRef(), node.getDatatype().sure(), node.getChildren()));
 
         }  else if(Std.downcast(astNode, SamalBinaryExpression) != null) {
             var node = Std.downcast(astNode, SamalBinaryExpression);

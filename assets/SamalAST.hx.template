@@ -199,11 +199,6 @@ class SamalCreateLambdaExpression extends SamalExpression {
 
 class SamalCreateListExpression extends SamalExpression {
     -children : Array<SamalExpression>
-    @start_hx_ctor(baseType : Null<Datatype>)
-        if(baseType != null) {
-            ret.mDatatype = Datatype.List(baseType.sure());
-        }
-    @end_hx
 }
 
 class SamalCreateStructExpression extends SamalExpression {

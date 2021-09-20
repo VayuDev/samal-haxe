@@ -371,10 +371,10 @@ class Parser {
                     eat(Colons);
                     var type = parseDatatype();
                     eat(RSquare);
-                    return SamalCreateListExpression.create(makeSourceRef(), [], type);
+                    return SamalCreateListExpression.createFull(makeSourceRef(), List(type), []);
                 }
                 var expressions = parseExpressionList(LSquare, RSquare);
-                return SamalCreateListExpression.create(makeSourceRef(), expressions, null);
+                return SamalCreateListExpression.create(makeSourceRef(), expressions);
 
             case Match:
                 startNode();
@@ -408,6 +408,15 @@ class Parser {
                 startNode();
                 final ch = eat(CharLiteral).getSubstr();
                 return SamalLiteralCharExpression.create(makeSourceRef(), ch);
+            
+            case StringLiteral:
+                startNode();
+                final str = eat(StringLiteral).getSubstr();
+                final listElements : Array<SamalExpression> = [];
+                for(i in 0...str.length) {
+                    listElements.push(SamalLiteralCharExpression.create(makeSourceRefNonDestructive(), str.charAt(i)));
+                }
+                return SamalCreateListExpression.createFull(makeSourceRef(), List(Char), listElements);
 
             case _:
                 throw new Exception(current().info() + " Expected expression");

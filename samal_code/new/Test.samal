@@ -115,6 +115,6 @@ fn mainFour() -> int {
     }
 }
 
-fn main() -> char {
-    'ö'
+fn main() -> [char] {
+    "Hällö"
 }
