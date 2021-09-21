@@ -13,6 +13,9 @@ import samal.lang.Util.NullTools;
 using samal.lang.Util.NullTools;
 using samal.lang.Datatype.DatatypeHelpers;
 
+using samal.lang.Stage3TraverseReturnHelpers;
+
+
 class Stage3 {
     var mSProgram : SamalProgram;
     var mCProgram : CppProgram;
@@ -49,7 +52,7 @@ class Stage3 {
         return stmt;
     }
 
-    function traverse(astNode : SamalASTNode) : String {
+    function traverse(astNode : SamalASTNode) : Stage3TraverseReturn {
         if(Std.downcast(astNode, SamalFunctionDeclaration) != null) {
             var node = Std.downcast(astNode, SamalFunctionDeclaration);
             final functionDatatype = addUsedDatatype(node.getDatatype());
@@ -58,7 +61,7 @@ class Stage3 {
 
             var lastStatementResult = "";
             for(stmt in node.getBody().getStatements()) {
-                lastStatementResult = traverse(stmt);
+                lastStatementResult = traverse(stmt).str();
             }
             if(lastStatementResult != "") {
                 scope.addStatement(new CppReturnStatement(node.getSourceRef(), DatatypeHelpers.getReturnType(functionDatatype), lastStatementResult));
@@ -86,7 +89,7 @@ class Stage3 {
             mScopeStack.add(scope.getScope());
             var lastStatementResult = "";
             for(stmt in node.getScope().getStatements()) {
-                lastStatementResult = traverse(stmt);
+                lastStatementResult = traverse(stmt).str();
             }
             if(lastStatementResult != "") {
                 // if it's not after an unreachable node
@@ -96,12 +99,12 @@ class Stage3 {
 
             addStatement(scope);
 
-            return scope.getVarName();
+            return Statement(scope);
         } else if(Std.downcast(astNode, SamalBinaryExpression) != null) {
             var node = Std.downcast(astNode, SamalBinaryExpression);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
-            final lhsVarName = traverse(node.getLhs());
-            final rhsVarName = traverse(node.getRhs());
+            final lhsVarName = traverse(node.getLhs()).str();
+            final rhsVarName = traverse(node.getRhs()).str();
             
             var op : CppBinaryExprOp;
             switch(node.getOp()) {
@@ -126,12 +129,12 @@ class Stage3 {
                     throw new Exception("TODO! " + node.dump());
             }
             var res = addStatement(new CppBinaryExprStatement(node.getSourceRef(), nodeDatatype, genTempVarName("binary_expr"), lhsVarName, op, rhsVarName));
-            
-            return res.getVarName();
+            return Statement(res);
+
         } else if(Std.downcast(astNode, SamalUnaryExpression) != null) {
             var node = Std.downcast(astNode, SamalUnaryExpression);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
-            var exprVarName = traverse(node.getExpr());
+            var exprVarName = traverse(node.getExpr()).str();
             var op : CppUnaryOp;
             switch(node.getOp()) {
                 case Not:
@@ -140,80 +143,80 @@ class Stage3 {
                     throw new Exception("TODO! " + node.dump());
             }
             var res = addStatement(new CppUnaryExprStatement(node.getSourceRef(), nodeDatatype, genTempVarName("unary_expr"), exprVarName, op));
-            return res.getVarName();
+            return Statement(res);
 
         } else if(Std.downcast(astNode, SamalSimpleListIsEmpty) != null) {
             var node = Std.downcast(astNode, SamalSimpleListIsEmpty);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
-            var exprVarName = traverse(node.getList());
+            var exprVarName = traverse(node.getList()).str();
             var res = addStatement(new CppUnaryExprStatement(node.getSourceRef(), nodeDatatype, genTempVarName("list_is_empty"), exprVarName, ListIsEmpty));
-            return res.getVarName();
+            return Statement(res);
 
         } else if(Std.downcast(astNode, SamalSimpleListGetHead) != null) {
             var node = Std.downcast(astNode, SamalSimpleListGetHead);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
-            var exprVarName = traverse(node.getList());
+            var exprVarName = traverse(node.getList()).str();
             var res = addStatement(new CppUnaryExprStatement(node.getSourceRef(), nodeDatatype, genTempVarName("list_get_head"), exprVarName, ListGetHead));
-            return res.getVarName();
+            return Statement(res);
 
         } else if(Std.downcast(astNode, SamalSimpleListGetTail) != null) {
             var node = Std.downcast(astNode, SamalSimpleListGetTail);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
-            var exprVarName = traverse(node.getList());
+            var exprVarName = traverse(node.getList()).str();
             var res = addStatement(new CppUnaryExprStatement(node.getSourceRef(), nodeDatatype, genTempVarName("list_get_tail"), exprVarName, ListGetTail));
-            return res.getVarName();
+            return Statement(res);
 
         } else if(Std.downcast(astNode, SamalLiteralIntExpression) != null) {
             var node = Std.downcast(astNode, SamalLiteralIntExpression);
-            return mTarget.getLiteralInt(node.getVal());
+            return Literal(mTarget.getLiteralInt(node.getVal()));
 
         } else if(Std.downcast(astNode, SamalLiteralCharExpression) != null) {
             var node = Std.downcast(astNode, SamalLiteralCharExpression);
-            return mTarget.getLiteralChar(node.getVal());
+            return Literal(mTarget.getLiteralChar(node.getVal()));
 
         } else if(Std.downcast(astNode, SamalAssignmentExpression) != null) {
             var node = Std.downcast(astNode, SamalAssignmentExpression);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
             
-            var rhsVarName = traverse(node.getRhs());
+            var rhsVarName = traverse(node.getRhs()).str();
 
             addStatement(new CppAssignmentStatement(node.getSourceRef(), nodeDatatype, node.getIdentifier(), rhsVarName, CppAssignmentType.DeclareAndAssign));
-            return node.getIdentifier();
+            return Literal(node.getIdentifier());
 
         } else if(Std.downcast(astNode, SamalLoadIdentifierExpression) != null) {
             var node = Std.downcast(astNode, SamalLoadIdentifierExpression);
-            return node.getIdentifier().mangled();
+            return Literal(node.getIdentifier().mangled());
+
         } else if(Std.downcast(astNode, SamalFunctionCallExpression) != null) {
             var node = Std.downcast(astNode, SamalFunctionCallExpression);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
-            var functionName = traverse(node.getFunction());
+            var functionName = traverse(node.getFunction()).str();
 
-            var params = [];
+            var params : Array<String> = [];
             for(p in node.getParams()) {
-                params.push(traverse(p));
+                params.push(traverse(p).str());
             }
-            var destName = genTempVarName("function_result");
-            addStatement(new CppFunctionCallStatement(node.getSourceRef(), nodeDatatype, destName, functionName, params));
+            final newNode = addStatement(new CppFunctionCallStatement(node.getSourceRef(), nodeDatatype, genTempVarName("function_result"), functionName, params));
 
-            return destName;
+            return Statement(newNode);
         
         } else if(Std.downcast(astNode, SamalSimpleIfExpression) != null) {
             var node = Std.downcast(astNode, SamalSimpleIfExpression);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
 
             final returnVarnmae = genTempVarName("if_result");
-            var resultDeclaration = addStatement(new CppAssignmentStatement(node.getSourceRef(), nodeDatatype, returnVarnmae, "", CppAssignmentType.JustDeclare));
+            final resultDeclaration = addStatement(new CppAssignmentStatement(node.getSourceRef(), nodeDatatype, returnVarnmae, "", CppAssignmentType.JustDeclare));
 
-            var umbrellaScope = new CppScopeStatement(node.getSourceRef(), nodeDatatype, returnVarnmae);
+            final umbrellaScope = new CppScopeStatement(node.getSourceRef(), nodeDatatype, returnVarnmae);
             mScopeStack.add(umbrellaScope.getScope());
 
-            var conditionVarName = traverse(node.getCondition());
+            final conditionVarName = traverse(node.getCondition()).str();
 
             var mainScope = new CppScopeNode(node.getSourceRef());
             mScopeStack.add(mainScope);
             var lastStatementResult = "";
             for(stmt in node.getMainBody().getStatements()) {
-                lastStatementResult = traverse(stmt);
+                lastStatementResult = traverse(stmt).str();
             }
             if(lastStatementResult != "") {
                 // if it's not after an unreachable point
@@ -225,7 +228,7 @@ class Stage3 {
             mScopeStack.add(elseScope);
             lastStatementResult = "";
             for(stmt in node.getElseBody().getStatements()) {
-                lastStatementResult = traverse(stmt);
+                lastStatementResult = traverse(stmt).str();
             }
             if(lastStatementResult != "") {
                 // if it's not after an unreachable point
@@ -238,21 +241,19 @@ class Stage3 {
             mScopeStack.pop();
             addStatement(umbrellaScope);
             
-            return resultDeclaration.getVarName();
+            return Statement(resultDeclaration);
 
         } else if(Std.downcast(astNode, SamalSimpleEnumIsVariant) != null) {
             final node = cast(astNode, SamalSimpleEnumIsVariant);
-            final varName = genTempVarName("enum_is_variant");
-            final enumVarName = traverse(node.getEnumExpr());
-            addStatement(new CppEnumIsVariantStatement(node.getSourceRef(), Bool, varName, enumVarName, node.getVariantName(), node.getVariantIndex()));
-
-            return varName;
+            final enumVarName = traverse(node.getEnumExpr()).str();
+            final newNode = addStatement(new CppEnumIsVariantStatement(node.getSourceRef(), Bool, genTempVarName("enum_is_variant"), enumVarName, node.getVariantName(), node.getVariantIndex()));
+            return Statement(newNode);
             
         } else if(Std.downcast(astNode, SamalSimpleFetchEnumField) != null) {
             final node = cast(astNode, SamalSimpleFetchEnumField);
             final varName = genTempVarName("enum_fetched_field");
-            final enumVarName = traverse(node.getEnumExpr());
-            addStatement(new CppFetchEnumFieldStatement(
+            final enumVarName = traverse(node.getEnumExpr()).str();
+            final newNode = addStatement(new CppFetchEnumFieldStatement(
                 node.getSourceRef(), 
                 node.getDatatype().sure(), 
                 varName, 
@@ -263,27 +264,26 @@ class Stage3 {
                 node.getFieldIndex()
             ));
 
-            return varName;
+            return Statement(newNode);
             
         } else if(Std.downcast(astNode, SamalSimpleListCreateEmpty) != null) {
             var node = Std.downcast(astNode, SamalSimpleListCreateEmpty);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
-            return mTarget.getLiteralEmptyList();
+            return Literal(mTarget.getLiteralEmptyList());
 
         } else if(Std.downcast(astNode, SamalSimpleListPrepend) != null) {
-            var node = Std.downcast(astNode, SamalSimpleListPrepend);
+            final node = Std.downcast(astNode, SamalSimpleListPrepend);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
             
-            var valueVarName = traverse(node.getValue());
-            var listVarName = traverse(node.getList());
+            final valueVarName = traverse(node.getValue()).str();
+            final listVarName = traverse(node.getList()).str();
 
-            var varName = genTempVarName("list_prepend");
-            addStatement(new CppListPrependStatement(node.getSourceRef(), nodeDatatype, varName, valueVarName, listVarName));
-            return varName;
+            final newNode = addStatement(new CppListPrependStatement(node.getSourceRef(), nodeDatatype, genTempVarName("list_prepend"), valueVarName, listVarName));
+            return Statement(newNode);
 
         } else if(Std.downcast(astNode, SamalSimpleUnreachable) != null) {
             addStatement(new CppUnreachable(astNode.getSourceRef()));
-            return "";
+            return Literal("");
 
         } else if(Std.downcast(astNode, SamalCreateEnumExpression) != null) {
             var node = Std.downcast(astNode, SamalCreateEnumExpression);
@@ -292,9 +292,8 @@ class Stage3 {
 
             final params = samalUsertypeParamsToCppParams(variant.getFields(), node.getParams());
             
-            final varName = genTempVarName("enum");
-            addStatement(new CppCreateEnumStatement(node.getSourceRef(), srcDecl.getDatatype(), varName, node.getVariantName(), params));
-            return varName;
+            final newNode = addStatement(new CppCreateEnumStatement(node.getSourceRef(), srcDecl.getDatatype(), genTempVarName("enum"), node.getVariantName(), params));
+            return Statement(newNode);
 
         } else if(Std.downcast(astNode, SamalCreateLambdaExpression) != null) {
             var node = Std.downcast(astNode, SamalCreateLambdaExpression);
@@ -307,39 +306,38 @@ class Stage3 {
             
             var lastStatementResult = "";
             for(stmt in node.getBody().getStatements()) {
-                lastStatementResult = traverse(stmt);
+                lastStatementResult = traverse(stmt).str();
             }
             if(lastStatementResult != "") {
                 scope.addStatement(new CppReturnStatement(node.getSourceRef(), DatatypeHelpers.getReturnType(functionDatatype), lastStatementResult));
             }
             mScopeStack.pop();
 
-            addStatement(new CppCreateLambdaStatement(node.getSourceRef(), functionDatatype, varName, node.getParameters(), node.getCapturedVariables(), scope));
-            return varName;
+            final newNode = addStatement(new CppCreateLambdaStatement(node.getSourceRef(), functionDatatype, varName, node.getParameters(), node.getCapturedVariables(), scope));
+            return Statement(newNode);
 
         } else if(Std.downcast(astNode, SamalCreateStructExpression) != null) {
             var node = Std.downcast(astNode, SamalCreateStructExpression);
-            final varName = genTempVarName("struct");
 
             final decl = cast(mSProgram.findDatatypeDeclaration(node.getDatatype().sure()), SamalStructDeclaration);
             final params = samalUsertypeParamsToCppParams(decl.getFields(), node.getParams());
 
-            addStatement(new CppCreateStructStatement(node.getSourceRef(), decl.getDatatype(), varName, params));
-            return varName;
+            final newNode = addStatement(new CppCreateStructStatement(node.getSourceRef(), decl.getDatatype(), genTempVarName("struct"), params));
+            return Statement(newNode);
 
         } else if(Std.downcast(astNode, SamalSimpleTailCallSelf) != null) {
             var node = Std.downcast(astNode, SamalSimpleTailCallSelf);
             var params : Array<TailCallSelfParam> = [];
             for(p in node.getParameters()) {
-                params.push(new TailCallSelfParam(p.getParamName(), traverse(p.getValue())));
+                params.push(new TailCallSelfParam(p.getParamName(), traverse(p.getValue()).str()));
             }
-            addStatement(new CppTailCallSelf(astNode.getSourceRef(), node.getDatatype().sure(), "", params));
-            return "";
+            final newNode = addStatement(new CppTailCallSelf(astNode.getSourceRef(), node.getDatatype().sure(), "", params));
+            return Statement(newNode);
 
         } else {
             throw new Exception("TODO! " + Type.getClassName(Type.getClass(astNode)));
         }
-        return "";
+        return Literal("");
     }
 
     private function samalUsertypeParamsToCppParams(fields : Array<UsertypeField>, passedParams : Array<SamalCreateUsertypeParam>) : Array<NamedAndValueStringedParameter> {
@@ -349,7 +347,7 @@ class Stage3 {
             for(p in passedParams) {
                 if(p.getFieldName() != expectedField.getFieldName())
                     continue;
-                params.push({name : p.getFieldName(), value : traverse(p.getValue())});
+                params.push({name : p.getFieldName(), value : traverse(p.getValue()).str()});
             }
         }
         return params;
