@@ -173,6 +173,9 @@ abstract class CppStatement extends CppASTNode {
     public function getVarName() {
         return mVarName;
     }
+    public function setVarName(varName : String) : Void {
+        mVarName = varName;
+    }
     public function getDatatype() {
         return mDatatype;
     }

@@ -101,7 +101,7 @@ class Stage3 {
 
             return Statement(scope);
         } else if(Std.downcast(astNode, SamalBinaryExpression) != null) {
-            var node = Std.downcast(astNode, SamalBinaryExpression);
+            final node = Std.downcast(astNode, SamalBinaryExpression);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
             final lhsVarName = traverse(node.getLhs()).str();
             final rhsVarName = traverse(node.getRhs()).str();
@@ -128,13 +128,13 @@ class Stage3 {
                 case _:
                     throw new Exception("TODO! " + node.dump());
             }
-            var res = addStatement(new CppBinaryExprStatement(node.getSourceRef(), nodeDatatype, genTempVarName("binary_expr"), lhsVarName, op, rhsVarName));
+            final res = addStatement(new CppBinaryExprStatement(node.getSourceRef(), nodeDatatype, genTempVarName("binary_expr"), lhsVarName, op, rhsVarName));
             return Statement(res);
 
         } else if(Std.downcast(astNode, SamalUnaryExpression) != null) {
-            var node = Std.downcast(astNode, SamalUnaryExpression);
+            final node = Std.downcast(astNode, SamalUnaryExpression);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
-            var exprVarName = traverse(node.getExpr()).str();
+            final exprVarName = traverse(node.getExpr()).str();
             var op : CppUnaryOp;
             switch(node.getOp()) {
                 case Not:
@@ -146,41 +146,45 @@ class Stage3 {
             return Statement(res);
 
         } else if(Std.downcast(astNode, SamalSimpleListIsEmpty) != null) {
-            var node = Std.downcast(astNode, SamalSimpleListIsEmpty);
+            final node = Std.downcast(astNode, SamalSimpleListIsEmpty);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
-            var exprVarName = traverse(node.getList()).str();
-            var res = addStatement(new CppUnaryExprStatement(node.getSourceRef(), nodeDatatype, genTempVarName("list_is_empty"), exprVarName, ListIsEmpty));
+            final exprVarName = traverse(node.getList()).str();
+            final res = addStatement(new CppUnaryExprStatement(node.getSourceRef(), nodeDatatype, genTempVarName("list_is_empty"), exprVarName, ListIsEmpty));
             return Statement(res);
 
         } else if(Std.downcast(astNode, SamalSimpleListGetHead) != null) {
-            var node = Std.downcast(astNode, SamalSimpleListGetHead);
+            final node = Std.downcast(astNode, SamalSimpleListGetHead);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
-            var exprVarName = traverse(node.getList()).str();
-            var res = addStatement(new CppUnaryExprStatement(node.getSourceRef(), nodeDatatype, genTempVarName("list_get_head"), exprVarName, ListGetHead));
+            final exprVarName = traverse(node.getList()).str();
+            final res = addStatement(new CppUnaryExprStatement(node.getSourceRef(), nodeDatatype, genTempVarName("list_get_head"), exprVarName, ListGetHead));
             return Statement(res);
 
         } else if(Std.downcast(astNode, SamalSimpleListGetTail) != null) {
-            var node = Std.downcast(astNode, SamalSimpleListGetTail);
+            final node = Std.downcast(astNode, SamalSimpleListGetTail);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
-            var exprVarName = traverse(node.getList()).str();
-            var res = addStatement(new CppUnaryExprStatement(node.getSourceRef(), nodeDatatype, genTempVarName("list_get_tail"), exprVarName, ListGetTail));
+            final exprVarName = traverse(node.getList()).str();
+            final res = addStatement(new CppUnaryExprStatement(node.getSourceRef(), nodeDatatype, genTempVarName("list_get_tail"), exprVarName, ListGetTail));
             return Statement(res);
 
         } else if(Std.downcast(astNode, SamalLiteralIntExpression) != null) {
-            var node = Std.downcast(astNode, SamalLiteralIntExpression);
+            final node = Std.downcast(astNode, SamalLiteralIntExpression);
             return Literal(mTarget.getLiteralInt(node.getVal()));
 
         } else if(Std.downcast(astNode, SamalLiteralCharExpression) != null) {
-            var node = Std.downcast(astNode, SamalLiteralCharExpression);
+            final node = Std.downcast(astNode, SamalLiteralCharExpression);
             return Literal(mTarget.getLiteralChar(node.getVal()));
 
         } else if(Std.downcast(astNode, SamalAssignmentExpression) != null) {
-            var node = Std.downcast(astNode, SamalAssignmentExpression);
+            final node = Std.downcast(astNode, SamalAssignmentExpression);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
             
-            var rhsVarName = traverse(node.getRhs()).str();
-
-            addStatement(new CppAssignmentStatement(node.getSourceRef(), nodeDatatype, node.getIdentifier(), rhsVarName, CppAssignmentType.DeclareAndAssign));
+            final rhsVarName = traverse(node.getRhs());
+            switch(rhsVarName) {
+                case Literal(str):
+                    addStatement(new CppAssignmentStatement(node.getSourceRef(), nodeDatatype, node.getIdentifier(), str, CppAssignmentType.DeclareAndAssign));
+                case Statement(stmt):
+                    stmt.setVarName(node.getIdentifier());
+            }
             return Literal(node.getIdentifier());
 
         } else if(Std.downcast(astNode, SamalLoadIdentifierExpression) != null) {
