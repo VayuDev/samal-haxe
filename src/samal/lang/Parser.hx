@@ -240,8 +240,9 @@ class Parser {
         var nextStepInfo = binaryExprInfo.copy();
         nextStepInfo.shift();
         var lhs = parseBinaryExpression(nextStepInfo);
-        while(binaryExprInfo[0].exists(current().getType())) {
-            var op = binaryExprInfo[0][current().getType()];
+        while(binaryExprInfo[0].exists(currentWithoutNewlines().getType())) {
+            skipNewlines();
+            var op = binaryExprInfo[0][current().getType()].sure();
             mTokenizer.next();
             var rhs = parseBinaryExpression(nextStepInfo);
             lhs = SamalBinaryExpression.create(makeSourceRef(), lhs, op.sure(), rhs);
@@ -433,6 +434,15 @@ class Parser {
     function current() : Token {
         return mTokenizer.current();
     }
+
+    function currentWithoutNewlines() : Token {
+        mTokenizer.push();
+        skipNewlines();
+        final tok = mTokenizer.current();
+        mTokenizer.pop();
+        return tok;
+    }
+
     function peek(n : Int = 1) {
         return mTokenizer.peek(n);
     }

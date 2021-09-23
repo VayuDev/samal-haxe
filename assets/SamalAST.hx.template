@@ -212,6 +212,7 @@ class SamalCreateStructExpression extends SamalExpression {
 class SamalFunctionCallExpression extends SamalExpression {
     -function : SamalExpression
     -params : Array<SamalExpression>
+    #initialValue : SamalExpression
 }
 
 class SamalIfExpression extends SamalExpression {

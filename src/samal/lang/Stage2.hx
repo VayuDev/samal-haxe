@@ -189,6 +189,18 @@ class Stage2 {
             popStackFrame();
         } else if(Std.downcast(astNode, SamalBinaryExpression) != null) {
             var node = Std.downcast(astNode, SamalBinaryExpression);
+            // first, handle function chains
+            if(node.getOp() == FunctionChain) {
+                if(!Std.isOfType(node.getRhs(), SamalFunctionCallExpression)) {
+                    throw new Exception('${node.errorInfo()} To use a function chain operator, you need to have a function call on the right hand side');
+                }
+                final rhsFuncCall = cast(node.getRhs(), SamalFunctionCallExpression);
+                rhsFuncCall.setInitialValue(node.getLhs());
+                traverse(rhsFuncCall);
+                node.setDatatype(rhsFuncCall.getDatatype().sure());
+                return;
+            }
+            // now normal operations
             traverse(node.getLhs());
             traverse(node.getRhs());
             final lhsType = node.getLhs().getDatatype().sure();
@@ -469,6 +481,10 @@ class Stage2 {
 
         }  else if(Std.downcast(astNode, SamalBinaryExpression) != null) {
             var node = Std.downcast(astNode, SamalBinaryExpression);
+            if(node.getOp() == FunctionChain) {
+                // in a function chain, the initialValue of rhs is already set in traverse, we now need to discard the binary expression
+                return node.getRhs();
+            }
             final lhsType = node.getLhs().getDatatype().sure();
             final rhsType = node.getRhs().getDatatype().sure();
 

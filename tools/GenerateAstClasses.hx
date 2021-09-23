@@ -275,13 +275,21 @@ class Translator {
             ret += " public " + (isAST ? "override " : "") + "function clone() : " + className + " {\n";
             ret += "  return new " + className + "(\n";
             ret += allParams.map(function(f) {
+                var ret = "   ";
+                if(f.access == ReadWriteNullable) {
+                    ret += "(this.m" + toCamelCase(f.name) + " != null ? ";
+                }
                 if(isGeneratedClass(f.datatype)) {
-                    return "   cast(m" + toCamelCase(f.name) + ".clone(), " + f.datatype + ")";
+                    ret += "cast(m" + toCamelCase(f.name) + ".clone(), " + f.datatype + ")";
+                } else if(f.datatypeTokens[0] == "Array") {
+                    ret += "" + getFieldAttributeName(f) + ".map(function(e) return " + (isGeneratedClass(f.datatypeTokens[2]) ? "cast(e.clone(), " + f.datatypeTokens[2] + ")" : "e") + ")";
+                } else {
+                    ret += "m" + toCamelCase(f.name);
                 }
-                else if(f.datatypeTokens[0] == "Array") {
-                    return "   " + getFieldAttributeName(f) + ".map(function(e) return " + (isGeneratedClass(f.datatypeTokens[2]) ? "cast(e.clone(), " + f.datatypeTokens[2] + ")" : "e") + ")";
+                if(f.access == ReadWriteNullable) {
+                    ret += " : null)";
                 }
-                return "   m" + toCamelCase(f.name);
+                return ret;
             }).join(",\n") + "\n";
             ret += "  );\n";
             ret += " }\n";
@@ -334,20 +342,26 @@ class Translator {
         return field.datatype;
     }
     private function generateFieldReplaceString(field : Field) : String {
-        if(isASTNode(field.datatype)) {
-            return "  m" + toCamelCase(field.name) + " = cast(m" + toCamelCase(field.name) + ".replace(preorder, postorder), " + field.datatype + ");\n";
+        var ret = "";
+        if(field.access == ReadWriteNullable) {
+            ret += "if(this.m" + toCamelCase(field.name) + " != null) {\n";
         }
-        if(field.datatypeTokens[0] == "Array") {
+        if(isASTNode(field.datatype)) {
+            ret += "  m" + toCamelCase(field.name) + " = cast(m" + toCamelCase(field.name) + ".replace(preorder, postorder), " + field.datatype + ");\n";
+        } else if(field.datatypeTokens[0] == "Array") {
             final subType = field.datatypeTokens[2];
-            return "  this.m" + toCamelCase(field.name) + " = m" + toCamelCase(field.name) 
+            ret += "  this.m" + toCamelCase(field.name) + " = m" + toCamelCase(field.name) 
                 + ".map(function(node :  " + subType +  ") : " + subType + " {\n"
                 + (isASTNode(subType) 
                     ? "   return cast(node.replace(preorder, postorder), " + subType + ");\n"
                     : "   return node;\n")
                 + "  });\n";
         }
+        if(field.access == ReadWriteNullable) {
+            ret += "}\n";
+        }
         
-        return "";
+        return ret;
     }
     private function getAllParentConstructorFields(parentName : Null<String>) : Array<Field> {
         if(parentName == null) {
