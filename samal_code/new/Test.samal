@@ -115,8 +115,14 @@ fn mainFour() -> int {
     }
 }
 
-fn main() -> [char] {
-    "Hällö"
+struct MainRet {
+    str : [char]
+    ba : bool
+    bb : bool
+}
+
+fn main() -> MainRet {
+    s = "Hällö"
     |> map<char, char>(fn(c : char) -> char {
         if c == 'l' {
             'b'
@@ -124,4 +130,5 @@ fn main() -> [char] {
             c
         }
     })
+    MainRet{str : s, ba : s == "Häbbö", bb : s == "Hallo"}
 }

@@ -52,10 +52,10 @@ class CppTarget extends LanguageTarget {
         return "(int32_t) (" + Std.string(value) + "ll)";
     }
     public function getLiteralChar(value : String) : String {
-        return Std.string(value.charCodeAt(0).sure());
+        return "(char32_t) (" + Std.string(value.charCodeAt(0).sure()) + ")";
     }
-    public function getLiteralEmptyList() : String {
-        return "nullptr";
+    public function getLiteralEmptyList(baseType : Datatype) : String {
+        return "(samalrt::List<" + baseType.toCppType() + ">*) nullptr";
     }
     public function makeFile(ctx : SourceCreationContext, node : CppFile) : String {
         var ret = "";
@@ -145,7 +145,7 @@ class CppTarget extends LanguageTarget {
         }
         final reversedFields = node.getFields().copy();
         reversedFields.reverse();
-
+        final nodeCppType = node.getDatatype().toCppType();
         return 
             "#pragma pack(push, 1)\n"
             + "struct " + node.getDatatype().toCppType() + " {\n"
@@ -154,7 +154,7 @@ class CppTarget extends LanguageTarget {
             }).join("")
             + "};\n"
             + "namespace samalrt {\n"
-            + "inline samalrt::SamalString inspect(samalrt::SamalContext& ctx, const " + node.getDatatype().toCppType() + "& value) {\n"
+            + "inline samalrt::SamalString inspect(samalrt::SamalContext& ctx, const " + nodeCppType + "& value) {\n"
             + ' samalrt::SamalString ret = samalrt::toSamalString(ctx, "}");\n'
             + reversedFields.map(function(f) {
                 return ' ret = samalrt::listConcat(ctx, inspect(ctx, value.${f.getFieldName()}), ret);\n'
@@ -162,6 +162,22 @@ class CppTarget extends LanguageTarget {
             }).join(' ret = samalrt::listConcat(ctx, samalrt::toSamalString(ctx, ", "), ret);\n')
             + ' ret = samalrt::listConcat(ctx, samalrt::toSamalString(ctx, "${node.getDatatype().toSamalType()}{"), ret);\n'
             + " return ret;\n"
+            + "}\n"
+            + "inline bool equals(samalrt::SamalContext& ctx, const " + nodeCppType + "& a, const " + nodeCppType + "& b) {\n"
+            + node.getFields().map(function(f) : String {
+                switch(f.getDatatype()) {
+                    case Int, Bool, Char:
+                        return ' if(a.${f.getFieldName()} != b.${f.getFieldName()}) return false;\n';
+                    case List(_), Usertype(_, _, _):
+                        return ' if(!equals(ctx, a.${f.getFieldName()}, b.${f.getFieldName()})) return false;\n';
+                    case Function(_, _), Tuple(_):
+                        throw new Exception(node.errorInfo() + ": Unsupported datatype " + f.getDatatype().toSamalType());
+                    case Unknown(_, _):
+                        throw new Exception(node.errorInfo() + ": Unknown datatype, this is a bug!");
+                }
+                return "";
+            }).join('')
+            + " return true;\n"
             + "}\n"
             + "}\n"
             + "#pragma pack(pop)\n";
@@ -190,7 +206,30 @@ class CppTarget extends LanguageTarget {
         return indent(ctx) + node.getScope().toSrc(this, ctx.next());
     }    
     public function makeBinaryExprStatement(ctx : SourceCreationContext, node : CppBinaryExprStatement) : String {
-        return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = " + node.getLhsVarName() + " " + opAsCppStr(node.getOp()) + " " + node.getRhsVarName() + getTrackerString(node);
+        var opStr : String = "";
+        switch(node.getOp()) {
+            case Equal, NotEqual:
+                return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = " + (node.getOp() == NotEqual ? "!" : "") 
+                    + "samalrt::equals($ctx, " + node.getLhsVarName() + ", " + node.getRhsVarName() + ")" + getTrackerString(node);
+            case Add:
+                opStr = "+";
+            case Sub:
+                opStr = "-";
+            case Mul:
+                opStr = "*";
+            case Div:
+                opStr = "/";
+            case Less:
+                opStr = "<";
+            case More:
+                opStr = ">";
+            case LessEqual:
+                opStr = "<=";
+            case MoreEqual:
+                opStr = ">=";
+        }
+        return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = " 
+            + node.getLhsVarName() + " " + opStr + " " + node.getRhsVarName() + getTrackerString(node);
     }    
     public function makeUnaryExprStatement(ctx : SourceCreationContext, node : CppUnaryExprStatement) : String {
         final ret = indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName();
@@ -299,30 +338,5 @@ class CppTarget extends LanguageTarget {
         }
         ret += indent(ctx) + "continue";
         return ret;
-    }
-
-    private function opAsCppStr(op : CppBinaryExprOp) : String {
-        switch(op) {
-            case Add:
-                return "+";
-            case Sub:
-                return "-";
-            case Mul:
-                return "*";
-            case Div:
-                return "/";
-            case Less:
-                return "<";
-            case More:
-                return ">";
-            case LessEqual:
-                return "<=";
-            case MoreEqual:
-                return ">=";
-            case Equal:
-                return "==";
-            case NotEqual:
-                return "!=";
-        }
     }
 }

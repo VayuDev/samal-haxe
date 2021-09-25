@@ -495,13 +495,20 @@ class Stage2 {
             if(node.getOp() == FunctionChain) {
                 return node.getRhs();
             }
-            final lhsType = node.getLhs().getDatatype().sure();
-            final rhsType = node.getRhs().getDatatype().sure();
+            final lhs = node.getLhs();
+            final rhs = node.getRhs();
+            final lhsType = lhs.getDatatype().sure();
+            final rhsType = rhs.getDatatype().sure();
 
             if(rhsType.match(List(_)) && lhsType.deepEquals(rhsType.getBaseType()) && node.getOp() == Add) {
                 // list prepend
-                return SamalSimpleListPrepend.createFull(node.getSourceRef(), rhsType, node.getLhs(), node.getRhs());
+                return SamalSimpleListPrepend.createFull(
+                    node.getSourceRef(), 
+                    rhsType, 
+                    lhs,
+                    rhs);
             }
+            
         } else if(Std.downcast(astNode, SamalMatchExpression) != null) {
             var node = Std.downcast(astNode, SamalMatchExpression);
 
@@ -551,9 +558,7 @@ class Stage2 {
                 createTailCallSelfParamArray(
                     mCurrentFunction.sure().getParams().map(
                         function(p) return p.getName()), 
-                    node.getParameters().map(
-                        function(p) return cast(p.replace(preorderReplace, postorderReplace), SamalExpression)
-                    )));
+                    node.getParameters()));
         }
         return astNode;
     }
@@ -672,6 +677,9 @@ class Stage2 {
 
     function postorderReplace(astNode : ASTNode) : ASTNode {
         return astNode;
+    }
+    function replace(astNode : ASTNode) : ASTNode {
+        return postorderReplace(preorderReplace(astNode));
     }
 
     function genTempVarName(baseName : String) : String {

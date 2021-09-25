@@ -257,6 +257,12 @@ class Translator {
                 ret += generateFieldReplaceString(field);
             }
             ret += " }\n";
+            // now replaceOnlyChildren
+            ret += " public " + (isASTNode(className) ? "override " : "") + "function replaceOnlyChildren(replacer : (ASTNode) -> ASTNode) : Void {\n";
+            for(field in fields) {
+                ret += generateFieldReplaceOnlyChildrenString(field);
+            }
+            ret += " }\n";
             // now replace
             ret += " public " + (isAST ? "override " : "") 
                 +  "function replace(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) : ";
@@ -350,10 +356,33 @@ class Translator {
             ret += "  m" + toCamelCase(field.name) + " = cast(m" + toCamelCase(field.name) + ".replace(preorder, postorder), " + field.datatype + ");\n";
         } else if(field.datatypeTokens[0] == "Array") {
             final subType = field.datatypeTokens[2];
+            final subType = field.datatypeTokens[2];
+            ret += "  this.m" + toCamelCase(field.name) + " = m" + toCamelCase(field.name) 
+                + ".map(function(node :  " + subType +  ") : " + subType + " {\n"
+                + (isGeneratedClass(subType) 
+                    ? "   return cast(node.replace(preorder, postorder), " + subType + ");\n"
+                    : "   return node;\n")
+                + "  });\n";
+        }
+        if(field.access == ReadWriteNullable) {
+            ret += "}\n";
+        }
+        
+        return ret;
+    }
+    private function generateFieldReplaceOnlyChildrenString(field : Field) : String {
+        var ret = "";
+        if(field.access == ReadWriteNullable) {
+            ret += "if(this.m" + toCamelCase(field.name) + " != null) {\n";
+        }
+        if(isASTNode(field.datatype)) {
+            ret += "  m" + toCamelCase(field.name) + " = cast(replacer(m" + toCamelCase(field.name) + "), " + field.datatype + ");\n";
+        } else if(field.datatypeTokens[0] == "Array") {
+            final subType = field.datatypeTokens[2];
             ret += "  this.m" + toCamelCase(field.name) + " = m" + toCamelCase(field.name) 
                 + ".map(function(node :  " + subType +  ") : " + subType + " {\n"
                 + (isASTNode(subType) 
-                    ? "   return cast(node.replace(preorder, postorder), " + subType + ");\n"
+                    ? "   return cast(replacer(node), " + subType + ");\n"
                     : "   return node;\n")
                 + "  });\n";
         }

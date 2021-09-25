@@ -276,7 +276,7 @@ class Stage3 {
         } else if(Std.downcast(astNode, SamalSimpleListCreateEmpty) != null) {
             var node = Std.downcast(astNode, SamalSimpleListCreateEmpty);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
-            return mTarget.getLiteralEmptyList();
+            return mTarget.getLiteralEmptyList(nodeDatatype.getBaseType());
 
         } else if(Std.downcast(astNode, SamalSimpleListPrepend) != null) {
             var node = Std.downcast(astNode, SamalSimpleListPrepend);

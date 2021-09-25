@@ -46,7 +46,7 @@ class JSTarget extends LanguageTarget {
         }
         return "'" + value + "'";
     }
-    public function getLiteralEmptyList() : String {
+    public function getLiteralEmptyList(baseType : Datatype) : String {
         return "null";
     }
     public function makeFile(ctx : SourceCreationContext, node : CppFile) : String {

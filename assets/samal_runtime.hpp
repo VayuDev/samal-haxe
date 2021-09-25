@@ -243,7 +243,7 @@ struct List {
     T value;
 };
 template<typename T>
-List<T>* listPrepend(SamalContext& ctx, T lhs, List<T>* rhs) {
+inline List<T>* listPrepend(SamalContext& ctx, T lhs, List<T>* rhs) {
     List<T>* prev = (List<T>*) ctx.alloc(sizeof(List<T>));
     new(prev)List<T>();
     prev->value = lhs;
@@ -251,7 +251,7 @@ List<T>* listPrepend(SamalContext& ctx, T lhs, List<T>* rhs) {
     return prev;
 }
 template<typename T>
-List<T>* listConcat(SamalContext& ctx, List<T>* lhs, List<T>* rhs) {
+inline List<T>* listConcat(SamalContext& ctx, List<T>* lhs, List<T>* rhs) {
     if(lhs == nullptr) {
         return rhs;
     }
@@ -308,7 +308,7 @@ SamalString inspect(SamalContext& ctx, bool);
 SamalString inspect(SamalContext& ctx, char32_t);
 
 template<typename T>
-SamalString inspect(SamalContext& ctx, List<T>* current) {
+inline SamalString inspect(SamalContext& ctx, List<T>* current) {
     std::vector<SamalString> children;
     children.push_back(toSamalString(ctx, "["));
     while(current != nullptr) {
@@ -331,6 +331,34 @@ SamalString inspect(SamalContext& ctx, List<T>* current) {
         ret = *it;
     }
     return ret;
+}
+
+template<typename T>
+inline bool equals(SamalContext& ctx, const List<T>* a, const List<T>* b) {
+    while(true) {
+        if(!a && !b) {
+            return true;
+        }
+        if(!a && b || a && !b) {
+            return false;
+        }
+        if(!equals(ctx, a->value, b->value)) {
+            return false;
+        }
+        a = a->next;
+        b = b->next;
+    }
+    assert(false);
+}
+
+inline bool equals(SamalContext& ctx, char32_t a, char32_t b) {
+    return a == b;
+}
+inline bool equals(SamalContext& ctx, bool a, bool b) {
+    return a == b;
+}
+inline bool equals(SamalContext& ctx, int a, int b) {
+    return a == b;
 }
 
 std::ostream& operator<<(std::ostream& stream, SamalString str);

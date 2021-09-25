@@ -53,6 +53,9 @@ class ASTNode implements Cloneable {
     }
     public function replaceChildren(preorder : (ASTNode) -> ASTNode, postorder : (ASTNode) -> ASTNode) {
     }
+    public function replaceOnlyChildren(replacer : (ASTNode) -> ASTNode) : Void {
+
+    }
 
     public function errorInfo() : String {
         return mSourceCodeRef.errorInfo() + ": ";
