@@ -117,8 +117,8 @@ fn mainFour() -> int {
 
 struct MainRet {
     str : [char]
-    ba : bool
-    bb : bool
+    b1 : bool
+    b2 : bool
 }
 
 fn main() -> MainRet {
@@ -130,5 +130,5 @@ fn main() -> MainRet {
             c
         }
     })
-    MainRet{str : s, ba : s == "Häbbö", bb : s == "Hallo"}
+    MainRet{str: s, b1: s == "Häbbö", b2: s == "Hallo"}
 }

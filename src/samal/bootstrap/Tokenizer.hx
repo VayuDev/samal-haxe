@@ -300,9 +300,11 @@ class TokenGenerator {
                 continue;
             }
             var isIdentifier = false;
-            while(getCurrentChar() != "" && "abcdefghijklmnopqrstuvwyxzABCDEFGHIJKLMNOPQRSTUVWXYZ._".indexOf(getCurrentChar()) != -1) {
-                advance();
-                isIdentifier = true;
+            if(getCurrentChar() != "" && "abcdefghijklmnopqrstuvwyxzABCDEFGHIJKLMNOPQRSTUVWXYZ._".indexOf(getCurrentChar()) != -1) {
+                while(getCurrentChar() != "" && "abcdefghijklmnopqrstuvwyxzABCDEFGHIJKLMNOPQRSTUVWXYZ._0123456789".indexOf(getCurrentChar()) != -1) {
+                    advance();
+                    isIdentifier = true;
+                }
             }
             if(isIdentifier) {
                 tokens.push(new Token(makeSourceRef(), TokenType.Identifier, skippedSpaces));
