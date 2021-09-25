@@ -219,6 +219,9 @@ class Parser {
         return parseBinaryExpression([[
             TokenType.FunctionChain => SamalBinaryExpressionOp.FunctionChain
         ], [
+            TokenType.DoubleEquals => SamalBinaryExpressionOp.Equal,
+            TokenType.NotEquals => SamalBinaryExpressionOp.NotEqual,
+        ],[
             TokenType.Less => SamalBinaryExpressionOp.Less,
             TokenType.More => SamalBinaryExpressionOp.More,
             TokenType.LessEqual => SamalBinaryExpressionOp.LessEqual,
@@ -316,6 +319,13 @@ class Parser {
             case LCurly:
                 startNode();
                 return SamalScopeExpression.create(makeSourceRef(), parseScope());
+            
+            case LParen:
+                eat(LParen);
+                final expr = parseExpression();
+                eat(RParen);
+                return expr;
+            
             case Identifier:
                 startNode();
                 if (peek().getType() == TokenType.Equals) {

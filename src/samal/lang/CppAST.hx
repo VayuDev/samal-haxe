@@ -208,6 +208,8 @@ enum CppBinaryExprOp {
     More;
     LessEqual;
     MoreEqual;
+    Equal;
+    NotEqual;
 }
 
 class CppBinaryExprStatement extends CppStatement {
@@ -223,25 +225,8 @@ class CppBinaryExprStatement extends CppStatement {
     public override function dumpSelf() : String {
         return super.dumpSelf() + ": " + mVarName + " = " + mLhsVarName + " " + mOp + " " + mRhsVarName;
     }
-    public function opAsStr() : String {
-        switch(mOp) {
-            case Add:
-                return "+";
-            case Sub:
-                return "-";
-            case Mul:
-                return "*";
-            case Div:
-                return "/";
-            case Less:
-                return "<";
-            case More:
-                return ">";
-            case LessEqual:
-                return "<=";
-            case MoreEqual:
-                return ">=";
-        }
+    public function getOp() {
+        return mOp;
     }
     public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
         return target.makeBinaryExprStatement(ctx, this);

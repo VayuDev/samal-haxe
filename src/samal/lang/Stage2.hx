@@ -206,18 +206,19 @@ class Stage2 {
             final lhsType = node.getLhs().getDatatype().sure();
             final rhsType = node.getRhs().getDatatype().sure();
 
+            if(rhsType.match(List(_)) && lhsType.deepEquals(rhsType.getBaseType()) && node.getOp() == Add) {
+                // list prepend
+                node.setDatatype(rhsType);
+                return;
+            }
+
             if(!lhsType.deepEquals(rhsType)) {
-                if(rhsType.match(List(_)) && lhsType.deepEquals(rhsType.getBaseType()) && node.getOp() == Add) {
-                    // list prepend
-                    node.setDatatype(rhsType);
-                    return;
-                }
                 throw new Exception('${node.errorInfo()} Lhs and rhs types aren\'t equal. Lhs is ${node.getLhs().getDatatype().sure()}, rhs is ${node.getRhs().getDatatype().sure()}');
             }
-            if(!([Int].contains(lhsType))) {
+            if(!([Int].contains(lhsType)) && [Less, LessEqual, More, MoreEqual].contains(node.getOp())) {
                 throw new Exception('${node.errorInfo()} The ${node.getOp()} operator is only defined for integers, not for ${node.getLhs().getDatatype().sure()}');
             }
-            if([Less, LessEqual, More, MoreEqual].contains(node.getOp())) {
+            if([Less, LessEqual, More, MoreEqual, Equal, NotEqual].contains(node.getOp())) {
                 node.setDatatype(Datatype.Bool);
             } else {
                 node.setDatatype(lhsType);

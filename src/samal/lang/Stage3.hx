@@ -121,6 +121,10 @@ class Stage3 {
                     op = CppBinaryExprOp.LessEqual;
                 case MoreEqual:
                     op = CppBinaryExprOp.MoreEqual;
+                case Equal:
+                    op = CppBinaryExprOp.Equal;
+                case NotEqual:
+                    op = CppBinaryExprOp.NotEqual;
                 
                 case _:
                     throw new Exception("TODO! " + node.dump());

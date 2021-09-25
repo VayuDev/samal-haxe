@@ -105,7 +105,7 @@ class JSTarget extends LanguageTarget {
         return indent(ctx) + node.getScope().toSrc(this, ctx.next());
     }    
     public function makeBinaryExprStatement(ctx : SourceCreationContext, node : CppBinaryExprStatement) : String {
-        return indent(ctx) + "let " + node.getVarName() + " = " + node.getLhsVarName() + " " + node.opAsStr() + " " + node.getRhsVarName();
+        return indent(ctx) + "let " + node.getVarName() + " = " + node.getLhsVarName() + " " + opAsJsStr(node.getOp()) + " " + node.getRhsVarName();
     }    
     public function makeUnaryExprStatement(ctx : SourceCreationContext, node : CppUnaryExprStatement) : String {
         final ret = indent(ctx) + "let " + node.getVarName();
@@ -174,5 +174,30 @@ class JSTarget extends LanguageTarget {
         }
         ret += indent(ctx) + "continue";
         return ret;
+    }
+
+    private function opAsJsStr(op : CppBinaryExprOp) : String {
+        switch(op) {
+            case Add:
+                return "+";
+            case Sub:
+                return "-";
+            case Mul:
+                return "*";
+            case Div:
+                return "/";
+            case Less:
+                return "<";
+            case More:
+                return ">";
+            case LessEqual:
+                return "<=";
+            case MoreEqual:
+                return ">=";
+            case Equal:
+                return "===";
+            case NotEqual:
+                return "!==";
+        }
     }
 }
