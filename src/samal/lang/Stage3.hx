@@ -186,9 +186,13 @@ class Stage3 {
         } else if(Std.downcast(astNode, SamalFunctionCallExpression) != null) {
             var node = Std.downcast(astNode, SamalFunctionCallExpression);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());
-            var functionName = traverse(node.getFunction());
 
             var params = [];
+            if(node.getInitialValue() != null) {
+                params.push(traverse(node.getInitialValue().sure()));
+            }
+            var functionName = traverse(node.getFunction());
+
             for(p in node.getParams()) {
                 params.push(traverse(p));
             }

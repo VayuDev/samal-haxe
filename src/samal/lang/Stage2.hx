@@ -260,6 +260,16 @@ class Stage2 {
             
         } else if(Std.downcast(astNode, SamalFunctionCallExpression) != null) {
             var node = Std.downcast(astNode, SamalFunctionCallExpression);
+            // function chains work the following way:
+            //  1. Function chains are binary expressions. The binary expression above sets the initialValue of the the FunctionCallExpression
+            //     to the lhs of the function chain
+            //  2. We traverse the initialValue here, importantly before the function name and the params
+            //  3. The binary expressions gets stripped further down in the preorderReplace function, raising the function call one level up
+            //  4. In stage 3, we first evaluate the initial value of the node we get passed in and then evaluate function name and further params.
+            //     The initial value is prepended to the params in the created node (currently named CppFunctionCallStatement or so).
+            if(node.getInitialValue() != null) {
+                traverse(node.getInitialValue().sure());
+            }
             traverse(node.getFunction());
             for(param in node.getParams()) {
                 traverse(param);
@@ -482,7 +492,6 @@ class Stage2 {
         }  else if(Std.downcast(astNode, SamalBinaryExpression) != null) {
             var node = Std.downcast(astNode, SamalBinaryExpression);
             if(node.getOp() == FunctionChain) {
-                // in a function chain, the initialValue of rhs is already set in traverse, we now need to discard the binary expression
                 return node.getRhs();
             }
             final lhsType = node.getLhs().getDatatype().sure();
