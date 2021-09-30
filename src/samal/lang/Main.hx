@@ -251,7 +251,7 @@ Options:');
               printHelpAndExit(11, "You must specify an output file path to store the executable!");
             }
             Sys.command(compiler, 
-              ["-O0", "-g", "-std=c++11", "-o", flags.get("output").sure()]
+              ["-O0", "-g", "-std=c++11", "-o", flags.get("output").sure(), "-lstdc++"]
               .concat(result.transpileResult.generatedFiles.filter(function(f) return f.name.substr(-4) == ".cpp").map(function(f) return result.cppResultDir + "/" + f.name)));
             if(result.cppResultDirIsGenerated) {
               for(f in FileSystem.readDirectory(result.cppResultDir)) {

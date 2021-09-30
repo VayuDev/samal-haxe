@@ -4,3 +4,4 @@
 bin
 out/*
 src/samal/lang/generated/*.hx
+build.hxml
