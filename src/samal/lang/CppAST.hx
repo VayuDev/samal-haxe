@@ -215,11 +215,15 @@ enum CppBinaryExprOp {
 class CppBinaryExprStatement extends CppStatement {
     var mLhsVarName : String;
     var mRhsVarName : String;
+    var mLhsAndRhsDatatypes : Datatype;
     var mOp : CppBinaryExprOp;
-    public function new(sourceRef : SourceCodeRef, datatype : Datatype, resultVarName : String, lhsVarName : String, op : CppBinaryExprOp, rhsVarName : String) {
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, resultVarName : String, 
+        lhsVarName : String, op : CppBinaryExprOp, rhsVarName : String, lhsAndRhsDatatype : Datatype) {
+        
         super(sourceRef, datatype, resultVarName);
         mLhsVarName = lhsVarName;
         mRhsVarName = rhsVarName;
+        mLhsAndRhsDatatypes = lhsAndRhsDatatype;
         mOp = op;
     }
     public override function dumpSelf() : String {
@@ -236,6 +240,9 @@ class CppBinaryExprStatement extends CppStatement {
     }
     public function getRhsVarName() {
         return mRhsVarName;
+    }
+    public function getLhsAndRhsDatatype() {
+        return mLhsAndRhsDatatypes;
     }
 }
 

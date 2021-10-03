@@ -129,7 +129,11 @@ class Stage3 {
                 case _:
                     throw new Exception("TODO! " + node.dump());
             }
-            var res = addStatement(new CppBinaryExprStatement(node.getSourceRef(), nodeDatatype, genTempVarName("binary_expr"), lhsVarName, op, rhsVarName));
+            if(!node.getLhs().getDatatype().sure().deepEquals(node.getRhs().getDatatype().sure())) {
+                throw new Exception("Assert: lhs type " + node.getLhs() + " and rhs type " + node.getRhs() + " should match in stage 3");
+            }
+            var res = addStatement(
+                new CppBinaryExprStatement(node.getSourceRef(), nodeDatatype, genTempVarName("binary_expr"), lhsVarName, op, rhsVarName, node.getRhs().getDatatype().sure()));
             
             return res.getVarName();
         } else if(Std.downcast(astNode, SamalUnaryExpression) != null) {

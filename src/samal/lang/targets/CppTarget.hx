@@ -40,7 +40,7 @@ class CppTarget extends LanguageTarget {
     public function new() {}
 
     private function getTrackerString(statement : CppStatement) : String {
-        if(!statement.getDatatype().requiresGC()) {
+        if(!statement.getDatatype().isContainerType()) {
             return "";
         }
         return "; samalrt::SamalGCTracker " + statement.getVarName() 

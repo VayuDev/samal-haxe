@@ -80,11 +80,21 @@ class JSTarget extends LanguageTarget {
     public function makeStructDeclaration(ctx : SourceCreationContext, node : CppStructDeclaration) : String {
         if(cast(ctx, JSContext).getDof() != Datatypes)
             return "";
-        return "class " + node.getDatatype().getUsertypeMangledName() + " {\n" 
+        final thisTypeName = node.getDatatype().getUsertypeMangledName();
+        return "class " + thisTypeName + " {\n" 
             + " constructor(" + node.getFields().map(function(f) return f.getFieldName()).join(",") + ") {\n"
             + node.getFields().map(function(f) {
                 return "  this." + f.getFieldName() + " = " + f.getFieldName() + ";\n";
             }).join("")
+            + " }\n"
+            + " equals(other) {\n"
+            // This check isn't actually necessary as it is (should be?) check by stage 2 and no longer needed at runtime.
+            // It might be useful in case some is interacting with samal code from the outside? Maybe we should make it optional?
+            //+ "  if (!(other instanceof " + thisTypeName + ")) return false;\n"
+            + node.getFields().map(function(f) {
+                return "  if(!" + genCheckIfEqualCode("this." + f.getFieldName(), "other." + f.getFieldName(), f.getDatatype()) + ") return false;";
+            }).join("")
+            + "  return true;"
             + " }\n"
             + "}";
     }
@@ -103,10 +113,32 @@ class JSTarget extends LanguageTarget {
     }
     public function makeScopeStatement(ctx : SourceCreationContext, node : CppScopeStatement) : String {
         return indent(ctx) + node.getScope().toSrc(this, ctx.next());
-    }    
+    }
     public function makeBinaryExprStatement(ctx : SourceCreationContext, node : CppBinaryExprStatement) : String {
-        return indent(ctx) + "let " + node.getVarName() + " = " + node.getLhsVarName() + " " + opAsJsStr(node.getOp()) + " " + node.getRhsVarName();
-    }    
+        var opStr : String = "";
+        switch(node.getOp()) {
+            case Equal, NotEqual:
+                return indent(ctx) + "let " + node.getVarName() + " = " + (node.getOp() == NotEqual ? "!" : "") 
+                    + genCheckIfEqualCode(node.getLhsVarName(), node.getRhsVarName(), node.getLhsAndRhsDatatype());
+            case Add:
+                opStr = "+";
+            case Sub:
+                opStr = "-";
+            case Mul:
+                opStr = "*";
+            case Div:
+                opStr = "/";
+            case Less:
+                opStr = "<";
+            case More:
+                opStr = ">";
+            case LessEqual:
+                opStr = "<=";
+            case MoreEqual:
+                opStr = ">=";
+        }
+        return indent(ctx) + "let " + node.getVarName() + " = " + node.getLhsVarName() + " " + opStr + " " + node.getRhsVarName();
+    }
     public function makeUnaryExprStatement(ctx : SourceCreationContext, node : CppUnaryExprStatement) : String {
         final ret = indent(ctx) + "let " + node.getVarName();
         switch(node.getOp()) {
@@ -176,28 +208,10 @@ class JSTarget extends LanguageTarget {
         return ret;
     }
 
-    private function opAsJsStr(op : CppBinaryExprOp) : String {
-        switch(op) {
-            case Add:
-                return "+";
-            case Sub:
-                return "-";
-            case Mul:
-                return "*";
-            case Div:
-                return "/";
-            case Less:
-                return "<";
-            case More:
-                return ">";
-            case LessEqual:
-                return "<=";
-            case MoreEqual:
-                return ">=";
-            case Equal:
-                return "===";
-            case NotEqual:
-                return "!==";
+    private function genCheckIfEqualCode(lhsVarName : String, rhsVarName : String, datatype : Datatype) : String {
+        if(datatype.isContainerType()) {
+            return "((" + lhsVarName + " !== null && " + rhsVarName + " !== null) && " + lhsVarName + ".equals(" + rhsVarName + "))";
         }
+        return "(" + lhsVarName + " === " + rhsVarName + ")";
     }
 }

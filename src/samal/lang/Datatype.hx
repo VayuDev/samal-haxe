@@ -190,7 +190,7 @@ class DatatypeHelpers {
     static public function toCppGCTypeStr(type : Datatype) : String {
         return toMangledName(type);
     }
-    static public function requiresGC(type : Datatype) : Bool {
+    static public function isContainerType(type : Datatype) : Bool {
         switch(type) {
             case Int, Bool, Char:
                 return false;
@@ -199,7 +199,6 @@ class DatatypeHelpers {
             case Function(_, _):
                 return true;
             case Usertype(_, _, _):
-                // TODO check if type actually needs GC
                 return true;
             case _:
                 throw new Exception("TODO requiresGC " + type);
