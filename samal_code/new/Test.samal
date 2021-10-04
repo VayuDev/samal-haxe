@@ -124,6 +124,10 @@ struct MainRet {
     b5 : bool
 }
 
+fn makeTuple<A, B>(a : A, b : B) -> (A, B) {
+    (a, b)
+}
+
 fn main() -> MainRet {
     s = "Hällö"
     |> map<char, char>(fn(c : char) -> char {

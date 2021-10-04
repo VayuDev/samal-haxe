@@ -210,6 +210,9 @@ class SamalCreateStructExpression extends SamalExpression {
         ret.mDatatype = Datatype.Unknown(ret.mStructName.getName(), ret.mStructName.getTemplateParams());
     @end_hx
 }
+class SamalCreateTupleExpression extends SamalExpression {
+    -params : Array<SamalExpression>
+}
 
 class SamalFunctionCallExpression extends SamalExpression {
     -function : SamalExpression

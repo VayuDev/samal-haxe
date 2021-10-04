@@ -90,6 +90,12 @@ class Parser {
                 var baseType = parseDatatype();
                 eat(RSquare);
                 return Datatype.List(baseType);
+
+            case LParen:
+                return Tuple(parseList(LParen, Comma, RParen, function() {
+                    return parseDatatype();
+                }));
+
             case Identifier:
                 final ident = parseIdentifierWithTemplate();
                 return Datatype.Unknown(ident.getName(), ident.getTemplateParams());
@@ -321,10 +327,15 @@ class Parser {
                 return SamalScopeExpression.create(makeSourceRef(), parseScope());
             
             case LParen:
-                eat(LParen);
-                final expr = parseExpression();
-                eat(RParen);
-                return expr;
+                final l = parseList(LParen, Comma, RParen, function() {
+                    return parseExpression();
+                });
+                if(l.length == 1) {
+                    // just a bracketet expression, used for precendence; you can't create tuples with just one element in samal :c
+                    dropNode();
+                    return l[0].sure();
+                }
+                return SamalCreateTupleExpression.create(makeSourceRef(), l);
             
             case Identifier:
                 startNode();
