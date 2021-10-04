@@ -137,6 +137,7 @@ fn main() -> MainRet {
             c
         }
     })
+    t = makeTuple<int, char>(3, 'ü')
     m = Maybe<int>::Some{v: 5}
     n = Maybe<int>::None{}
     MainRet{str: s, b1: s == "Häbbö", b2: s == "Hallo", b3: m == Maybe<int>::None{}, b4: m == Maybe<int>::Some{v: 5}, b5: n == Maybe<int>::None{}}

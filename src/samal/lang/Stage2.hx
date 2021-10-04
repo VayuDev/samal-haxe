@@ -329,6 +329,15 @@ class Stage2 {
             } else {
                 node.setDatatype(complete(node.getDatatype().sure()));
             }
+        } else if(Std.downcast(astNode, SamalCreateTupleExpression) != null) {
+            final node = Std.downcast(astNode, SamalCreateTupleExpression);
+            final types : Array<Datatype> = [];
+            for(child in node.getParams()) {
+                traverse(child);
+                types.push(child.getDatatype().sure());
+            }
+            node.setDatatype(Tuple(types));
+            
         } else if(Std.downcast(astNode, SamalMatchExpression) != null) {
             var node = Std.downcast(astNode, SamalMatchExpression);
 
