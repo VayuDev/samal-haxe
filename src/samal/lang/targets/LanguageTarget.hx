@@ -46,6 +46,7 @@ abstract class LanguageTarget {
     abstract public function makeCreateEnumStatement(ctx : SourceCreationContext, node : CppCreateEnumStatement) : String;
     abstract public function makeCreateLambdaStatement(ctx : SourceCreationContext, node : CppCreateLambdaStatement) : String;
     abstract public function makeCreateStructStatement(ctx : SourceCreationContext, node : CppCreateStructStatement) : String;
+    abstract public function makeCreateTupleStatement(ctx : SourceCreationContext, node : CppCreateTupleStatement) : String;
     abstract public function makeEnumIsVariantStatement(ctx : SourceCreationContext, node : CppEnumIsVariantStatement) : String;
     abstract public function makeFetchEnumFieldStatement(ctx : SourceCreationContext, node : CppFetchEnumFieldStatement) : String;
     abstract public function makeFunctionCallStatement(ctx : SourceCreationContext, node : CppFunctionCallStatement) : String;

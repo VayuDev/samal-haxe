@@ -339,6 +339,17 @@ class Stage3 {
             addStatement(new CppCreateStructStatement(node.getSourceRef(), decl.getDatatype(), varName, params));
             return varName;
 
+        } else if(Std.downcast(astNode, SamalCreateTupleExpression) != null) {
+            var node = Std.downcast(astNode, SamalCreateTupleExpression);
+            final varName = genTempVarName("tuple");
+            final params : Array<String> = [];
+            for(child in node.getParams()) {
+                params.push(traverse(child));
+            }
+
+            addStatement(new CppCreateTupleStatement(node.getSourceRef(), node.getDatatype().sure(), varName, params));
+            return varName;
+
         } else if(Std.downcast(astNode, SamalSimpleTailCallSelf) != null) {
             var node = Std.downcast(astNode, SamalSimpleTailCallSelf);
             var params : Array<TailCallSelfParam> = [];

@@ -209,6 +209,9 @@ class JSTarget extends LanguageTarget {
         final paramsStr = node.getParams().map(function(p) return p.value).join(", ");
         return indent(ctx) + "let " + node.getVarName() + " = new " + node.getDatatype().getUsertypeMangledName() + "(" + paramsStr + ")";
     }
+    public function makeCreateTupleStatement(ctx : SourceCreationContext, node : CppCreateTupleStatement) : String {
+        return indent(ctx) + "let " + node.getVarName() + " = [" + node.getParams().join(", ") + "]";
+    }
     public function makeEnumIsVariantStatement(ctx : SourceCreationContext, node : CppEnumIsVariantStatement) : String {
         return indent(ctx) + "let " + node.getVarName() + " = " + node.getEnumExpr() + ".variant == " + node.getVariantIndex();
     }

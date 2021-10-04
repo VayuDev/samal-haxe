@@ -524,6 +524,23 @@ class CppCreateStructStatement extends CppStatement {
     }
 }
 
+class CppCreateTupleStatement extends CppStatement {
+    final mParams : Array<String>;
+
+    public function new(sourceRef : SourceCodeRef, datatype : Datatype, varName : String, 
+                        params : Array<String>) {
+        super(sourceRef, datatype, varName);
+        mParams = params;
+    }
+
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeCreateTupleStatement(ctx, this);
+    }
+    public function getParams() {
+        return mParams;
+    }
+}
+
 class TailCallSelfParam {
     public var paramName(default,null) : String;
     public var paramValue(default, null) : String;
