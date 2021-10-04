@@ -108,7 +108,23 @@ class JSTarget extends LanguageTarget {
             + memberIndexList.map(function(i) {
                 return "  this.m" + i + " = p" + i + ";\n";
             }).join("")
-            + "}\n"
+            + " }\n"
+            + " equals(other) {\n"
+            + "  if(this.variant !== other.variant) return false;\n"
+            + memberIndexList.map(function(i) {
+                final lhsVarName = "this.m" + i;
+                final rhsVarName = "other.m" + i;
+                /*  This is actually a bit funky because even after the .equals check fails, we still check for equality with ===.
+                    As everything is immutable in samal, this shouldn't be a problem though.
+                */
+                return "  if (!(" 
+                    + "(" + lhsVarName + " === null && " + rhsVarName + " === null) || "
+                    + "(" + lhsVarName + " === undefined && " + rhsVarName + " === undefined) || "
+                    + "((" + lhsVarName + ".equals !== undefined && " + lhsVarName + ".equals(" + rhsVarName + "))"
+                    + " || " + lhsVarName + " === " + rhsVarName + "))) return false;\n";
+            }).join("")
+            + "  return true;"
+            + " }\n"
             + "}";
     }
     public function makeScopeStatement(ctx : SourceCreationContext, node : CppScopeStatement) : String {
@@ -210,7 +226,7 @@ class JSTarget extends LanguageTarget {
 
     private function genCheckIfEqualCode(lhsVarName : String, rhsVarName : String, datatype : Datatype) : String {
         if(datatype.isContainerType()) {
-            return "((" + lhsVarName + " !== null && " + rhsVarName + " !== null) && " + lhsVarName + ".equals(" + rhsVarName + "))";
+            return "((" + lhsVarName + " === null && " + rhsVarName + " === null) || " + lhsVarName + ".equals(" + rhsVarName + "))";
         }
         return "(" + lhsVarName + " === " + rhsVarName + ")";
     }

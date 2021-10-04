@@ -119,6 +119,9 @@ struct MainRet {
     str : [char]
     b1 : bool
     b2 : bool
+    b3 : bool
+    b4 : bool
+    b5 : bool
 }
 
 fn main() -> MainRet {
@@ -130,5 +133,7 @@ fn main() -> MainRet {
             c
         }
     })
-    MainRet{str: s, b1: s == "Häbbö", b2: s == "Hallo"}
+    m = Maybe<int>::Some{v: 5}
+    n = Maybe<int>::None{}
+    MainRet{str: s, b1: s == "Häbbö", b2: s == "Hallo", b3: m == Maybe<int>::None{}, b4: m == Maybe<int>::Some{v: 5}, b5: n == Maybe<int>::None{}}
 }
