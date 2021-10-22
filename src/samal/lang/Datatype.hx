@@ -133,6 +133,14 @@ class DatatypeHelpers {
                 });
         }
     }
+    static public function toCppTupleBaseTypename(type : Datatype) : String {
+        switch(type) {
+            case Tuple(elements):
+                return "TS" + elements.map(function(e) return toMangledName(e)).join("_") + "TE";
+            case _:
+                throw new Exception("Not a tuple!");
+        }
+    }
     static public function toCppType(type : Datatype) : String {
         switch(type) {
             case Int:
@@ -147,6 +155,8 @@ class DatatypeHelpers {
                 return "samalrt::Function<" + toCppType(returnType) + "(samalrt::SamalContext&, " + params.map(function(p) return toCppType(p)).join(", ") + ")>";
             case Usertype(name, params, subtype):
                 return getUsertypeMangledName(type);
+            case Tuple(elements):
+                return "samalrt::tuples::" + toCppTupleBaseTypename(type);
             case _:
                 throw new Exception("TODO toCppType: " + type);
         }
@@ -183,6 +193,8 @@ class DatatypeHelpers {
                 return "fn_s" + toMangledName(returnType) + "_" + params.map(function(p) return toMangledName(p)).join("_") + "e";
             case Usertype(name, params, subtype):
                 return Std.string(subtype).toLowerCase() + "_s" + Util.mangle(name, params) + "e";
+            case Tuple(elements):
+                return "tuple_s" + elements.map(function(e) return toMangledName(e)).join("_") + "e";
             case _:
                 throw new Exception("TODO " + type);
         }
@@ -194,11 +206,7 @@ class DatatypeHelpers {
         switch(type) {
             case Int, Bool, Char:
                 return false;
-            case List(_):
-                return true;
-            case Function(_, _):
-                return true;
-            case Usertype(_, _, _):
+            case Function(_, _), Usertype(_, _, _), List(_), Tuple(_):
                 return true;
             case _:
                 throw new Exception("TODO requiresGC " + type);
@@ -248,6 +256,8 @@ class DatatypeHelpers {
             case Usertype(name, params, Struct):
                 return "static samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Struct};\n";
             case Usertype(name, params, Enum):
+                return "static samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Enum};\n";
+            case Tuple(elements):
                 return "static samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Enum};\n";
             case _:
                 throw new Exception("TODO  " + type);
