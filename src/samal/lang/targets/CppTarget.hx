@@ -213,6 +213,18 @@ class CppTarget extends LanguageTarget {
         }
         return ret;
     }
+    private static function genEqualityCheckCode(nodeErrorInfo : String, datatype : Datatype, lhsName : String, rhsName : String) : String {
+        switch(datatype) {
+        case Int, Bool, Char:
+            return 'if($lhsName != $rhsName) return false;\n';
+        case List(_), Usertype(_, _, _):
+            return  'if(!equals(ctx, $lhsName, $rhsName)) return false;\n';
+        case Function(_, _), Tuple(_):
+            throw new Exception(nodeErrorInfo + ": Unsupported datatype " + datatype.toSamalType());
+        case Unknown(_, _):
+            throw new Exception(nodeErrorInfo + ": Unknown datatype, this is a bug!");
+        }
+    }
     public function makeStructDeclaration(ctx : SourceCreationContext, node : CppStructDeclaration) : String {
         final cppCtx = cast(ctx, CppContext);
         if(cppCtx.getHos() != HeaderStart) {
@@ -240,17 +252,7 @@ class CppTarget extends LanguageTarget {
             + "}\n"
             + "inline bool equals(samalrt::SamalContext& ctx, const " + nodeCppType + "& a, const " + nodeCppType + "& b) {\n"
             + node.getFields().map(function(f) : String {
-                switch(f.getDatatype()) {
-                    case Int, Bool, Char:
-                        return ' if(a.${f.getFieldName()} != b.${f.getFieldName()}) return false;\n';
-                    case List(_), Usertype(_, _, _):
-                        return ' if(!equals(ctx, a.${f.getFieldName()}, b.${f.getFieldName()})) return false;\n';
-                    case Function(_, _), Tuple(_):
-                        throw new Exception(node.errorInfo() + ": Unsupported datatype " + f.getDatatype().toSamalType());
-                    case Unknown(_, _):
-                        throw new Exception(node.errorInfo() + ": Unknown datatype, this is a bug!");
-                }
-                return "";
+                return " " + genEqualityCheckCode(node.errorInfo(), f.getDatatype(), "a." + f.getFieldName(), "b." + f.getFieldName());
             }).join('')
             + " return true;\n"
             + "}\n"
@@ -262,9 +264,10 @@ class CppTarget extends LanguageTarget {
         if(cppCtx.getHos() != HeaderStart) {
             return "";
         }
+        final nodeCppType = node.getDatatype().toCppType();
         return
             "#pragma pack(1)\n"
-            + "struct " + node.getDatatype().toCppType() + " {\n"
+            + "struct " + nodeCppType + " {\n"
             + " int32_t variant;\n"
             + " union {\n"
             + node.getVariants().map(function(v) {
@@ -275,7 +278,25 @@ class CppTarget extends LanguageTarget {
                     + "  } " + v.getName() + ";\n";
             }).join("")
             + " };\n"
-            + "};\n";
+            + "};\n"
+            + "namespace samalrt {\n"
+            + "inline bool equals(samalrt::SamalContext& ctx, const " + nodeCppType + "& a, const " + nodeCppType + "& b) {\n"
+            + " if(a.variant != b.variant) return false;\n"
+            + " switch(a.variant) {\n"
+            + Util.seq(node.getVariants().length).map(function(variantIndex) : String {
+                var ret = "  case " + variantIndex + ": {\n";
+                final v = node.getVariants()[variantIndex];
+                for(f in v.getFields()) {
+                    ret += "   " + genEqualityCheckCode(node.errorInfo(), f.getDatatype(), 'a.${v.getName()}.${f.getFieldName()}', 'b.${v.getName()}.${f.getFieldName()}');
+                }
+                ret += "   break;\n";
+                ret += "  }\n";
+                return ret;
+            }).join('')
+            + " }\n"
+            + " return true;\n"
+            + "}\n"
+            + "}\n";
     }
     public function makeScopeStatement(ctx : SourceCreationContext, node : CppScopeStatement) : String {
         return indent(ctx) + node.getScope().toSrc(this, ctx.next());
