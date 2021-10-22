@@ -6,6 +6,8 @@ import samal.lang.targets.LanguageTarget;
 using samal.lang.Datatype.DatatypeHelpers;
 using samal.lang.Util.NullTools;
 
+using samal.lang.targets.CppDatatypeHelpers;
+
 enum HeaderOrSource {
     HeaderStart;
     HeaderEnd;
