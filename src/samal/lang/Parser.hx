@@ -40,7 +40,14 @@ class Parser {
             }
             skipNewlines();
         }
-        return SamalModule.create(makeSourceRef(), moduleName, decls);
+        final ret = SamalModule.create(makeSourceRef(), moduleName, decls);
+        if(!mSourceRefs.isEmpty()) {
+            for(ref in mSourceRefs) {
+                trace(ref.info());
+            }
+            throw new Exception("Assert: Souce code refs remaining!");
+        }
+        return ret;
     }
 
     function parseDeclaration() : Null<SamalDeclaration> {
@@ -52,7 +59,6 @@ class Parser {
                 var params = parseFunctionParameterList();
                 eat(TokenType.RightArrow);
                 var returnType = parseDatatype();
-                startNode();
                 var body = parseScope();
                 return SamalFunctionDeclaration.create(makeSourceRef(), identifier, params, returnType, body);
             
@@ -257,8 +263,7 @@ class Parser {
             var op = binaryExprInfo[0][current().getType()].sure();
             mTokenizer.next();
             var rhs = parseBinaryExpression(nextStepInfo);
-            lhs = SamalBinaryExpression.create(makeSourceRef(), lhs, op.sure(), rhs);
-            startNode();
+            lhs = SamalBinaryExpression.create(makeSourceRefNonDestructive(), lhs, op.sure(), rhs);
         }
         dropNode();
         return lhs;
@@ -275,8 +280,7 @@ class Parser {
         var lhs = parseLiteralExpression();
         while(current().getType() == TokenType.LParen) {
             var params = parseExpressionList(LParen, RParen);
-            lhs = SamalFunctionCallExpression.create(makeSourceRef(), lhs, params);
-            startNode();
+            lhs = SamalFunctionCallExpression.create(makeSourceRefNonDestructive(), lhs, params);
         }
         dropNode();
         return lhs;
@@ -326,8 +330,8 @@ class Parser {
                 }
                 return SamalLiteralIntExpression.create(makeSourceRef(), valAsInt);
             case LCurly:
-                startNode();
-                return SamalScopeExpression.create(makeSourceRef(), parseScope());
+                final scope = parseScope();
+                return SamalScopeExpression.create(makeSourceRef(), scope);
             
             case LParen:
                 final l = parseList(LParen, Comma, RParen, function() {
@@ -341,7 +345,6 @@ class Parser {
                 return SamalCreateTupleExpression.create(makeSourceRef(), l);
             
             case Identifier:
-                startNode();
                 if (peek().getType() == TokenType.Equals) {
                     final identifierName = current().getSubstr();
                     eat(TokenType.Identifier);
@@ -366,9 +369,9 @@ class Parser {
                     // probably just a function call like fib<int>(5), not a struct or enum creation Point<int>{...}
                     return SamalLoadIdentifierExpression.create(makeSourceRef(), identifier);
                 }
-                return SamalLoadIdentifierExpression.create(makeSourceRef(), parseIdentifierWithTemplate());
+                final ident = parseIdentifierWithTemplate();
+                return SamalLoadIdentifierExpression.create(makeSourceRef(), ident);
             case If:
-                startNode();
                 eat(If);
                 var mainCondition = parseExpression();
                 var mainBody = parseScope();
@@ -390,7 +393,6 @@ class Parser {
                 return SamalIfExpression.create(makeSourceRef(), mainCondition, mainBody, elseIfs, elseScope);
 
             case LSquare:
-                startNode();
                 if (peek().getType() == Colons) {
                     eat(LSquare);
                     eat(Colons);
@@ -402,7 +404,6 @@ class Parser {
                 return SamalCreateListExpression.create(makeSourceRef(), expressions);
 
             case Match:
-                startNode();
                 eat(Match);
                 var toMatch = parseExpression();
                 eat(LCurly);
@@ -421,7 +422,6 @@ class Parser {
                 return SamalMatchExpression.create(makeSourceRef(), toMatch, rows);
 
             case Fn:
-                startNode();
                 eat(Fn);
                 final params = parseFunctionParameterList();
                 eat(RightArrow);
@@ -430,12 +430,10 @@ class Parser {
                 return SamalCreateLambdaExpression.create(makeSourceRef(), params, returnType, body, []);
 
             case CharLiteral:
-                startNode();
                 final ch = eat(CharLiteral).getSubstr();
                 return SamalLiteralCharExpression.create(makeSourceRef(), ch);
             
             case StringLiteral:
-                startNode();
                 final str = eat(StringLiteral).getSubstr();
                 final listElements : Array<SamalExpression> = [];
                 for(i in 0...str.length) {
@@ -444,12 +442,10 @@ class Parser {
                 return SamalCreateListExpression.createFull(makeSourceRef(), List(Char), listElements);
 
             case True:
-                startNode();
                 eat(True);
                 return SamalLiteralBoolExpression.create(makeSourceRef(), true);
 
             case False:
-                startNode();
                 eat(False);
                 return SamalLiteralBoolExpression.create(makeSourceRef(), false);
 
@@ -499,11 +495,11 @@ class Parser {
     }
 
     function makeSourceRefNonDestructive() : SourceCodeRef {
-
         var base = mSourceRefs.first();
         if(base == null) {
             throw new Exception("Unexpected mSourceRefs is empty");
         }
-        return SourceCodeRef.merge(base, mTokenizer.current().getSourceRef(), mTokenizer.getOriginalString());
+        final ret = SourceCodeRef.merge(base, mTokenizer.peek(-1).getSourceRef(), mTokenizer.getOriginalString());
+        return ret;
     }
 }

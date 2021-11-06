@@ -148,7 +148,7 @@ class Tokenizer {
         return tokens[indexStack.first()];
     }
     public function peek(n : Int = 1) : Token {
-        if(indexStack.first() + n >= tokens.length) {
+        if(indexStack.first() + n >= tokens.length || indexStack.first() + n < 0) {
             if(tokens.length == 0) {
                 return new Token(new SourceCodeRef(1, 1, 1, 1, 0, 0, ""), TokenType.Invalid, 0);
             }
