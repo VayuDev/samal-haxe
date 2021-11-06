@@ -58,12 +58,18 @@ class Stage1 {
 
     public function completeGlobalIdentifiers() : SamalProgram {
         // step 1: complete global identifiers
+        final globalIdentifiers = new Map<String, Int>(); // Int is not used, but haxe doesn't have (native) sets
         mProgram.forEachModule(function (moduleName, moduleAST) {
             mCurrentModule = moduleName;
             moduleAST.traverse(function(astNode) {}, function(astNode) {
                 if(Std.downcast(astNode, SamalDeclaration) != null) {
                     var node = Std.downcast(astNode, SamalDeclaration);
-                    node.setName(new IdentifierWithTemplate(mCurrentModule + "." + node.getName().getName(), node.getName().getTemplateParams()));
+                    final name = mCurrentModule + "." + node.getName().getName();
+                    if(globalIdentifiers.exists(name)) {
+                        throw new Exception(astNode.errorInfo() + ": Declared twice");
+                    }
+                    node.setName(new IdentifierWithTemplate(name, node.getName().getTemplateParams()));
+                    globalIdentifiers.set(name, 0);
                 }
             });
         });
