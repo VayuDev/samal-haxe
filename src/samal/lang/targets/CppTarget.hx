@@ -50,11 +50,14 @@ class CppTarget extends LanguageTarget {
             + ", " + statement.getDatatype().toCppGCTypeStr() + "}";
     }
 
-    public function getLiteralInt(value : Int) : String {
-        return "(int32_t) (" + Std.string(value) + "ll)";
+    public function getLiteralBool(value : Bool) : String {
+        return value ? "true" : "false";
     }
     public function getLiteralChar(value : String) : String {
         return "(char32_t) (" + Std.string(value.charCodeAt(0).sure()) + ")";
+    }
+    public function getLiteralInt(value : Int) : String {
+        return "(int32_t) (" + Std.string(value) + "ll)";
     }
     public function getLiteralEmptyList(baseType : Datatype) : String {
         return "(samalrt::List<" + baseType.toCppType() + ">*) nullptr";

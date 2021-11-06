@@ -440,6 +440,16 @@ class Parser {
                 }
                 return SamalCreateListExpression.createFull(makeSourceRef(), List(Char), listElements);
 
+            case True:
+                startNode();
+                eat(True);
+                return SamalLiteralBoolExpression.create(makeSourceRef(), true);
+
+            case False:
+                startNode();
+                eat(False);
+                return SamalLiteralBoolExpression.create(makeSourceRef(), false);
+
             case _:
                 throw new Exception(current().info() + " Expected expression");
         }

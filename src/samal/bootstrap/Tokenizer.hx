@@ -56,6 +56,7 @@ enum TokenType {
     Enum;
     Equals;
     ExclamationMark;
+    False;
     Fn;
     FunctionChain;
     Hashtag;
@@ -85,6 +86,7 @@ enum TokenType {
     Star;
     StringLiteral;
     Struct;
+    True;
     Underscore;
 }
 
@@ -248,7 +250,9 @@ class TokenGenerator {
         "||" => TokenType.DoublePipe,
         "module" => TokenType.Module,
         "struct" => TokenType.Struct,
-        "enum" => TokenType.Enum
+        "enum" => TokenType.Enum,
+        "true" => TokenType.True,
+        "false" => TokenType.False
     ];
     
 
