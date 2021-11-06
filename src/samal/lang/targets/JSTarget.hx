@@ -155,6 +155,10 @@ class JSTarget extends LanguageTarget {
                 opStr = "<=";
             case MoreEqual:
                 opStr = ">=";
+            case And:
+                opStr = "&&";
+            case Or:
+                opStr = "||";
         }
         return indent(ctx) + "let " + node.getVarName() + " = " + node.getLhsVarName() + " " + opStr + " " + node.getRhsVarName();
     }

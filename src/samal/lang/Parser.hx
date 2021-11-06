@@ -225,9 +225,12 @@ class Parser {
         return parseBinaryExpression([[
             TokenType.FunctionChain => SamalBinaryExpressionOp.FunctionChain
         ], [
+            TokenType.DoubleAnd => SamalBinaryExpressionOp.And,
+            TokenType.DoublePipe => SamalBinaryExpressionOp.Or,
+        ], [
             TokenType.DoubleEquals => SamalBinaryExpressionOp.Equal,
             TokenType.NotEquals => SamalBinaryExpressionOp.NotEqual,
-        ],[
+        ], [
             TokenType.Less => SamalBinaryExpressionOp.Less,
             TokenType.More => SamalBinaryExpressionOp.More,
             TokenType.LessEqual => SamalBinaryExpressionOp.LessEqual,

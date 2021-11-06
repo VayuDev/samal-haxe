@@ -210,6 +210,8 @@ enum CppBinaryExprOp {
     MoreEqual;
     Equal;
     NotEqual;
+    And;
+    Or;
 }
 
 class CppBinaryExprStatement extends CppStatement {

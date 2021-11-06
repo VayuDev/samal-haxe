@@ -326,6 +326,10 @@ class CppTarget extends LanguageTarget {
                 opStr = "<=";
             case MoreEqual:
                 opStr = ">=";
+            case And:
+                opStr = "&&";
+            case Or:
+                opStr = "||";
         }
         return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = " 
             + node.getLhsVarName() + " " + opStr + " " + node.getRhsVarName() + getTrackerString(node);
