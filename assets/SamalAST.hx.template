@@ -171,6 +171,8 @@ enum SamalBinaryExpressionOp {
     MoreEqual;
     Equal;
     NotEqual;
+    And;
+    Or;
 }
 @end_hx
 
