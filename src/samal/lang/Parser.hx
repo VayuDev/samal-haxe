@@ -88,6 +88,9 @@ class Parser {
             case Bool:
                 eat(TokenType.Bool);
                 return Datatype.Bool;
+            case Byte:
+                eat(Byte);
+                return Datatype.Byte;
             case Char:
                 eat(TokenType.Char);
                 return Datatype.Char;
@@ -329,6 +332,17 @@ class Parser {
                     throw new Exception(current().info() + " Couldn't convert " + val + " to int");
                 }
                 return SamalLiteralIntExpression.create(makeSourceRef(), valAsInt);
+
+            case ByteLiteral:
+                var val = current().getSubstr();
+                val = val.substr(0, val.length - 1); // remove trailing 'b'
+                eat(ByteLiteral);
+                var valAsInt = Std.parseInt(val);
+                if(valAsInt == null) {
+                    throw new Exception(current().info() + " Couldn't convert " + val + " to byte");
+                }
+                return SamalLiteralByteExpression.create(makeSourceRef(), valAsInt);
+
             case LCurly:
                 final scope = parseScope();
                 return SamalScopeExpression.create(makeSourceRef(), scope);

@@ -251,6 +251,13 @@ class SamalLiteralBoolExpression extends SamalExpression {
     @end_hx
 }
 
+class SamalLiteralByteExpression extends SamalExpression {
+    -val : Int
+    @start_hx_ctor()
+        ret.mDatatype = Datatype.Byte;
+    @end_hx
+}
+
 class SamalLiteralCharExpression extends SamalExpression {
     -val : String
     @start_hx_ctor()

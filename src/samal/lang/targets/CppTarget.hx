@@ -53,6 +53,9 @@ class CppTarget extends LanguageTarget {
     public function getLiteralBool(value : Bool) : String {
         return value ? "true" : "false";
     }
+    public function getLiteralByte(value : Int) : String {
+        return "((uint8_t) " + Std.string(value) + ")";
+    }
     public function getLiteralChar(value : String) : String {
         return "(char32_t) (" + Std.string(value.charCodeAt(0).sure()) + ")";
     }
@@ -69,7 +72,7 @@ class CppTarget extends LanguageTarget {
             }
         }
         switch(type) {
-            case Int, Bool, Char:
+            case Int, Bool, Char, Byte:
                 return "";
             case List(baseType):
                 return toCppTupleDeclaration(baseType, alreadyDone, program);
@@ -218,7 +221,7 @@ class CppTarget extends LanguageTarget {
     }
     private static function genEqualityCheckCode(nodeErrorInfo : String, datatype : Datatype, lhsName : String, rhsName : String) : String {
         switch(datatype) {
-        case Int, Bool, Char:
+        case Int, Bool, Char, Byte:
             return 'if($lhsName != $rhsName) return false;\n';
         case List(_), Usertype(_, _, _):
             return  'if(!equals(ctx, $lhsName, $rhsName)) return false;\n';

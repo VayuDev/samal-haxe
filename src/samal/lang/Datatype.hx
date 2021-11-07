@@ -16,6 +16,7 @@ enum Datatype {
     Int;
     Bool;
     Char;
+    Byte;
     List(baseType : Datatype);
     Unknown(name : String, templateParams : Array<Datatype>);
     Function(returnType : Datatype, params : Array<Datatype>);
@@ -102,7 +103,7 @@ class DatatypeHelpers {
                 return Datatype.Tuple(params.map(function(paramType) {
                     return complete(paramType, map);
                 }));
-            case Int, Bool, Char:
+            case Int, Bool, Char, Byte:
                 return type;
             case Usertype(name, templateParams, subtype):
                 return Datatype.Usertype(name, templateParams.map(function(f) return complete(f, map)), subtype);
@@ -125,7 +126,7 @@ class DatatypeHelpers {
                 return !params.any(function(p) {
                     return !isComplete(p);
                 });
-            case Int, Bool, Char:
+            case Int, Bool, Char, Byte:
                 return true;
             case Usertype(name, templateParams, subtype):
                 return !templateParams.any(function(p) {
@@ -139,6 +140,8 @@ class DatatypeHelpers {
                 return "int";
             case Bool:
                 return "bool";
+            case Byte:
+                return "byte";
             case Char:
                 return "char";
             case List(base):
@@ -157,6 +160,8 @@ class DatatypeHelpers {
                 return "int_";
             case Bool:
                 return "bool_";
+            case Byte:
+                return "byte_";
             case Char:
                 return "char_";
             case List(base):
@@ -173,12 +178,12 @@ class DatatypeHelpers {
     }
     static public function isContainerType(type : Datatype) : Bool {
         switch(type) {
-            case Int, Bool, Char:
+            case Int, Bool, Char, Byte:
                 return false;
             case Function(_, _), Usertype(_, _, _), List(_), Tuple(_):
                 return true;
             case _:
-                throw new Exception("TODO requiresGC " + type);
+                throw new Exception("TODO isContainerType " + type);
         }
     }
     public static function deepEquals(a : Datatype, b : Datatype) : Bool {

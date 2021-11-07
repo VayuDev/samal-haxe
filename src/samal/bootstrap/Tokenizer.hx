@@ -43,6 +43,8 @@ enum TokenType {
     Unknown;
     At;
     Bool;
+    Byte;
+    ByteLiteral;
     Char;
     CharLiteral;
     Colons;
@@ -252,7 +254,8 @@ class TokenGenerator {
         "struct" => TokenType.Struct,
         "enum" => TokenType.Enum,
         "true" => TokenType.True,
-        "false" => TokenType.False
+        "false" => TokenType.False,
+        "byte" => TokenType.Byte
     ];
     
 
@@ -293,6 +296,12 @@ class TokenGenerator {
 
                 while(getCurrentChar() != "" && "0123456789".indexOf(getCurrentChar()) != -1) {
                     advance();
+                }
+                if(getCurrentChar() == "b") {
+                    // byte literal
+                    advance();
+                    tokens.push(new Token(makeSourceRef(), TokenType.ByteLiteral, skippedSpaces));
+                    continue;
                 }
                 tokens.push(new Token(makeSourceRef(), TokenType.Integer, skippedSpaces));
                 continue;

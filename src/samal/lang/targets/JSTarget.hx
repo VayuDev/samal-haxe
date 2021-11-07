@@ -40,6 +40,9 @@ class JSTarget extends LanguageTarget {
     public function getLiteralBool(value : Bool) : String {
         return value ? "true" : "false";
     }
+    public function getLiteralByte(value : Int) : String {
+        return Std.string(value);
+    }
     public function getLiteralChar(value : String) : String {
         if(value.charCodeAt(0).sure() < 20) {
             return "'\\u" + value.charCodeAt(0).sure() + "'";

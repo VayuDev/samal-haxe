@@ -146,6 +146,10 @@ fn mainSix() -> (int, char) {
     makeTuple<int, char>(3, 'ü')
 }
 
-fn main() -> bool {
+fn mainSeven() -> bool {
     false || true
+}
+
+fn main() -> byte {
+    27b
 }

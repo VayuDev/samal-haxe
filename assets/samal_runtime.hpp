@@ -25,6 +25,7 @@ enum class DatatypeCategory {
     List,
     Int,
     Bool,
+    Byte,
     Char,
     Function,
     Struct,
@@ -303,6 +304,7 @@ private:
 
 SamalString toSamalString(SamalContext& ctx, const std::string& str);
 SamalString toSamalString(SamalContext& ctx, const std::u32string& str);
+SamalString inspect(SamalContext& ctx, uint8_t);
 SamalString inspect(SamalContext& ctx, int32_t);
 SamalString inspect(SamalContext& ctx, bool);
 SamalString inspect(SamalContext& ctx, char32_t);

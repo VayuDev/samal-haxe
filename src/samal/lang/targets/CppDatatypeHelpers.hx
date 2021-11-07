@@ -19,6 +19,8 @@ class CppDatatypeHelpers {
                 return "int32_t";
             case Bool:
                 return "bool";
+            case Byte:
+                return "uint8_t";
             case Char:
                 return "char32_t";
             case List(base):
@@ -38,7 +40,7 @@ class CppDatatypeHelpers {
     }
     static public function toCppDefaultInitializationString(type : Datatype) : String {
         switch(type) {
-            case Int:
+            case Int, Byte:
                 return "0";
             case Bool:
                 return "false";
@@ -65,6 +67,8 @@ class CppDatatypeHelpers {
                 return "static const samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Int};\n";
             case Bool:
                 return "static const samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Bool};\n";
+            case Byte:
+                return "static const samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Byte};\n";
             case Char:
                 return "static const samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Char};\n";
             case List(base):

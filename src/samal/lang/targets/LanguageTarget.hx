@@ -28,6 +28,7 @@ class SourceCreationContext {
 abstract class LanguageTarget {
 
     abstract public function getLiteralBool(value : Bool) : String;
+    abstract public function getLiteralByte(value : Int) : String;
     abstract public function getLiteralChar(value : String) : String;
     abstract public function getLiteralInt(value : Int) : String;
     abstract public function getLiteralEmptyList(baseType : Datatype) : String;
