@@ -277,6 +277,15 @@ class TokenGenerator {
                     continue;
                 }
             }
+
+            if(getCurrentChar() == "/" && getNextChar() == "/") {
+                // line comment
+                while(getCurrentChar() != "\n") {
+                    advance();
+                }
+                advance();
+                continue;
+            }
             
             var isInteger = false;
             if(getCurrentChar() == "-" && StringTools.contains("0123456789", getNextChar())) {
