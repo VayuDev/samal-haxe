@@ -142,6 +142,14 @@ fn mainFive() -> MainRet {
     MainRet{str: s, b1: s == "Häbbö", b2: s == "Hallo", b3: m == Maybe<int>::None{}, b4: m == Maybe<int>::Some{v: 5}, b5: n == Maybe<int>::None{}}
 }
 
-fn main() -> (int, char) {
+fn mainSix() -> (int, char) {
     makeTuple<int, char>(3, 'ü')
+}
+
+fn mainSeven() -> bool {
+    false || true
+}
+
+fn main() -> byte {
+    27b
 }

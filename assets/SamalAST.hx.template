@@ -171,6 +171,8 @@ enum SamalBinaryExpressionOp {
     MoreEqual;
     Equal;
     NotEqual;
+    And;
+    Or;
 }
 @end_hx
 
@@ -241,6 +243,21 @@ class SamalElseIfBranch {
 class SamalLineExpression extends SamalExpression {
 
 }
+
+class SamalLiteralBoolExpression extends SamalExpression {
+    -val : Bool
+    @start_hx_ctor()
+        ret.mDatatype = Datatype.Bool;
+    @end_hx
+}
+
+class SamalLiteralByteExpression extends SamalExpression {
+    -val : Int
+    @start_hx_ctor()
+        ret.mDatatype = Datatype.Byte;
+    @end_hx
+}
+
 class SamalLiteralCharExpression extends SamalExpression {
     -val : String
     @start_hx_ctor()

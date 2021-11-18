@@ -79,6 +79,7 @@ void SamalContext::visitObj(void *toVisit, const Datatype& type) {
     switch(type.getCategory()) {
     case DatatypeCategory::Bool:
     case DatatypeCategory::Int:
+    case DatatypeCategory::Byte:
         break;
     case DatatypeCategory::List: {
         void** rawPtr = (void**)toVisit;
@@ -171,7 +172,11 @@ void* SamalContext::copyToOther(void* rawPtr, size_t size) {
 bool SamalContext::isInOtherPage(void* ptr) {
     return ptr >= mOtherPage && ptr < mOtherPage + mOtherPageOffset;
 }
-
+SamalString inspect(SamalContext& ctx, uint8_t val) {
+    auto str = std::to_string(val);
+    auto ret = toSamalString(ctx, str);
+    return listConcat(ctx, ret, toSamalString(ctx, "b"));
+}
 SamalString inspect(SamalContext& ctx, int32_t val) {
     auto str = std::to_string(val);
     return toSamalString(ctx, str);

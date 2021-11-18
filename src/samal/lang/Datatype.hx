@@ -16,6 +16,7 @@ enum Datatype {
     Int;
     Bool;
     Char;
+    Byte;
     List(baseType : Datatype);
     Unknown(name : String, templateParams : Array<Datatype>);
     Function(returnType : Datatype, params : Array<Datatype>);
@@ -102,7 +103,7 @@ class DatatypeHelpers {
                 return Datatype.Tuple(params.map(function(paramType) {
                     return complete(paramType, map);
                 }));
-            case Int, Bool, Char:
+            case Int, Bool, Char, Byte:
                 return type;
             case Usertype(name, templateParams, subtype):
                 return Datatype.Usertype(name, templateParams.map(function(f) return complete(f, map)), subtype);
@@ -125,30 +126,12 @@ class DatatypeHelpers {
                 return !params.any(function(p) {
                     return !isComplete(p);
                 });
-            case Int, Bool, Char:
+            case Int, Bool, Char, Byte:
                 return true;
             case Usertype(name, templateParams, subtype):
                 return !templateParams.any(function(p) {
                     return !isComplete(p);
                 });
-        }
-    }
-    static public function toCppType(type : Datatype) : String {
-        switch(type) {
-            case Int:
-                return "int32_t";
-            case Bool:
-                return "bool";
-            case Char:
-                return "char32_t";
-            case List(base):
-                return "samalrt::List<" + toCppType(base) + ">*";
-            case Function(returnType, params):
-                return "samalrt::Function<" + toCppType(returnType) + "(samalrt::SamalContext&, " + params.map(function(p) return toCppType(p)).join(", ") + ")>";
-            case Usertype(name, params, subtype):
-                return getUsertypeMangledName(type);
-            case _:
-                throw new Exception("TODO toCppType: " + type);
         }
     }
     static public function toSamalType(type : Datatype) : String {
@@ -157,10 +140,12 @@ class DatatypeHelpers {
                 return "int";
             case Bool:
                 return "bool";
+            case Byte:
+                return "byte";
             case Char:
                 return "char";
             case List(base):
-                return "[" + toCppType(base) + "]";
+                return "[" + toSamalType(base) + "]";
             case Usertype(name, [], subtype):
                 return name;
             case Usertype(name, params, subtype):
@@ -175,6 +160,8 @@ class DatatypeHelpers {
                 return "int_";
             case Bool:
                 return "bool_";
+            case Byte:
+                return "byte_";
             case Char:
                 return "char_";
             case List(base):
@@ -183,76 +170,21 @@ class DatatypeHelpers {
                 return "fn_s" + toMangledName(returnType) + "_" + params.map(function(p) return toMangledName(p)).join("_") + "e";
             case Usertype(name, params, subtype):
                 return Std.string(subtype).toLowerCase() + "_s" + Util.mangle(name, params) + "e";
+            case Tuple(elements):
+                return "tuple_s" + elements.map(function(e) return toMangledName(e)).join("_") + "e";
             case _:
                 throw new Exception("TODO " + type);
         }
     }
-    static public function toCppGCTypeStr(type : Datatype) : String {
-        return toMangledName(type);
-    }
     static public function isContainerType(type : Datatype) : Bool {
         switch(type) {
-            case Int, Bool, Char:
+            case Int, Bool, Char, Byte:
                 return false;
-            case List(_):
-                return true;
-            case Function(_, _):
-                return true;
-            case Usertype(_, _, _):
+            case Function(_, _), Usertype(_, _, _), List(_), Tuple(_):
                 return true;
             case _:
-                throw new Exception("TODO requiresGC " + type);
+                throw new Exception("TODO isContainerType " + type);
         }
-    }
-    static public function toCppDefaultInitializationString(type : Datatype) : String {
-        switch(type) {
-            case Int:
-                return "0";
-            case Bool:
-                return "false";
-            case Char:
-                return "0";
-            case List(_):
-                return "{ 0 }";
-            case Function(_, _):
-                return "{}";
-            case _:
-                throw new Exception("TODO toDefaultInitializationString" + type);
-        }
-    }
-    static public function toCppGCTypeDeclaration(type : Datatype, alreadyDone : Array<Datatype>) : String {
-        for(done in alreadyDone) {
-            if(deepEquals(done, type)) {
-                return "";
-            }
-        }
-        final typeStr = toCppGCTypeStr(type);
-        alreadyDone.push(type);
-        switch(type) {
-            case Int:
-                return "static const samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Int};\n";
-            case Bool:
-                return "static const samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Bool};\n";
-            case Char:
-                return "static const samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Char};\n";
-            case List(base):
-                return toCppGCTypeDeclaration(base, alreadyDone) 
-                    + "static const samalrt::Datatype " + typeStr +  "{samalrt::DatatypeCategory::List, &" + toCppGCTypeStr(base) + "};\n";
-            case Function(returnType, params):
-                return toCppGCTypeDeclaration(returnType, alreadyDone) 
-                    + params.map(function(p) {
-                        return toCppGCTypeDeclaration(p, alreadyDone);
-                    }).join("")
-                    + "static const samalrt::Datatype " + typeStr +  "{samalrt::DatatypeCategory::Function, &" 
-                    + toCppGCTypeStr(returnType) + ", {" + params.map(function(p) return "&" + toCppGCTypeStr(p)).join(", ") + "}};\n";
-            case Usertype(name, params, Struct):
-                return "static samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Struct};\n";
-            case Usertype(name, params, Enum):
-                return "static samalrt::Datatype " + typeStr + "{samalrt::DatatypeCategory::Enum};\n";
-            case _:
-                throw new Exception("TODO  " + type);
-        }
-        throw new Exception("TODO toCppGCTypeDeclaration" + type);
     }
     public static function deepEquals(a : Datatype, b : Datatype) : Bool {
         return Std.string(a) == Std.string(b);

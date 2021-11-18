@@ -125,6 +125,10 @@ class Stage3 {
                     op = CppBinaryExprOp.Equal;
                 case NotEqual:
                     op = CppBinaryExprOp.NotEqual;
+                case And:
+                    op = CppBinaryExprOp.And;
+                case Or:
+                    op = CppBinaryExprOp.Or;
                 
                 case _:
                     throw new Exception("TODO! " + node.dump());
@@ -171,13 +175,21 @@ class Stage3 {
             var res = addStatement(new CppUnaryExprStatement(node.getSourceRef(), nodeDatatype, genTempVarName("list_get_tail"), exprVarName, ListGetTail));
             return res.getVarName();
 
-        } else if(Std.downcast(astNode, SamalLiteralIntExpression) != null) {
-            var node = Std.downcast(astNode, SamalLiteralIntExpression);
-            return mTarget.getLiteralInt(node.getVal());
+        } else if(Std.downcast(astNode, SamalLiteralBoolExpression) != null) {
+            var node = Std.downcast(astNode, SamalLiteralBoolExpression);
+            return mTarget.getLiteralBool(node.getVal());
+
+        } else if(Std.downcast(astNode, SamalLiteralByteExpression) != null) {
+            var node = Std.downcast(astNode, SamalLiteralByteExpression);
+            return mTarget.getLiteralByte(node.getVal());
 
         } else if(Std.downcast(astNode, SamalLiteralCharExpression) != null) {
             var node = Std.downcast(astNode, SamalLiteralCharExpression);
             return mTarget.getLiteralChar(node.getVal());
+
+        } else if(Std.downcast(astNode, SamalLiteralIntExpression) != null) {
+            var node = Std.downcast(astNode, SamalLiteralIntExpression);
+            return mTarget.getLiteralInt(node.getVal());
 
         } else if(Std.downcast(astNode, SamalAssignmentExpression) != null) {
             var node = Std.downcast(astNode, SamalAssignmentExpression);

@@ -40,7 +40,14 @@ class Parser {
             }
             skipNewlines();
         }
-        return SamalModule.create(makeSourceRef(), moduleName, decls);
+        final ret = SamalModule.create(makeSourceRef(), moduleName, decls);
+        if(!mSourceRefs.isEmpty()) {
+            for(ref in mSourceRefs) {
+                trace(ref.info());
+            }
+            throw new Exception("Assert: Souce code refs remaining!");
+        }
+        return ret;
     }
 
     function parseDeclaration() : Null<SamalDeclaration> {
@@ -52,7 +59,6 @@ class Parser {
                 var params = parseFunctionParameterList();
                 eat(TokenType.RightArrow);
                 var returnType = parseDatatype();
-                startNode();
                 var body = parseScope();
                 return SamalFunctionDeclaration.create(makeSourceRef(), identifier, params, returnType, body);
             
@@ -82,6 +88,9 @@ class Parser {
             case Bool:
                 eat(TokenType.Bool);
                 return Datatype.Bool;
+            case Byte:
+                eat(Byte);
+                return Datatype.Byte;
             case Char:
                 eat(TokenType.Char);
                 return Datatype.Char;
@@ -225,9 +234,12 @@ class Parser {
         return parseBinaryExpression([[
             TokenType.FunctionChain => SamalBinaryExpressionOp.FunctionChain
         ], [
+            TokenType.DoubleAnd => SamalBinaryExpressionOp.And,
+            TokenType.DoublePipe => SamalBinaryExpressionOp.Or,
+        ], [
             TokenType.DoubleEquals => SamalBinaryExpressionOp.Equal,
             TokenType.NotEquals => SamalBinaryExpressionOp.NotEqual,
-        ],[
+        ], [
             TokenType.Less => SamalBinaryExpressionOp.Less,
             TokenType.More => SamalBinaryExpressionOp.More,
             TokenType.LessEqual => SamalBinaryExpressionOp.LessEqual,
@@ -254,8 +266,7 @@ class Parser {
             var op = binaryExprInfo[0][current().getType()].sure();
             mTokenizer.next();
             var rhs = parseBinaryExpression(nextStepInfo);
-            lhs = SamalBinaryExpression.create(makeSourceRef(), lhs, op.sure(), rhs);
-            startNode();
+            lhs = SamalBinaryExpression.create(makeSourceRefNonDestructive(), lhs, op.sure(), rhs);
         }
         dropNode();
         return lhs;
@@ -272,8 +283,7 @@ class Parser {
         var lhs = parseLiteralExpression();
         while(current().getType() == TokenType.LParen) {
             var params = parseExpressionList(LParen, RParen);
-            lhs = SamalFunctionCallExpression.create(makeSourceRef(), lhs, params);
-            startNode();
+            lhs = SamalFunctionCallExpression.create(makeSourceRefNonDestructive(), lhs, params);
         }
         dropNode();
         return lhs;
@@ -322,9 +332,20 @@ class Parser {
                     throw new Exception(current().info() + " Couldn't convert " + val + " to int");
                 }
                 return SamalLiteralIntExpression.create(makeSourceRef(), valAsInt);
+
+            case ByteLiteral:
+                var val = current().getSubstr();
+                val = val.substr(0, val.length - 1); // remove trailing 'b'
+                eat(ByteLiteral);
+                var valAsInt = Std.parseInt(val);
+                if(valAsInt == null) {
+                    throw new Exception(current().info() + " Couldn't convert " + val + " to byte");
+                }
+                return SamalLiteralByteExpression.create(makeSourceRef(), valAsInt);
+
             case LCurly:
-                startNode();
-                return SamalScopeExpression.create(makeSourceRef(), parseScope());
+                final scope = parseScope();
+                return SamalScopeExpression.create(makeSourceRef(), scope);
             
             case LParen:
                 final l = parseList(LParen, Comma, RParen, function() {
@@ -338,7 +359,6 @@ class Parser {
                 return SamalCreateTupleExpression.create(makeSourceRef(), l);
             
             case Identifier:
-                startNode();
                 if (peek().getType() == TokenType.Equals) {
                     final identifierName = current().getSubstr();
                     eat(TokenType.Identifier);
@@ -363,9 +383,9 @@ class Parser {
                     // probably just a function call like fib<int>(5), not a struct or enum creation Point<int>{...}
                     return SamalLoadIdentifierExpression.create(makeSourceRef(), identifier);
                 }
-                return SamalLoadIdentifierExpression.create(makeSourceRef(), parseIdentifierWithTemplate());
+                final ident = parseIdentifierWithTemplate();
+                return SamalLoadIdentifierExpression.create(makeSourceRef(), ident);
             case If:
-                startNode();
                 eat(If);
                 var mainCondition = parseExpression();
                 var mainBody = parseScope();
@@ -387,7 +407,6 @@ class Parser {
                 return SamalIfExpression.create(makeSourceRef(), mainCondition, mainBody, elseIfs, elseScope);
 
             case LSquare:
-                startNode();
                 if (peek().getType() == Colons) {
                     eat(LSquare);
                     eat(Colons);
@@ -399,7 +418,6 @@ class Parser {
                 return SamalCreateListExpression.create(makeSourceRef(), expressions);
 
             case Match:
-                startNode();
                 eat(Match);
                 var toMatch = parseExpression();
                 eat(LCurly);
@@ -418,7 +436,6 @@ class Parser {
                 return SamalMatchExpression.create(makeSourceRef(), toMatch, rows);
 
             case Fn:
-                startNode();
                 eat(Fn);
                 final params = parseFunctionParameterList();
                 eat(RightArrow);
@@ -427,18 +444,24 @@ class Parser {
                 return SamalCreateLambdaExpression.create(makeSourceRef(), params, returnType, body, []);
 
             case CharLiteral:
-                startNode();
                 final ch = eat(CharLiteral).getSubstr();
                 return SamalLiteralCharExpression.create(makeSourceRef(), ch);
             
             case StringLiteral:
-                startNode();
                 final str = eat(StringLiteral).getSubstr();
                 final listElements : Array<SamalExpression> = [];
                 for(i in 0...str.length) {
                     listElements.push(SamalLiteralCharExpression.create(makeSourceRefNonDestructive(), str.charAt(i)));
                 }
                 return SamalCreateListExpression.createFull(makeSourceRef(), List(Char), listElements);
+
+            case True:
+                eat(True);
+                return SamalLiteralBoolExpression.create(makeSourceRef(), true);
+
+            case False:
+                eat(False);
+                return SamalLiteralBoolExpression.create(makeSourceRef(), false);
 
             case _:
                 throw new Exception(current().info() + " Expected expression");
@@ -486,11 +509,11 @@ class Parser {
     }
 
     function makeSourceRefNonDestructive() : SourceCodeRef {
-
         var base = mSourceRefs.first();
         if(base == null) {
             throw new Exception("Unexpected mSourceRefs is empty");
         }
-        return SourceCodeRef.merge(base, mTokenizer.current().getSourceRef(), mTokenizer.getOriginalString());
+        final ret = SourceCodeRef.merge(base, mTokenizer.peek(-1).getSourceRef(), mTokenizer.getOriginalString());
+        return ret;
     }
 }

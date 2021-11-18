@@ -43,6 +43,8 @@ enum TokenType {
     Unknown;
     At;
     Bool;
+    Byte;
+    ByteLiteral;
     Char;
     CharLiteral;
     Colons;
@@ -56,6 +58,7 @@ enum TokenType {
     Enum;
     Equals;
     ExclamationMark;
+    False;
     Fn;
     FunctionChain;
     Hashtag;
@@ -85,6 +88,7 @@ enum TokenType {
     Star;
     StringLiteral;
     Struct;
+    True;
     Underscore;
 }
 
@@ -146,7 +150,7 @@ class Tokenizer {
         return tokens[indexStack.first()];
     }
     public function peek(n : Int = 1) : Token {
-        if(indexStack.first() + n >= tokens.length) {
+        if(indexStack.first() + n >= tokens.length || indexStack.first() + n < 0) {
             if(tokens.length == 0) {
                 return new Token(new SourceCodeRef(1, 1, 1, 1, 0, 0, ""), TokenType.Invalid, 0);
             }
@@ -248,7 +252,10 @@ class TokenGenerator {
         "||" => TokenType.DoublePipe,
         "module" => TokenType.Module,
         "struct" => TokenType.Struct,
-        "enum" => TokenType.Enum
+        "enum" => TokenType.Enum,
+        "true" => TokenType.True,
+        "false" => TokenType.False,
+        "byte" => TokenType.Byte
     ];
     
 
@@ -298,6 +305,12 @@ class TokenGenerator {
 
                 while(getCurrentChar() != "" && "0123456789".indexOf(getCurrentChar()) != -1) {
                     advance();
+                }
+                if(getCurrentChar() == "b") {
+                    // byte literal
+                    advance();
+                    tokens.push(new Token(makeSourceRef(), TokenType.ByteLiteral, skippedSpaces));
+                    continue;
                 }
                 tokens.push(new Token(makeSourceRef(), TokenType.Integer, skippedSpaces));
                 continue;

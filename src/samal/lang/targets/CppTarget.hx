@@ -6,6 +6,8 @@ import samal.lang.targets.LanguageTarget;
 using samal.lang.Datatype.DatatypeHelpers;
 using samal.lang.Util.NullTools;
 
+using samal.lang.targets.CppDatatypeHelpers;
+
 enum HeaderOrSource {
     HeaderStart;
     HeaderEnd;
@@ -48,14 +50,86 @@ class CppTarget extends LanguageTarget {
             + ", " + statement.getDatatype().toCppGCTypeStr() + "}";
     }
 
-    public function getLiteralInt(value : Int) : String {
-        return "(int32_t) (" + Std.string(value) + "ll)";
+    public function getLiteralBool(value : Bool) : String {
+        return value ? "true" : "false";
+    }
+    public function getLiteralByte(value : Int) : String {
+        return "((uint8_t) " + Std.string(value) + ")";
     }
     public function getLiteralChar(value : String) : String {
         return "(char32_t) (" + Std.string(value.charCodeAt(0).sure()) + ")";
     }
+    public function getLiteralInt(value : Int) : String {
+        return "(int32_t) (" + Std.string(value) + "ll)";
+    }
     public function getLiteralEmptyList(baseType : Datatype) : String {
         return "(samalrt::List<" + baseType.toCppType() + ">*) nullptr";
+    }
+    private function toCppTupleDeclaration(type : Datatype, alreadyDone : Array<Datatype>, program : CppProgram) : String {
+        for(done in alreadyDone) {
+            if(DatatypeHelpers.deepEquals(done, type)) {
+                return "";
+            }
+        }
+        switch(type) {
+            case Int, Bool, Char, Byte:
+                return "";
+            case List(baseType):
+                return toCppTupleDeclaration(baseType, alreadyDone, program);
+            case Usertype(name, templateParams, actualType):
+                final typeDecl = program.findUsertypeDeclaration(type);
+                if(Std.isOfType(typeDecl, CppStructDeclaration)) {
+                    final structDecl = cast(typeDecl, CppStructDeclaration);
+                    final ret = "";
+                    for(f in structDecl.getFields()) {
+                        ret += toCppTupleDeclaration(f.getDatatype(), alreadyDone, program) + "\n";
+                    }
+                    return ret;
+                }
+                if(Std.isOfType(typeDecl, CppEnumDeclaration)) {
+                    final enumDecl = cast(typeDecl, CppEnumDeclaration);
+                    final ret = "";
+                    for(v in enumDecl.getVariants()) {
+                        for(f in v.getFields()) {
+                            ret += toCppTupleDeclaration(f.getDatatype(), alreadyDone, program) + "\n";
+                        }
+                    }
+                    return ret;
+                }
+                throw new Exception("TODO");
+            case Function(returnType, params):
+                return toCppTupleDeclaration(returnType, alreadyDone, program) 
+                    + params.map(function(p) return toCppTupleDeclaration(p, alreadyDone, program)).join("\n");
+            case Tuple(elements):
+                alreadyDone.push(type);
+                var ret = "";
+                for(e in elements) {
+                    ret += toCppTupleDeclaration(e, alreadyDone, program);
+                }
+                final guardStr = "_SAMAL_TUPLE_DECL_" + type.toCppGCTypeStr();
+                ret += "#ifndef " + guardStr + "\n";
+                ret += "#define " + guardStr + "\n";
+                ret += "namespace samalrt {\n";
+                ret += "namespace tuples {\n";
+                ret += "struct " + type.toCppTupleBaseTypename() + " {" + "\n";
+                ret += Util.seq(elements.length).map(function(i) return " " + elements[i].toCppType() + " e" + i + ";\n").join("");
+                ret += "};\n";
+                ret += "};\n";
+                // inspect
+                ret += "inline samalrt::SamalString inspect(samalrt::SamalContext& ctx, const " + type.toCppType() + "& value) {\n"
+                    + ' samalrt::SamalString ret = samalrt::toSamalString(ctx, ")");\n'
+                    + Util.seq(elements.length).map(function(i) {
+                        return ' ret = samalrt::listConcat(ctx, inspect(ctx, value.e${elements.length - i - 1}), ret);\n';
+                    }).join(' ret = samalrt::listConcat(ctx, samalrt::toSamalString(ctx, ", "), ret);\n')
+                    + ' ret = samalrt::listConcat(ctx, samalrt::toSamalString(ctx, "("), ret);\n'
+                    + " return ret;\n"
+                    + "}\n";
+                ret += "};\n";
+                ret += "#endif\n";
+                return ret;
+            case Unknown(_, _):
+                throw new Exception("ASSERT!");
+        }
     }
     public function makeFile(ctx : SourceCreationContext, node : CppFile) : String {
         var ret = "";
@@ -69,15 +143,22 @@ class CppTarget extends LanguageTarget {
             ret += "#include <cassert>\n";
             ret += "#include <functional>\n";
             ret += "#include \"samal_runtime.hpp\"\n";
+            ret += "\n";
+            // declare tuples
+            final alreadyDeclaredTuples = [];
+            for(d in node.getUsedDatatypes()) {
+                ret += StringTools.trim(toCppTupleDeclaration(d, alreadyDeclaredTuples, cppCtx.getProgram()));
+            }
+            ret += "\n";
         } else if(cppCtx.getHos() == Source) {
             ret += '#include "${node.getName()}.hpp"\n';
             ret += "\n";
-            // used datatypes
+            // this is for declaring the Datatype-objects for GC tracking
             final alreadyDeclared = [];
             for(d in node.getUsedDatatypes()) {
                 ret += d.toCppGCTypeDeclaration(alreadyDeclared);
             }
-            // now assign the fields to the structs. We need to do it in this order, because structs can be recursive.
+            // now assign the fields to the structs/enums. We can't do this in the prev step, because structs/enums can be recursive.
             ret += "\n";
             var placerCounter = 0;
             for(declaredType in alreadyDeclared) {
@@ -138,6 +219,18 @@ class CppTarget extends LanguageTarget {
         }
         return ret;
     }
+    private static function genEqualityCheckCode(nodeErrorInfo : String, datatype : Datatype, lhsName : String, rhsName : String) : String {
+        switch(datatype) {
+        case Int, Bool, Char, Byte:
+            return 'if($lhsName != $rhsName) return false;\n';
+        case List(_), Usertype(_, _, _):
+            return  'if(!equals(ctx, $lhsName, $rhsName)) return false;\n';
+        case Function(_, _), Tuple(_):
+            throw new Exception(nodeErrorInfo + ": Unsupported datatype " + datatype.toSamalType());
+        case Unknown(_, _):
+            throw new Exception(nodeErrorInfo + ": Unknown datatype, this is a bug!");
+        }
+    }
     public function makeStructDeclaration(ctx : SourceCreationContext, node : CppStructDeclaration) : String {
         final cppCtx = cast(ctx, CppContext);
         if(cppCtx.getHos() != HeaderStart) {
@@ -165,17 +258,7 @@ class CppTarget extends LanguageTarget {
             + "}\n"
             + "inline bool equals(samalrt::SamalContext& ctx, const " + nodeCppType + "& a, const " + nodeCppType + "& b) {\n"
             + node.getFields().map(function(f) : String {
-                switch(f.getDatatype()) {
-                    case Int, Bool, Char:
-                        return ' if(a.${f.getFieldName()} != b.${f.getFieldName()}) return false;\n';
-                    case List(_), Usertype(_, _, _):
-                        return ' if(!equals(ctx, a.${f.getFieldName()}, b.${f.getFieldName()})) return false;\n';
-                    case Function(_, _), Tuple(_):
-                        throw new Exception(node.errorInfo() + ": Unsupported datatype " + f.getDatatype().toSamalType());
-                    case Unknown(_, _):
-                        throw new Exception(node.errorInfo() + ": Unknown datatype, this is a bug!");
-                }
-                return "";
+                return " " + genEqualityCheckCode(node.errorInfo(), f.getDatatype(), "a." + f.getFieldName(), "b." + f.getFieldName());
             }).join('')
             + " return true;\n"
             + "}\n"
@@ -187,9 +270,10 @@ class CppTarget extends LanguageTarget {
         if(cppCtx.getHos() != HeaderStart) {
             return "";
         }
+        final nodeCppType = node.getDatatype().toCppType();
         return
             "#pragma pack(1)\n"
-            + "struct " + node.getDatatype().toCppType() + " {\n"
+            + "struct " + nodeCppType + " {\n"
             + " int32_t variant;\n"
             + " union {\n"
             + node.getVariants().map(function(v) {
@@ -200,7 +284,25 @@ class CppTarget extends LanguageTarget {
                     + "  } " + v.getName() + ";\n";
             }).join("")
             + " };\n"
-            + "};\n";
+            + "};\n"
+            + "namespace samalrt {\n"
+            + "inline bool equals(samalrt::SamalContext& ctx, const " + nodeCppType + "& a, const " + nodeCppType + "& b) {\n"
+            + " if(a.variant != b.variant) return false;\n"
+            + " switch(a.variant) {\n"
+            + Util.seq(node.getVariants().length).map(function(variantIndex) : String {
+                var ret = "  case " + variantIndex + ": {\n";
+                final v = node.getVariants()[variantIndex];
+                for(f in v.getFields()) {
+                    ret += "   " + genEqualityCheckCode(node.errorInfo(), f.getDatatype(), 'a.${v.getName()}.${f.getFieldName()}', 'b.${v.getName()}.${f.getFieldName()}');
+                }
+                ret += "   break;\n";
+                ret += "  }\n";
+                return ret;
+            }).join('')
+            + " }\n"
+            + " return true;\n"
+            + "}\n"
+            + "}\n";
     }
     public function makeScopeStatement(ctx : SourceCreationContext, node : CppScopeStatement) : String {
         return indent(ctx) + node.getScope().toSrc(this, ctx.next());
@@ -227,6 +329,10 @@ class CppTarget extends LanguageTarget {
                 opStr = "<=";
             case MoreEqual:
                 opStr = ">=";
+            case And:
+                opStr = "&&";
+            case Or:
+                opStr = "||";
         }
         return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = " 
             + node.getLhsVarName() + " " + opStr + " " + node.getRhsVarName() + getTrackerString(node);
@@ -326,7 +432,8 @@ class CppTarget extends LanguageTarget {
         return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = " + node.getDatatype().getUsertypeMangledName() + "{" + paramsStr + "}" + getTrackerString(node);
     }
     public function makeCreateTupleStatement(ctx : SourceCreationContext, node : CppCreateTupleStatement) : String {
-        return indent(ctx) + "let " + node.getVarName() + " = [" + node.getParams().join(", ") + "]";
+        return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = " 
+            + node.getDatatype().toCppType() + "{" + node.getParams().join(", ") + "}";
     }
     public function makeEnumIsVariantStatement(ctx : SourceCreationContext, node : CppEnumIsVariantStatement) : String {
         return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = " + node.getEnumExpr() + ".variant == " + node.getVariantIndex() + getTrackerString(node);

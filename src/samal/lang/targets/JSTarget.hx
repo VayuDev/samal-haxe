@@ -37,7 +37,10 @@ class JSContext extends SourceCreationContext {
 class JSTarget extends LanguageTarget {
     public function new() {}
 
-    public function getLiteralInt(value : Int) : String {
+    public function getLiteralBool(value : Bool) : String {
+        return value ? "true" : "false";
+    }
+    public function getLiteralByte(value : Int) : String {
         return Std.string(value);
     }
     public function getLiteralChar(value : String) : String {
@@ -45,6 +48,9 @@ class JSTarget extends LanguageTarget {
             return "'\\u" + value.charCodeAt(0).sure() + "'";
         }
         return "'" + value + "'";
+    }
+    public function getLiteralInt(value : Int) : String {
+        return Std.string(value);
     }
     public function getLiteralEmptyList(baseType : Datatype) : String {
         return "null";
@@ -152,6 +158,10 @@ class JSTarget extends LanguageTarget {
                 opStr = "<=";
             case MoreEqual:
                 opStr = ">=";
+            case And:
+                opStr = "&&";
+            case Or:
+                opStr = "||";
         }
         return indent(ctx) + "let " + node.getVarName() + " = " + node.getLhsVarName() + " " + opStr + " " + node.getRhsVarName();
     }
