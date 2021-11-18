@@ -1,4 +1,5 @@
 package samal.lang.targets;
+import samal.lang.Stage2.VarDeclaration;
 import haxe.Exception;
 import samal.lang.Program.CppProgram;
 import samal.lang.CppAST;
@@ -80,7 +81,7 @@ class CppTarget extends LanguageTarget {
                 final typeDecl = program.findUsertypeDeclaration(type);
                 if(Std.isOfType(typeDecl, CppStructDeclaration)) {
                     final structDecl = cast(typeDecl, CppStructDeclaration);
-                    final ret = "";
+                    var ret = "";
                     for(f in structDecl.getFields()) {
                         ret += toCppTupleDeclaration(f.getDatatype(), alreadyDone, program) + "\n";
                     }
@@ -88,7 +89,7 @@ class CppTarget extends LanguageTarget {
                 }
                 if(Std.isOfType(typeDecl, CppEnumDeclaration)) {
                     final enumDecl = cast(typeDecl, CppEnumDeclaration);
-                    final ret = "";
+                    var ret = "";
                     for(v in enumDecl.getVariants()) {
                         for(f in v.getFields()) {
                             ret += toCppTupleDeclaration(f.getDatatype(), alreadyDone, program) + "\n";
