@@ -156,7 +156,7 @@ class JSTarget extends LanguageTarget {
         return indent(ctx) + "let " + node.getVarName() + " = " + node.getLhsVarName() + " " + opStr + " " + node.getRhsVarName();
     }
     public function makeUnaryExprStatement(ctx : SourceCreationContext, node : CppUnaryExprStatement) : String {
-        final ret = indent(ctx) + "let " + node.getVarName();
+        var ret = indent(ctx) + "let " + node.getVarName();
         switch(node.getOp()) {
             case Not:
                 ret += " = !(" + node.getExpr() + ")";

@@ -232,7 +232,7 @@ class CppTarget extends LanguageTarget {
             + node.getLhsVarName() + " " + opStr + " " + node.getRhsVarName() + getTrackerString(node);
     }    
     public function makeUnaryExprStatement(ctx : SourceCreationContext, node : CppUnaryExprStatement) : String {
-        final ret = indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName();
+        var ret = indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName();
         switch(node.getOp()) {
             case Not:
                 ret += " = !(" + node.getExpr() + ")" + getTrackerString(node);
