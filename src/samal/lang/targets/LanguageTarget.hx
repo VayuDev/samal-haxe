@@ -54,6 +54,7 @@ abstract class LanguageTarget {
     abstract public function makeFunctionCallStatement(ctx : SourceCreationContext, node : CppFunctionCallStatement) : String;
     abstract public function makeIfStatement(ctx : SourceCreationContext, node : CppIfStatement) : String;
     abstract public function makeListPrependStatement(ctx : SourceCreationContext, node : CppListPrependStatement) : String;
+    abstract public function makeNativeStatement(ctx : SourceCreationContext, node : CppNativeStatement) : String;
     abstract public function makeReturnStatement(ctx : SourceCreationContext, node : CppReturnStatement) : String;
     abstract public function makeScopeStatement(ctx : SourceCreationContext, node : CppScopeStatement) : String;
     abstract public function makeTailCallSelf(ctx : SourceCreationContext, node : CppTailCallSelf) : String;

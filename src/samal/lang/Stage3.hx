@@ -203,6 +203,11 @@ class Stage3 {
         } else if(Std.downcast(astNode, SamalLoadIdentifierExpression) != null) {
             var node = Std.downcast(astNode, SamalLoadIdentifierExpression);
             return node.getIdentifier().mangled();
+        } else if(Std.downcast(astNode, SamalNativeExpression) != null) {
+            var node = Std.downcast(astNode, SamalNativeExpression);
+            addStatement(new CppNativeStatement(node.getSourceRef(), node.getDatatype().sure(), node.getReturnName(), node.getParts()));
+            return node.getReturnName();
+
         } else if(Std.downcast(astNode, SamalFunctionCallExpression) != null) {
             var node = Std.downcast(astNode, SamalFunctionCallExpression);
             final nodeDatatype = addUsedDatatype(node.getDatatype().sure());

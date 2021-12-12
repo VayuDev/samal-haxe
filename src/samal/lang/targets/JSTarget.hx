@@ -204,6 +204,9 @@ class JSTarget extends LanguageTarget {
     public function makeListPrependStatement(ctx : SourceCreationContext, node : CppListPrependStatement) : String {
         return indent(ctx) + "let " + node.getVarName() + " = new samalrt.List(" + node.getValue() + ", " + node.getList() + ")";
     }
+    public function makeNativeStatement(ctx : SourceCreationContext, node : CppNativeStatement) : String {
+        return indent(ctx) + " let " + node.getVarName() + " = null;\n {\n" + node.findSnippet("js") + "\n};\n";
+    }
     public function makeCreateEnumStatement(ctx : SourceCreationContext, node : CppCreateEnumStatement) : String {
         final jsCtx = cast(ctx, JSContext);
         final decl = cast(jsCtx.getProgram().findUsertypeDeclaration(node.getDatatype()), CppEnumDeclaration);

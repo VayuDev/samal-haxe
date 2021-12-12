@@ -323,6 +323,7 @@ class Parser {
     }
 
     function parseLiteralExpression() : SamalExpression {
+        skipNewlines();
         startNode();
         switch(current().getType()) {
             case Integer:
@@ -471,18 +472,39 @@ class Parser {
                     case "start_native":
                         eat(LParen);
                         final returnName = eat(Identifier).getSubstr();
+                        eat(Colons);
+                        final returnDatatype = parseDatatype();
                         eat(RParen);
 
-                        while(current().getType() != At && peek().getType() != Identifier) {
-                            eat(current().getType());
+                        final snippets : Array<NativeCodeSnippet> = [];
+                        var currentLang = "";
+                        while(true) {
+                            mTokenizer.push();
+                            while(current().getType() != At || peek().getType() != Identifier) {
+                                eat(current().getType());
+                            }
+                            
+                            if(currentLang != "") {
+                                snippets.push(NativeCodeSnippet.create(currentLang, mTokenizer.acceptAndGetSubstring()));
+                            } else {
+                                mTokenizer.acceptState();
+                            }
+    
+                            eat(At);
+                            final subMacroType = eat(Identifier).getSubstr();
+                            if(subMacroType == "native_lang") {
+                                eat(LParen);
+                                currentLang = eat(Identifier).getSubstr();
+                                eat(RParen);
+                            } else if(subMacroType == "end_native") {
+                                break;
+                            }
                         }
 
-                        eat(At);
-                        final subMacroType = eat(Identifier).getSubstr();
-
+                        return SamalNativeExpression.create(makeSourceRef(), returnName, snippets, returnDatatype);
 
                     default:
-                        throw new Exception("Unknown compiler macro @" + type);
+                        throw new Exception(current().info() + "Unknown compiler macro @" + type);
                 }
 
             case _:

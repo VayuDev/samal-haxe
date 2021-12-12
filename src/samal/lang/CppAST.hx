@@ -1,5 +1,6 @@
 package samal.lang;
 
+import samal.lang.generated.SamalAST.NativeCodeSnippet;
 import samal.lang.generated.SamalAST.EnumDeclVariant;
 import haxe.Exception;
 import samal.lang.generated.SamalAST.UsertypeField;
@@ -566,5 +567,29 @@ class CppTailCallSelf extends CppStatement {
     }
     public function getParams() {
         return mParams;
+    }
+}
+
+class CppNativeStatement extends CppStatement {
+    final mSnippets : Array<NativeCodeSnippet>;
+
+    public function new(sourceRef : SourceCodeRef, returnDatatype : Datatype, returnName : String, snippets : Array<NativeCodeSnippet>) {
+        super(sourceRef, returnDatatype, returnName);
+        mSnippets = snippets;
+    }
+
+    public override function toSrc(target : LanguageTarget, ctx : SourceCreationContext) {
+        return target.makeNativeStatement(ctx, this);
+    }
+    public function getSnippets() {
+        return mSnippets;
+    }
+    public function findSnippet(language : String) : String {
+        for(s in mSnippets) {
+            if(s.getLanguage() == language) {
+                return s.getCode();
+            }
+        }
+        return "";
     }
 }

@@ -15,7 +15,7 @@ fn fib(n : int) -> int {
 fn reverseHelper<T>(la : [T], lb : [T]) -> [T] {
     match la {
     [head + tail] -> {
-        @tail_call_self(tail, head + lb)
+        @@tail_call_self(tail, head + lb)
     }
     [] -> {
         lb
@@ -150,13 +150,13 @@ fn mainSeven() -> bool {
     false || true
 }
 
-fn main() -> byte {
+fn main() -> int {
     a = 
-        @start_native(cpp, NATIVE_RETURN)
-            int i = 42;
+        @start_native(NATIVE_RETURN : int)
+        @native_lang(cpp)
+            int i = (int)pow(3, 4);
             NATIVE_RETURN = *&i;
         @native_lang(js)
-            NATIVE_RETURN = [42][0];
+            NATIVE_RETURN = Math.pow(3, 4)
         @end_native
-    27b
 }

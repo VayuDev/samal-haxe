@@ -30,6 +30,11 @@ class EnumDeclVariant {
     -fields : Array<UsertypeField>
 }
 
+class NativeCodeSnippet {
+    -language : String
+    -code : String
+}
+
 
 
 class IdentifierWithTemplate {
@@ -284,6 +289,14 @@ class SamalMatchExpression extends SamalExpression {
 class SamalMatchRow extends SamalASTNode {
     -shape : SamalShape
     -body : SamalExpression
+}
+
+class SamalNativeExpression extends SamalExpression {
+    -returnName : String
+    -parts : Array<NativeCodeSnippet>
+    @start_hx_ctor(type : Datatype)
+        ret.mDatatype = type;
+    @end_hx
 }
 
 class SamalScopeExpression extends SamalExpression {
