@@ -215,8 +215,9 @@ class Parser {
     }
 
     function parseExpressionOrLineExpression() : SamalExpression {
-        if(current().getType() == At) {
+        if(current().getType() == At && peek().getType() == At) {
             startNode();
+            eat(At);
             eat(At);
             final type = current().getSubstr();
             eat(Identifier);
@@ -462,6 +463,27 @@ class Parser {
             case False:
                 eat(False);
                 return SamalLiteralBoolExpression.create(makeSourceRef(), false);
+
+            case At:
+                eat(At);
+                final type = eat(Identifier).getSubstr();
+                switch(type) {
+                    case "start_native":
+                        eat(LParen);
+                        final returnName = eat(Identifier).getSubstr();
+                        eat(RParen);
+
+                        while(current().getType() != At && peek().getType() != Identifier) {
+                            eat(current().getType());
+                        }
+
+                        eat(At);
+                        final subMacroType = eat(Identifier).getSubstr();
+
+
+                    default:
+                        throw new Exception("Unknown compiler macro @" + type);
+                }
 
             case _:
                 throw new Exception(current().info() + " Expected expression");

@@ -151,5 +151,12 @@ fn mainSeven() -> bool {
 }
 
 fn main() -> byte {
+    a = 
+        @start_native(cpp, NATIVE_RETURN)
+            int i = 42;
+            NATIVE_RETURN = *&i;
+        @native_lang(js)
+            NATIVE_RETURN = [42][0];
+        @end_native
     27b
 }

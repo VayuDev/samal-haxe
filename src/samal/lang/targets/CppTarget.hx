@@ -1,4 +1,5 @@
 package samal.lang.targets;
+import samal.lang.Stage2.VarDeclaration;
 import haxe.Exception;
 import samal.lang.Program.CppProgram;
 import samal.lang.CppAST;
