@@ -150,13 +150,15 @@ fn mainSeven() -> bool {
     false || true
 }
 
+fn pow(b : int, e : int) -> int {
+    @start_native(NATIVE_RETURN : int)
+    @native_lang(cpp)
+        NATIVE_RETURN = (int)pow(b, e);
+    @native_lang(js)
+        NATIVE_RETURN = Math.pow(b, e);
+    @end_native
+}
+
 fn main() -> int {
-    a = 
-        @start_native(NATIVE_RETURN : int)
-        @native_lang(cpp)
-            int i = (int)pow(3, 4);
-            NATIVE_RETURN = *&i;
-        @native_lang(js)
-            NATIVE_RETURN = Math.pow(3, 4)
-        @end_native
+    pow(2, 4)
 }

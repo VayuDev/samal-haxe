@@ -1,4 +1,5 @@
 package samal.lang.targets;
+import haxe.Exception;
 import samal.lang.Program.CppProgram;
 import samal.lang.Pipeline.TargetType;
 import samal.lang.CppAST;
@@ -205,7 +206,11 @@ class JSTarget extends LanguageTarget {
         return indent(ctx) + "let " + node.getVarName() + " = new samalrt.List(" + node.getValue() + ", " + node.getList() + ")";
     }
     public function makeNativeStatement(ctx : SourceCreationContext, node : CppNativeStatement) : String {
-        return indent(ctx) + " let " + node.getVarName() + " = null;\n {\n" + node.findSnippet("js") + "\n};\n";
+        final s = node.findSnippet("js");
+        if(s == null) {
+            throw new Exception(node.errorInfo() + ": Missing native snippet for js");  
+        }
+        return indent(ctx) + " let " + node.getVarName() + " = null;\n {\n" + s + "\n};\n";
     }
     public function makeCreateEnumStatement(ctx : SourceCreationContext, node : CppCreateEnumStatement) : String {
         final jsCtx = cast(ctx, JSContext);

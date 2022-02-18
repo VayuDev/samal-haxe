@@ -378,9 +378,13 @@ class CppTarget extends LanguageTarget {
         return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = samalrt::listPrepend<" + node.getDatatype().getBaseType().toCppType() + ">($ctx, " + node.getValue() + ", " + node.getList() + ")" + getTrackerString(node);
     }
     public function makeNativeStatement(ctx : SourceCreationContext, node : CppNativeStatement) : String {
+        final s = node.findSnippet("cpp");
+        if(s == null) {
+            throw new Exception(node.errorInfo() + ": Missing native snippet for C++");  
+        }
         return indent(ctx) + node.getDatatype().toCppType() + " " + node.getVarName() + " = " + node.getDatatype().toCppDefaultInitializationString() + getTrackerString(node) + ";\n"
             + indent(ctx) + "{\n"
-            + indent(ctx.next()) + node.findSnippet("cpp")
+            + indent(ctx.next()) + s
             + indent(ctx) + "}";
     }
     public function makeCreateEnumStatement(ctx : SourceCreationContext, node : CppCreateEnumStatement) : String {

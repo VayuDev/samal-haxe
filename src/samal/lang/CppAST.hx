@@ -584,12 +584,12 @@ class CppNativeStatement extends CppStatement {
     public function getSnippets() {
         return mSnippets;
     }
-    public function findSnippet(language : String) : String {
+    public function findSnippet(language : String) : Null<String> {
         for(s in mSnippets) {
             if(s.getLanguage() == language) {
                 return s.getCode();
             }
         }
-        return "";
+        return null;
     }
 }
